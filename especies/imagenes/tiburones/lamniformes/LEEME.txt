@@ -1,0 +1,7 @@
+Coloca aquí las fotos de Lamniformes (tiburones), nombradas como {id}.jpg
+
+Especies de este orden:
+- tigredearena.jpg  ✓ presente
+- peregrino.jpg     ✓ presente
+- blanco.jpg        ✓ presente
+- marrajo.jpg       ✓ presente (foto: mako)

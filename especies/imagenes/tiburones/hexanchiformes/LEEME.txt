@@ -1,0 +1,5 @@
+Coloca aquí las fotos de Hexanchiformes (tiburones), nombradas como {id}.jpg
+
+Especies de este orden:
+- sietebranquias.jpg  ✓ presente
+- quelvacho.jpg       ✓ presente (foto: cañabota gris)

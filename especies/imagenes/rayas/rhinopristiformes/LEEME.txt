@@ -1,0 +1,6 @@
+Coloca aquí las fotos de Rhinopristiformes (rayas), nombradas como {id}.jpg
+
+Especies de este orden:
+- guitarra.jpg
+- guitarramora.jpg
+- sierra.jpg

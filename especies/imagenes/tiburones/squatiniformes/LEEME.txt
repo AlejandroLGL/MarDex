@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Squatiniformes (tiburones), nombradas como {id}.jpg
+
+Especies de este orden:
+- angelote.jpg  ✓ presente

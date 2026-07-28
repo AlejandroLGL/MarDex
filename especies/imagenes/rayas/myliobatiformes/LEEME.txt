@@ -1,0 +1,11 @@
+Coloca aquí las fotos de Myliobatiformes (rayas), nombradas como {id}.jpg
+
+Especies de este orden:
+- aguila.jpg
+- manta.jpg
+- latigo.jpg
+- clavos.jpg
+- aguila_moteada.jpg
+- mariposa.jpg
+- azulina.jpg
+- pelagica.jpg

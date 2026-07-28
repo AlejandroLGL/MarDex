@@ -1,0 +1,7 @@
+Coloca aquí las fotos de Rajiformes (rayas), nombradas como {id}.jpg
+
+Especies de este orden:
+- comun.jpg       ✓ presente  (Raja clavata — Raya común)
+- espejos.jpg     ✓ presente  (Raja miraletus — Raya de espejos)
+- santiaguesa.jpg
+- mosaica.jpg               (Raja undulata — Raya mosaica)

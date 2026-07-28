@@ -1,0 +1,13 @@
+Coloca aquí las fotos de Carcharhiniformes (tiburones), nombradas como {id}.jpg
+
+Especies de este orden:
+- puntablanca.jpg  ✓ presente
+- puntanegra.jpg   ✓ presente
+- pintarroja.jpg   ✓ presente
+- cazon.jpg        ✓ presente
+- martillo.jpg     ✓ presente
+- limon.jpg        ✓ presente
+- tope.jpg         ✓ presente
+- toro.jpg         ✓ presente
+- sedoso.jpg       ✓ presente
+- azul.jpg         ✓ presente

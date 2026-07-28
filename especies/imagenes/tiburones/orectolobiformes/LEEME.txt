@@ -1,0 +1,8 @@
+Coloca aquí las fotos de Orectolobiformes (tiburones), nombradas como {id}.jpg
+
+Especies de este orden:
+- nodriza.jpg
+- cebra.jpg
+- ballena.jpg
+- wobbegong.jpg
+- charretera.jpg

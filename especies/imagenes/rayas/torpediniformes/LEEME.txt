@@ -1,0 +1,5 @@
+Coloca aquí las fotos de Torpediniformes (rayas), nombradas como {id}.jpg
+
+Especies de este orden:
+- torpedo.jpg
+- torpedomarmoreado.jpg

@@ -1,0 +1,5 @@
+Coloca aquí las fotos de Heterodontiformes (tiburones), nombradas como {id}.jpg
+
+Especies de este orden:
+- cornudo.jpg          ✓ presente
+- cuernocalifornia.jpg ✓ presente
