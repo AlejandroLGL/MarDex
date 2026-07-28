@@ -2964,7 +2964,7 @@ function wireForm(s, sightings, editingSighting){
     input.click();
   };
 
-  document.getElementById('saveForm').onclick = ()=>{
+  document.getElementById('saveForm').onclick = async ()=>{
     const title = document.getElementById('f-title').value.trim();
     const location = document.getElementById('f-location').value.trim();
     const comment = document.getElementById('f-comment').value.trim();
