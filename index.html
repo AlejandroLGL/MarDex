@@ -3577,8 +3577,8 @@ function _renderAlForm(mode){
   const wrap=document.getElementById('alFormWrap');
   if(mode==='login'){
     wrap.innerHTML=`
-      <div class="al-field"><label>Correo electrónico</label>
-        <input type="email" id="alEmail" placeholder="tucorreo@mail.com" autocomplete="off">
+      <div class="al-field"><label>Usuario o correo</label>
+        <input type="text" id="alEmail" placeholder="@usuario o tucorreo@mail.com" autocomplete="off">
       </div>
       <div class="al-field"><label>Contrase&ntilde;a</label>
         <input type="password" id="alPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
@@ -3627,11 +3627,16 @@ function _alShowError(msg){
 }
 
 async function _alDoLogin(){
-  const input=(document.getElementById('alEmail').value||'').trim().toLowerCase();
+  let input=(document.getElementById('alEmail').value||'').trim().toLowerCase();
   const password=document.getElementById('alPassword').value;
   if(!input||!password){_alShowError('Rellena todos los campos.');return;}
   const btn=document.getElementById('alSubmitBtn');
   btn.disabled=true;
+  if(!input.includes('@')){
+    const {data:emailData}=await _sb.rpc('get_email_by_username',{uname:input});
+    if(!emailData){btn.disabled=false;_alShowError('Usuario no encontrado.');return;}
+    input=emailData;
+  }
   const {data,error}=await _sb.auth.signInWithPassword({email:input,password});
   btn.disabled=false;
   if(error){_alShowError('Correo o contraseña incorrectos.');return;}
