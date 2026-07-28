@@ -272,6 +272,19 @@
   .pp-row-value{ font-size:13px; color:var(--ink); font-weight:700; max-width:60%; text-align:right; word-break:break-all; }
   .pp-row-action{ font-size:12px; color:var(--blue); font-weight:700; background:none; border:none; cursor:pointer; padding:0; }
   .pp-row-action:hover{ color:var(--turq); }
+  .pp-section-header{ display:flex; justify-content:space-between; align-items:center; }
+  .pp-edit-btn{ font-size:12px; color:var(--blue); font-weight:700; background:none; border:none; cursor:pointer; padding:0; }
+  .pp-edit-btn:hover{ color:var(--turq); }
+  .pp-edit-form{ display:flex; flex-direction:column; gap:10px; padding:4px 0 2px; }
+  .pp-edit-field{ display:flex; flex-direction:column; gap:4px; }
+  .pp-edit-label{ font-size:12px; font-weight:600; color:var(--muted); }
+  .pp-edit-input{ font-size:13px; font-family:var(--sans); font-weight:600; color:var(--ink); border:1.5px solid var(--blue-soft); border-radius:8px; padding:7px 10px; background:var(--bg); outline:none; width:100%; box-sizing:border-box; }
+  .pp-edit-input:focus{ border-color:var(--blue); }
+  .pp-edit-actions{ display:flex; gap:8px; margin-top:2px; }
+  .pp-edit-save{ font-size:12px; font-weight:700; font-family:var(--sans); background:var(--blue); color:#fff; border:none; border-radius:8px; padding:7px 16px; cursor:pointer; }
+  .pp-edit-save:hover{ background:var(--turq); }
+  .pp-edit-cancel{ font-size:12px; font-weight:700; font-family:var(--sans); background:none; color:var(--muted); border:1.5px solid var(--blue-soft); border-radius:8px; padding:7px 14px; cursor:pointer; }
+  .pp-edit-cancel:hover{ color:var(--ink); }
   .pp-placeholder{
     display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px;
     background:var(--bg); color:var(--faint); font-size:13px; font-weight:600;
@@ -642,7 +655,7 @@
   .toast.error{ background:var(--coral); }
 
   .confirm-overlay{
-    display:none; position:fixed; inset:0; background:rgba(8,18,34,0.65); z-index:60;
+    display:none; position:fixed; inset:0; background:rgba(8,18,34,0.65); z-index:120;
     align-items:center; justify-content:center; padding:16px;
   }
   .confirm-overlay.open{ display:flex; }
@@ -825,6 +838,90 @@
   .activity-cell-year:hover::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; font-size:10px; padding:4px 8px; border-radius:6px; white-space:nowrap; z-index:20; pointer-events:none; font-family:var(--sans); font-weight:600; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
   .activity-year-lbl { font-size:12px; font-weight:700; color:rgba(5,46,74,0.5); pointer-events:none; }
 
+
+  /* ── Auth Landing Page ────────────────────────── */
+  #authLanding{
+    position:fixed;inset:0;z-index:300;
+    background:linear-gradient(160deg,#040C18 0%,#061525 50%,#091F35 100%);
+    display:none;align-items:center;justify-content:center;overflow:hidden;
+  }
+  #authLanding.open{display:flex;}
+  #alRaysCanvas,#alParticlesCanvas{
+    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
+  }
+  #alRaysCanvas{z-index:1;}
+  #alParticlesCanvas{z-index:2;pointer-events:auto;}
+  #alGradient{
+    position:absolute;inset:0;z-index:3;pointer-events:none;
+    background:linear-gradient(to bottom,
+      rgba(129, 179, 255, 0.55) 0%,
+      rgba(27, 65, 122, 0.1) 60%,
+      rgba(4,12,24,0.65) 100%
+    );
+  }
+  .al-content{
+    position:relative;z-index:10;
+    display:flex;flex-direction:column;align-items:center;
+    width:100%;max-width:420px;padding:24px 20px;
+  }
+  .al-logo{text-align:center;margin-bottom:28px;}
+  .al-logo-text{font-family:var(--serif);font-size:48px;line-height:1;letter-spacing:-0.02em;}
+  .al-logo-text span:first-child{color:#fff;}
+  .al-logo-dex{color:#4CCEF5;}
+  .al-logo-sub{
+    font-size:10.5px;font-weight:700;letter-spacing:0.14em;
+    color:rgba(255,255,255,0.35);margin-top:8px;text-transform:uppercase;
+  }
+  .al-card{
+    background:rgba(5,28,52,0.80);backdrop-filter:blur(24px) saturate(1.4);
+    -webkit-backdrop-filter:blur(24px) saturate(1.4);
+    border:1.5px solid rgba(76,206,245,0.13);border-radius:22px;
+    padding:28px;width:100%;box-sizing:border-box;
+    box-shadow:0 32px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(76,206,245,0.05);
+  }
+  .al-tabs{
+    display:flex;border-radius:12px;overflow:hidden;
+    background:rgba(255,255,255,0.06);margin-bottom:22px;padding:3px;gap:3px;
+  }
+  .al-tab{
+    flex:1;padding:9px;border:none;background:transparent;
+    color:rgba(255,255,255,0.45);font-family:var(--sans);font-size:13.5px;
+    font-weight:700;cursor:pointer;border-radius:9px;transition:all 0.2s;
+  }
+  .al-tab.active{background:rgba(0,128,200,0.9);color:#fff;}
+  .al-field{margin-bottom:13px;}
+  .al-field label{
+    display:block;font-size:10.5px;font-weight:700;letter-spacing:0.07em;
+    text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:5px;
+  }
+  .al-field input{
+    width:100%;box-sizing:border-box;
+    background:rgba(255,255,255,0.06);border:1.5px solid rgba(76,206,245,0.14);
+    border-radius:11px;padding:11px 13px;color:#fff;
+    font-family:var(--sans);font-size:14.5px;outline:none;
+    transition:border-color 0.18s;caret-color:#4CCEF5;
+  }
+  .al-field input:focus{border-color:rgba(76,206,245,0.45);background:rgba(76,206,245,0.05);}
+  .al-field input::placeholder{color:rgba(255,255,255,0.22);}
+  .al-submit{
+    width:100%;padding:13px;margin-top:8px;
+    background:var(--blue);color:#fff;border:none;border-radius:11px;
+    font-family:var(--sans);font-size:15px;font-weight:700;
+    cursor:pointer;transition:background 0.2s,transform 0.1s,box-shadow 0.2s;
+    box-shadow:0 4px 20px rgba(0,128,200,0.35);
+  }
+  .al-submit:hover{background:#0070B8;box-shadow:0 6px 24px rgba(0,128,200,0.45);}
+  .al-submit:active{transform:scale(0.98);}
+  .al-error{
+    margin-top:10px;padding:10px 13px;
+    background:rgba(255,95,83,0.13);border:1.5px solid rgba(255,95,83,0.25);
+    border-radius:9px;color:#FF9999;font-size:12.5px;font-weight:600;
+    display:none;
+  }
+  .al-error.show{display:block;}
+  .al-switch{text-align:center;margin-top:15px;font-size:12.5px;color:rgba(255,255,255,0.35);}
+  .al-switch a{color:#4CCEF5;cursor:pointer;font-weight:600;}
+  .al-switch a:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -1283,6 +1380,7 @@ async function enterAccount(account){
   currentProfile = account.name;
   await safeSet('last-profile', account.name, false);
   document.getElementById('profileOverlay').classList.remove('open');
+  closeAuthLanding();
   renderProfileBadge();
   await loadState();
   renderCatNav();
@@ -1298,8 +1396,17 @@ function closeProfileOverlay(){
 }
 
 async function openProfilePicker(){
-  document.getElementById('profileOverlay').classList.add('open');
-  await renderAuthScreen('login');
+  // Check for saved profile first
+  const lastP = await safeGet('last-profile', false);
+  if(lastP){
+    const accs = await loadAccounts();
+    const acc = accs.find(a => a.name === lastP);
+    if(acc){
+      await _alEnterAccount(acc);
+      return;
+    }
+  }
+  await openAuthLanding();
 }
 
 // Cerrar al hacer click en el fondo del overlay
@@ -2162,15 +2269,20 @@ async function renderProfilePage(){
     </div>
 
     <!-- Nombre de usuario -->
-    <div class="pp-section">
-      <div class="pp-section-title">Nombre de usuario</div>
-      <div class="pp-row">
-        <span class="pp-row-label">Usuario</span>
-        <span class="pp-row-value">${username ? escapeHtml(username) : '<span style="color:var(--faint);font-style:italic">Sin asignar</span>'}</span>
+    <div class="pp-section" id="ppIdentitySection">
+      <div class="pp-section-header">
+        <div class="pp-section-title">Nombre de usuario</div>
+        <button class="pp-edit-btn" id="ppEditIdentityBtn">Editar</button>
       </div>
-      <div class="pp-row">
-        <span class="pp-row-label">Nombre</span>
-        <span class="pp-row-value">${escapeHtml(displayName)}</span>
+      <div id="ppIdentityRows">
+        <div class="pp-row">
+          <span class="pp-row-label">Usuario</span>
+          <span class="pp-row-value">${username ? escapeHtml(username) : '<span style="color:var(--faint);font-style:italic">Sin asignar</span>'}</span>
+        </div>
+        <div class="pp-row">
+          <span class="pp-row-label">Nombre</span>
+          <span class="pp-row-value">${escapeHtml(displayName)}</span>
+        </div>
       </div>
     </div>
 
@@ -2259,6 +2371,80 @@ async function renderProfilePage(){
     closeProfilePage();
     openProfilePicker();
     renderAuthScreen('forgot');
+  };
+
+  document.getElementById('ppEditIdentityBtn').onclick = ()=>{
+    const acc2 = currentAccountData;
+    const rows = document.getElementById('ppIdentityRows');
+    const btn  = document.getElementById('ppEditIdentityBtn');
+    btn.style.display = 'none';
+    rows.innerHTML = `
+      <div class="pp-edit-form">
+        <div class="pp-edit-field">
+          <label class="pp-edit-label">Nombre</label>
+          <input class="pp-edit-input" id="ppEditName" type="text" value="${escapeHtml(acc2 ? acc2.name : currentProfile)}" maxlength="40" placeholder="Tu nombre">
+        </div>
+        <div class="pp-edit-field">
+          <label class="pp-edit-label">Usuario (@)</label>
+          <input class="pp-edit-input" id="ppEditUsername" type="text" value="${escapeHtml(acc2 && acc2.username ? acc2.username : '')}" maxlength="30" placeholder="sin_espacios" style="text-transform:lowercase">
+        </div>
+        <div class="pp-edit-actions">
+          <button class="pp-edit-save" id="ppEditSaveBtn">Guardar</button>
+          <button class="pp-edit-cancel" id="ppEditCancelBtn">Cancelar</button>
+        </div>
+        <div class="al-error" id="ppEditError" style="display:none;margin-top:4px"></div>
+      </div>`;
+    document.getElementById('ppEditName').focus();
+
+    document.getElementById('ppEditCancelBtn').onclick = ()=> renderProfilePage();
+
+    document.getElementById('ppEditSaveBtn').onclick = async ()=>{
+      const newName     = document.getElementById('ppEditName').value.trim();
+      const newUsername = document.getElementById('ppEditUsername').value.trim().toLowerCase().replace(/\s+/g,'');
+      const errEl       = document.getElementById('ppEditError');
+      const showErr     = msg => { errEl.textContent=msg; errEl.style.display='block'; };
+
+      if(!newName){ showErr('El nombre no puede estar vacío.'); return; }
+      if(newUsername && !/^[a-z0-9_]{1,30}$/.test(newUsername)){
+        showErr('El usuario solo puede tener letras, números y _'); return;
+      }
+
+      const accs = await loadAccounts();
+      const idx  = accs.findIndex(a => a.name === currentProfile);
+      if(idx === -1){ showErr('No se encontró la cuenta.'); return; }
+
+      // Comprobar que el nuevo nombre no lo usa otra cuenta
+      if(newName !== accs[idx].name && accs.some((a,i)=> i!==idx && a.name===newName)){
+        showErr('Ese nombre ya está en uso.'); return;
+      }
+      // Comprobar username único
+      if(newUsername && newUsername !== (accs[idx].username||'') && accs.some((a,i)=> i!==idx && a.username===newUsername)){
+        showErr('Ese usuario ya está en uso.'); return;
+      }
+
+      const oldName = accs[idx].name;
+      accs[idx].name     = newName;
+      accs[idx].username = newUsername || '';
+      await saveAccounts(accs);
+
+      // Si el nombre cambió, actualizar currentProfile y last-profile
+      if(oldName !== newName){
+        // Migrar datos de estado al nuevo nombre
+        const oldData = await safeGet('mardex-data:' + oldName, true);
+        if(oldData) await safeSet('mardex-data:' + newName, oldData, true);
+        const oldAvatar = await safeGet('mardex-avatar:' + oldName, false);
+        if(oldAvatar) await safeSet('mardex-avatar:' + newName, oldAvatar, false);
+        currentProfile = newName;
+        currentAccountData = accs[idx];
+        await safeSet('last-profile', newName, false);
+        renderProfileBadge();
+      } else {
+        currentAccountData = accs[idx];
+      }
+
+      showToast('Perfil actualizado');
+      await renderProfilePage();
+    };
   };
 
   document.getElementById('ppLogoutBtn').onclick = async ()=>{
@@ -3040,7 +3226,7 @@ function initBottomNav(){
   });
 }
 
-(async function init(){
+async function init(){
   loadUIPrefs();
   const last = await safeGet('last-profile', false);
   if(last){
@@ -3068,9 +3254,434 @@ function initBottomNav(){
   initBottomNav();
   initTreePan();
   await openProfilePicker();
-})();
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 <script>
+// ══════════════════════════════════════════════════════════════════
+// AUTH LANDING PAGE — WebGL effects (Particles + LightRays)
+// ══════════════════════════════════════════════════════════════════
+
+// ── WebGL micro-utilities ─────────────────────────────────────────
+function _alShader(gl,type,src){
+  const s=gl.createShader(type);
+  gl.shaderSource(s,src);
+  gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){
+    console.error('[AL shader]',gl.getShaderInfoLog(s)); gl.deleteShader(s); return null;
+  }
+  return s;
+}
+function _alProg(gl,vs,fs){
+  const p=gl.createProgram();
+  gl.attachShader(p,_alShader(gl,gl.VERTEX_SHADER,vs));
+  gl.attachShader(p,_alShader(gl,gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)){
+    console.error('[AL program]',gl.getProgramInfoLog(p)); return null;
+  }
+  return p;
+}
+// Column-major mat4 helpers
+function _alM4persp(fovY,aspect,near,far){
+  const f=1/Math.tan(fovY/2), nf=1/(near-far);
+  return new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0]);
+}
+function _alM4mul(a,b){
+  const r=new Float32Array(16);
+  for(let j=0;j<4;j++) for(let i=0;i<4;i++) for(let k=0;k<4;k++) r[i+j*4]+=a[i+k*4]*b[k+j*4];
+  return r;
+}
+function _alM4rx(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);}
+function _alM4ry(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);}
+function _alM4rz(a){const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,s,0,0,-s,c,0,0,0,0,1,0,0,0,0,1]);}
+function _alM4t(tx,ty,tz){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,tx,ty,tz,1]);}
+function _alHex(hex){
+  hex=hex.replace(/^#/,''); if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+  const n=parseInt(hex,16); return [(n>>16&255)/255,(n>>8&255)/255,(n&255)/255];
+}
+
+// ── LightRays WebGL ───────────────────────────────────────────────
+function initAlRays(canvas,opts={}){
+  const {
+    raysOrigin='top-center', raysColor='#ffffff', raysSpeed=0.2,
+    lightSpread=2.0, rayLength=2.0, pulsating=true,
+    fadeDistance=1.0, saturation=1.0,
+    followMouse=false, mouseInfluence=0.08,
+    noiseAmount=0.0, distortion=0.02,
+    dpr=Math.min(window.devicePixelRatio||1,2)
+  }=opts;
+
+  const gl=canvas.getContext('webgl',{alpha:true,antialias:false});
+  if(!gl) return null;
+  gl.clearColor(0,0,0,0);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+
+  const VS=`attribute vec2 position;varying vec2 vUv;
+void main(){vUv=position*.5+.5;gl_Position=vec4(position,0.,1.);}`;
+
+  const FS=`precision highp float;
+uniform float iTime;uniform vec2 iResolution,rayPos,rayDir,mousePos;
+uniform vec3 raysColor;
+uniform float raysSpeed,lightSpread,rayLength,pulsating,fadeDistance,saturation,mouseInfluence,noiseAmount,distortion;
+float noise(vec2 st){return fract(sin(dot(st,vec2(12.9898,78.233)))*43758.5453123);}
+float rayStr(vec2 src,vec2 refDir,vec2 coord,float sA,float sB,float spd){
+  vec2 stc=coord-src; vec2 dn=normalize(stc);
+  float ca=dot(dn,refDir);
+  float da=ca+distortion*sin(iTime*2.+length(stc)*.01)*.2;
+  float sf=pow(max(da,0.),1./max(lightSpread,.001));
+  float dist=length(stc);
+  float mxd=iResolution.x*rayLength;
+  float lf=clamp((mxd-dist)/mxd,0.,1.);
+  float ff=clamp((iResolution.x*fadeDistance-dist)/(iResolution.x*fadeDistance),.5,1.);
+  float pulse=pulsating>.5?(.8+.2*sin(iTime*spd*3.)):1.;
+  float bs=clamp((.45+.15*sin(da*sA+iTime*spd))+(.3+.2*cos(-da*sB+iTime*spd)),0.,1.);
+  return bs*lf*ff*sf*pulse;
+}
+void main(){
+  vec2 coord=vec2(gl_FragCoord.x,iResolution.y-gl_FragCoord.y);
+  vec2 frd=rayDir;
+  if(mouseInfluence>0.){vec2 msp=mousePos*iResolution.xy;frd=normalize(mix(rayDir,normalize(msp-rayPos),mouseInfluence));}
+  vec4 r1=vec4(1.)*rayStr(rayPos,frd,coord,36.2214,21.1135,1.5*raysSpeed);
+  vec4 r2=vec4(1.)*rayStr(rayPos,frd,coord,22.3991,18.0234,1.1*raysSpeed);
+  vec4 fc=r1*.5+r2*.4;
+  if(noiseAmount>0.){float n=noise(coord*.01+iTime*.1);fc.rgb*=(1.-noiseAmount+noiseAmount*n);}
+  float br=1.-(coord.y/iResolution.y);
+  fc.x*=.1+br*.8; fc.y*=.3+br*.6; fc.z*=.5+br*.5;
+  if(saturation!=1.){float g=dot(fc.rgb,vec3(.299,.587,.114));fc.rgb=mix(vec3(g),fc.rgb,saturation);}
+  fc.rgb*=raysColor; gl_FragColor=fc;
+}`;
+
+  const prog=_alProg(gl,VS,FS); if(!prog) return null;
+  const tri=new Float32Array([-1,-1,3,-1,-1,3]);
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,tri,gl.STATIC_DRAW);
+
+  const aPos=gl.getAttribLocation(prog,'position');
+  const uTime=gl.getUniformLocation(prog,'iTime');
+  const uRes=gl.getUniformLocation(prog,'iResolution');
+  const uRayPos=gl.getUniformLocation(prog,'rayPos');
+  const uRayDir=gl.getUniformLocation(prog,'rayDir');
+  const uColor=gl.getUniformLocation(prog,'raysColor');
+  const uSpeed=gl.getUniformLocation(prog,'raysSpeed');
+  const uSpread=gl.getUniformLocation(prog,'lightSpread');
+  const uLen=gl.getUniformLocation(prog,'rayLength');
+  const uPulse=gl.getUniformLocation(prog,'pulsating');
+  const uFade=gl.getUniformLocation(prog,'fadeDistance');
+  const uSat=gl.getUniformLocation(prog,'saturation');
+  const uMouse=gl.getUniformLocation(prog,'mousePos');
+  const uMInf=gl.getUniformLocation(prog,'mouseInfluence');
+  const uNoise=gl.getUniformLocation(prog,'noiseAmount');
+  const uDist=gl.getUniformLocation(prog,'distortion');
+
+  function getAnchorDir(origin,w,h){
+    const o=0.2;
+    const map={'top-left':{a:[0,-o*h],d:[0,1]},'top-right':{a:[w,-o*h],d:[0,1]},
+      'left':{a:[-o*w,.5*h],d:[1,0]},'right':{a:[(1+o)*w,.5*h],d:[-1,0]},
+      'bottom-left':{a:[0,(1+o)*h],d:[0,-1]},'bottom-center':{a:[.5*w,(1+o)*h],d:[0,-1]},
+      'bottom-right':{a:[w,(1+o)*h],d:[0,-1]}};
+    return map[origin]||{a:[.5*w,-o*h],d:[0,1]};
+  }
+
+  let W=0,H=0,anchor=[0,0],dir=[0,1];
+  const mouse={x:.5,y:.5},sm={x:.5,y:.5};
+  const onMM=e=>{mouse.x=e.clientX/window.innerWidth;mouse.y=e.clientY/window.innerHeight;};
+  if(followMouse) window.addEventListener('mousemove',onMM);
+
+  function resize(){
+    const w=canvas.parentElement?canvas.parentElement.clientWidth:window.innerWidth;
+    const h=canvas.parentElement?canvas.parentElement.clientHeight:window.innerHeight;
+    canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr);
+    canvas.style.width=w+'px'; canvas.style.height=h+'px';
+    W=canvas.width; H=canvas.height; gl.viewport(0,0,W,H);
+    const ad=getAnchorDir(raysOrigin,W,H); anchor=ad.a; dir=ad.d;
+  }
+  window.addEventListener('resize',resize); resize();
+
+  const col=_alHex(raysColor);
+  let animId,lastT=0,elapsed=0;
+  function render(t){
+    animId=requestAnimationFrame(render);
+    const dt=t-lastT; lastT=t; elapsed+=dt;
+    if(followMouse){const s=.92;sm.x=sm.x*s+mouse.x*(1-s);sm.y=sm.y*s+mouse.y*(1-s);}
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(prog);
+    gl.uniform1f(uTime,elapsed*.001);
+    gl.uniform2f(uRes,W,H);
+    gl.uniform2fv(uRayPos,anchor);
+    gl.uniform2fv(uRayDir,dir);
+    gl.uniform3fv(uColor,col);
+    gl.uniform1f(uSpeed,raysSpeed);
+    gl.uniform1f(uSpread,lightSpread);
+    gl.uniform1f(uLen,rayLength);
+    gl.uniform1f(uPulse,pulsating?1:0);
+    gl.uniform1f(uFade,fadeDistance);
+    gl.uniform1f(uSat,saturation);
+    gl.uniform2f(uMouse,sm.x,sm.y);
+    gl.uniform1f(uMInf,mouseInfluence);
+    gl.uniform1f(uNoise,noiseAmount);
+    gl.uniform1f(uDist,distortion);
+    gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+  animId=requestAnimationFrame(render);
+  return{destroy(){cancelAnimationFrame(animId);window.removeEventListener('resize',resize);if(followMouse)window.removeEventListener('mousemove',onMM);}};
+}
+
+// ── Particles WebGL ───────────────────────────────────────────────
+function initAlParticles(canvas,opts={}){
+  const {
+    particleCount=350, particleSpread=10, speed=0.1,
+    particleColors=['#4CCEF5','#BDE8FA','#AADDFF','#ffffff'],
+    moveParticlesOnHover=true, particleHoverFactor=0.6,
+    alphaParticles=true, particleBaseSize=70, sizeRandomness=1,
+    cameraDistance=20, disableRotation=false,
+    dpr=Math.min(window.devicePixelRatio||1,2)
+  }=opts;
+
+  const gl=canvas.getContext('webgl',{alpha:true,depth:false,antialias:false});
+  if(!gl) return null;
+  gl.clearColor(0,0,0,0);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+
+  const VS=`
+    attribute vec3 position;attribute vec4 random;attribute vec3 color;
+    uniform mat4 modelMatrix,viewMatrix,projectionMatrix;
+    uniform float uTime,uSpread,uBaseSize,uSizeRandomness;
+    varying vec4 vRandom;varying vec3 vColor;varying float vDepth;
+    void main(){
+      vRandom=random;vColor=color;
+      vec3 pos=position*uSpread;pos.z*=10.;
+      vec4 mPos=modelMatrix*vec4(pos,1.);
+      float t=uTime;
+      mPos.x+=sin(t*random.z+6.28*random.w)*mix(.1,1.5,random.x);
+      mPos.y+=sin(t*random.y+6.28*random.x)*mix(.1,1.5,random.w);
+      mPos.z+=sin(t*random.w+6.28*random.y)*mix(.1,1.5,random.z);
+      vec4 mvPos=viewMatrix*mPos;
+      vDepth=-mvPos.z;
+      gl_PointSize=uSizeRandomness==0.?uBaseSize:(uBaseSize*(1.+uSizeRandomness*(random.x-.5)))/length(mvPos.xyz);
+      gl_Position=projectionMatrix*mvPos;
+    }`;
+  const FS=`
+    precision highp float;
+    uniform float uTime,uAlphaParticles;
+    varying vec4 vRandom;varying vec3 vColor;varying float vDepth;
+    void main(){
+      vec2 uv=gl_PointCoord.xy;float d=length(uv-vec2(.5));
+      float blur=clamp(abs(vDepth-20.0)/12.0,0.0,1.0);
+      float innerR=mix(0.42,0.0,blur);
+      float maxAlpha=mix(0.85,0.28,blur);
+      if(uAlphaParticles<.5){if(d>.5)discard;gl_FragColor=vec4(vColor+.2*sin(uv.yxx+uTime+vRandom.y*6.28),maxAlpha);}
+      else{float c=smoothstep(.5,innerR,d)*maxAlpha;gl_FragColor=vec4(vColor+.2*sin(uv.yxx+uTime+vRandom.y*6.28),c);}
+    }`;
+
+  const prog=_alProg(gl,VS,FS); if(!prog) return null;
+
+  const count=particleCount;
+  const pos=new Float32Array(count*3),rnd=new Float32Array(count*4),col=new Float32Array(count*3);
+  const palette=particleColors.length>0?particleColors:['#ffffff'];
+  for(let i=0;i<count;i++){
+    let x,y,z,len;
+    do{x=Math.random()*2-1;y=Math.random()*2-1;z=Math.random()*2-1;len=x*x+y*y+z*z;}while(len>1||len===0);
+    const r=Math.cbrt(Math.random());
+    pos.set([x*r,y*r,z*r],i*3);
+    rnd.set([Math.random(),Math.random(),Math.random(),Math.random()],i*4);
+    col.set(_alHex(palette[Math.floor(Math.random()*palette.length)]),i*3);
+  }
+
+  function mkBuf(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);return b;}
+  const posBuf=mkBuf(pos),rndBuf=mkBuf(rnd),colBuf=mkBuf(col);
+
+  const aP=gl.getAttribLocation(prog,'position');
+  const aR=gl.getAttribLocation(prog,'random');
+  const aC=gl.getAttribLocation(prog,'color');
+  const uMod=gl.getUniformLocation(prog,'modelMatrix');
+  const uView=gl.getUniformLocation(prog,'viewMatrix');
+  const uProj=gl.getUniformLocation(prog,'projectionMatrix');
+  const uTime=gl.getUniformLocation(prog,'uTime');
+  const uSpr=gl.getUniformLocation(prog,'uSpread');
+  const uSize=gl.getUniformLocation(prog,'uBaseSize');
+  const uSR=gl.getUniformLocation(prog,'uSizeRandomness');
+  const uAlpha=gl.getUniformLocation(prog,'uAlphaParticles');
+
+  const mouse={x:0,y:0};
+  const onMM=e=>{const r=canvas.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-(((e.clientY-r.top)/r.height)*2-1);};
+  if(moveParticlesOnHover){canvas.addEventListener('mousemove',onMM);canvas.addEventListener('touchmove',e=>{const t=e.touches[0];onMM({clientX:t.clientX,clientY:t.clientY,target:canvas});},{passive:true});}
+
+  function resize(){
+    const w=canvas.parentElement?canvas.parentElement.clientWidth:window.innerWidth;
+    const h=canvas.parentElement?canvas.parentElement.clientHeight:window.innerHeight;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    canvas.style.width=w+'px';canvas.style.height=h+'px';
+    gl.viewport(0,0,canvas.width,canvas.height);
+  }
+  window.addEventListener('resize',resize); resize();
+
+  let animId,lastT=0,elapsed=0,rx=0,ry=0,rz=0;
+  function render(t){
+    animId=requestAnimationFrame(render);
+    const dt=t-lastT;lastT=t;elapsed+=dt*speed;
+    if(!disableRotation){rx=Math.sin(elapsed*.0002)*.1;ry=Math.cos(elapsed*.0005)*.15;rz+=.01*speed;}
+    const aspect=canvas.width/canvas.height;
+    const proj=_alM4persp(15*Math.PI/180,aspect,.01,100);
+    const view=_alM4t(0,0,-cameraDistance);
+    const offX=moveParticlesOnHover?-mouse.x*particleHoverFactor:0;
+    const offY=moveParticlesOnHover?-mouse.y*particleHoverFactor:0;
+    const model=_alM4mul(_alM4t(offX,offY,0),_alM4mul(_alM4mul(_alM4rx(rx),_alM4ry(ry)),_alM4rz(rz)));
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(prog);
+    gl.uniformMatrix4fv(uProj,false,proj);
+    gl.uniformMatrix4fv(uView,false,view);
+    gl.uniformMatrix4fv(uMod,false,model);
+    gl.uniform1f(uTime,elapsed*.001);
+    gl.uniform1f(uSpr,particleSpread);
+    gl.uniform1f(uSize,particleBaseSize*dpr);
+    gl.uniform1f(uSR,sizeRandomness);
+    gl.uniform1f(uAlpha,alphaParticles?1:0);
+    function bind(buf,attr,sz){gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(attr);gl.vertexAttribPointer(attr,sz,gl.FLOAT,false,0,0);}
+    bind(posBuf,aP,3);bind(rndBuf,aR,4);bind(colBuf,aC,3);
+    gl.drawArrays(gl.POINTS,0,count);
+  }
+  animId=requestAnimationFrame(render);
+  return{destroy(){cancelAnimationFrame(animId);window.removeEventListener('resize',resize);if(moveParticlesOnHover){canvas.removeEventListener('mousemove',onMM);}}};
+}
+
+// ── Landing open/close ────────────────────────────────────────────
+let _alRaysEffect=null, _alParticlesEffect=null, _alResolve=null;
+
+function openAuthLanding(){
+  return new Promise(resolve=>{
+    _alResolve=resolve;
+    const el=document.getElementById('authLanding');
+    el.classList.add('open');
+    _alRaysEffect=initAlRays(document.getElementById('alRaysCanvas'));
+    _alParticlesEffect=initAlParticles(document.getElementById('alParticlesCanvas'));
+    _renderAlForm('login');
+    document.getElementById('alTabs').querySelectorAll('.al-tab').forEach(btn=>{
+      btn.onclick=()=>{
+        document.getElementById('alTabs').querySelectorAll('.al-tab').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        _renderAlForm(btn.dataset.mode);
+      };
+    });
+  });
+}
+
+function closeAuthLanding(){
+  const el=document.getElementById('authLanding');
+  if(!el||!el.classList.contains('open')) return;
+  el.classList.remove('open');
+  if(_alRaysEffect){_alRaysEffect.destroy();_alRaysEffect=null;}
+  if(_alParticlesEffect){_alParticlesEffect.destroy();_alParticlesEffect=null;}
+  if(_alResolve){_alResolve();_alResolve=null;}
+}
+
+function _renderAlForm(mode){
+  const wrap=document.getElementById('alFormWrap');
+  if(mode==='login'){
+    wrap.innerHTML=`
+      <div class="al-field"><label>Usuario o correo</label>
+        <input type="text" id="alEmail" placeholder="buceador_ale o tucorreo@mail.com" autocomplete="off">
+      </div>
+      <div class="al-field"><label>Contrase&ntilde;a</label>
+        <input type="password" id="alPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
+      </div>
+      <button class="al-submit" id="alSubmitBtn">Entrar</button>
+      <div class="al-error" id="alError"></div>
+      <div class="al-switch">&iquest;No tienes cuenta? <a id="alSwitchLink">Crear cuenta</a></div>`;
+    document.getElementById('alSubmitBtn').onclick=_alDoLogin;
+    document.getElementById('alPassword').onkeydown=e=>{if(e.key==='Enter')_alDoLogin();};
+    document.getElementById('alSwitchLink').onclick=()=>{
+      document.getElementById('alTabs').querySelectorAll('.al-tab').forEach((b,i)=>b.classList.toggle('active',i===1));
+      _renderAlForm('signup');
+    };
+  } else {
+    wrap.innerHTML=`
+      <div class="al-field"><label>Nombre</label>
+        <input type="text" id="alName" placeholder="Ej: Ale" autocomplete="off">
+      </div>
+      <div class="al-field"><label>Nombre de usuario</label>
+        <input type="text" id="alUsername" placeholder="Ej: buceador_ale" autocomplete="off" style="text-transform:lowercase">
+      </div>
+      <div class="al-field"><label>Correo</label>
+        <input type="email" id="alEmail" placeholder="tucorreo@mail.com" autocomplete="off">
+      </div>
+      <div class="al-field"><label>Contrase&ntilde;a</label>
+        <input type="password" id="alPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
+      </div>
+      <div class="al-field"><label>Confirmar contrase&ntilde;a</label>
+        <input type="password" id="alPassword2" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
+      </div>
+      <button class="al-submit" id="alSubmitBtn">Crear cuenta</button>
+      <div class="al-error" id="alError"></div>
+      <div class="al-switch">&iquest;Ya tienes cuenta? <a id="alSwitchLink">Iniciar sesi&oacute;n</a></div>`;
+    document.getElementById('alSubmitBtn').onclick=_alDoSignup;
+    document.getElementById('alSwitchLink').onclick=()=>{
+      document.getElementById('alTabs').querySelectorAll('.al-tab').forEach((b,i)=>b.classList.toggle('active',i===0));
+      _renderAlForm('login');
+    };
+  }
+}
+
+function _alShowError(msg){
+  const el=document.getElementById('alError');
+  if(!el) return;
+  el.textContent=msg; el.classList.add('show');
+}
+
+async function _alDoLogin(){
+  const input=(document.getElementById('alEmail').value||'').trim().toLowerCase();
+  const password=document.getElementById('alPassword').value;
+  if(!input||!password){_alShowError('Rellena todos los campos.');return;}
+  const accounts=await loadAccounts();
+  const acc=accounts.find(a=>a.email.toLowerCase()===input||(a.username&&a.username.toLowerCase()===input));
+  if(!acc){_alShowError('No existe ninguna cuenta con ese usuario o correo.');return;}
+  const hash=await hashPassword(password,acc.salt);
+  if(hash!==acc.hash){_alShowError('Contrase\xf1a incorrecta.');return;}
+  closeAuthLanding();
+  await _alEnterAccount(acc);
+}
+
+async function _alDoSignup(){
+  const name=(document.getElementById('alName').value||'').trim();
+  const username=(document.getElementById('alUsername').value||'').trim().toLowerCase().replace(/\s+/g,'_');
+  const email=(document.getElementById('alEmail').value||'').trim().toLowerCase();
+  const p1=document.getElementById('alPassword').value;
+  const p2=document.getElementById('alPassword2').value;
+  if(!name){_alShowError('Escribe un nombre.');return;}
+  if(!username){_alShowError('Escribe un nombre de usuario.');return;}
+  if(!/^[a-z0-9_]{3,20}$/.test(username)){_alShowError('Usuario: 3-20 caracteres (letras, n\xfameros, _).');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){_alShowError('Escribe un correo v\xe1lido.');return;}
+  if(p1.length<6){_alShowError('La contrase\xf1a debe tener al menos 6 caracteres.');return;}
+  if(p1!==p2){_alShowError('Las contrase\xf1as no coinciden.');return;}
+  const accounts=await loadAccounts();
+  if(accounts.some(a=>a.email.toLowerCase()===email)){_alShowError('Ya existe una cuenta con ese correo.');return;}
+  if(accounts.some(a=>(a.username||'').toLowerCase()===username)){_alShowError('Ese nombre de usuario ya est\xe1 en uso.');return;}
+  const salt=randomSalt();
+  const hash=await hashPassword(p1,salt);
+  const account={name,username,email,salt,hash};
+  accounts.push(account);
+  await saveAccounts(accounts);
+  closeAuthLanding();
+  await _alEnterAccount(account);
+}
+
+async function _alEnterAccount(account){
+  currentProfile=account.name;
+  await safeSet('last-profile',account.name,false);
+  renderProfileBadge();
+  await loadState();
+  renderCatNav();
+  renderOrderNav();
+  renderLockNav();
+  renderEnvNav();
+  renderViewToggle();
+  renderGrid();
+}
+
+
 // Registro del Service Worker (PWA)
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
@@ -3080,5 +3691,25 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+
+<!-- ═══════════ AUTH LANDING PAGE ═══════════ -->
+<div id="authLanding">
+  <canvas id="alRaysCanvas"></canvas>
+  <canvas id="alParticlesCanvas"></canvas>
+  <div id="alGradient"></div>
+  <div class="al-content">
+    <div class="al-logo">
+      <div class="al-logo-text"><span>Mar</span><span class="al-logo-dex">Dex</span></div>
+      <div class="al-logo-sub">Gu&iacute;a de buceo &middot; Tiburones y Rayas</div>
+    </div>
+    <div class="al-card">
+      <div class="al-tabs" id="alTabs">
+        <button class="al-tab active" data-mode="login">Entrar</button>
+        <button class="al-tab" data-mode="signup">Crear cuenta</button>
+      </div>
+      <div id="alFormWrap"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
