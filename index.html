@@ -729,11 +729,57 @@
   .confirm-box{ background:var(--card); border-radius:var(--r-lg); padding:22px; max-width:340px; width:100%; }
   .confirm-box p{ font-size:13.5px; color:var(--ink); margin:0 0 16px; line-height:1.45; }
 
-  /* dock nav */
+  /* dock nav — oculto en móvil, sustituido por FAB */
   @media(max-width:600px){
-    .bottom-nav [data-bnav="saved"],
-    .bottom-nav [data-bnav="tree"]{ display:none; }
+    .bottom-nav{ display:none !important; }
+    .mob-fab-wrap{ display:flex !important; }
   }
+
+  /* ── Mobile FAB (estilo Pokémon GO) ──────────────────────────── */
+  .mob-fab-wrap{
+    display:none; position:fixed; bottom:28px; left:50%;
+    transform:translateX(-50%); z-index:50;
+    align-items:center; justify-content:center;
+  }
+  .mob-fab-backdrop{
+    display:none; position:fixed; inset:0; z-index:45;
+    background:rgba(4,12,24,0.65); backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+  }
+  .mob-fab-backdrop.open{ display:block; }
+  .mob-fab-btn{
+    width:62px; height:62px; border-radius:50%; z-index:51; position:relative;
+    background:rgba(5,46,74,0.92); border:1.5px solid rgba(76,206,245,0.35);
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    box-shadow:0 8px 32px rgba(5,46,74,0.55), 0 2px 8px rgba(0,0,0,0.3);
+    cursor:pointer; color:rgba(255,255,255,0.85);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1), background .2s;
+  }
+  .mob-fab-btn.open{ transform:rotate(135deg); background:rgba(47,128,237,0.9); }
+  .mob-fab-item{
+    position:fixed; width:52px; height:52px; border-radius:50%; z-index:51;
+    background:rgba(5,46,74,0.92); border:1.5px solid rgba(76,206,245,0.22);
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    box-shadow:0 4px 16px rgba(5,46,74,0.4);
+    cursor:pointer; color:rgba(255,255,255,0.85);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .3s cubic-bezier(.34,1.56,.64,1);
+    transform:translate(var(--tx0), var(--ty0)) scale(0.4);
+  }
+  .mob-fab-item.open{
+    opacity:1; pointer-events:all;
+    transform:translate(var(--tx1), var(--ty1)) scale(1);
+  }
+  .mob-fab-item svg{ width:20px; height:20px; display:block; flex-shrink:0; }
+  .mob-fab-item-label{ font-size:8px; font-weight:700; color:rgba(255,255,255,0.6); letter-spacing:.03em; }
+  @keyframes unlockReveal{
+    0%  { filter:blur(8px) brightness(0.7); transform:scale(0.97); }
+    60% { filter:blur(0px) brightness(1.15); transform:scale(1.03); }
+    100%{ filter:blur(0px) brightness(1);   transform:scale(1); }
+  }
+  .card.unlocking{ animation:unlockReveal 0.7s cubic-bezier(.22,1,.36,1) forwards; }
   .bottom-nav{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:20;
     background:rgba(5,46,74,0.88);
@@ -1125,6 +1171,13 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="mob-fab-backdrop" id="mobFabBackdrop"></div>
+<div class="mob-fab-wrap" id="mobFabWrap">
+  <button class="mob-fab-btn" id="mobFabBtn" aria-label="Menú">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</div>
 
 <nav class="bottom-nav" id="bottomNav">
   <button class="bnav-btn active" data-bnav="explore">
@@ -3078,10 +3131,22 @@ function wireForm(s, sightings, editingSighting){
         environment:envChoice, photo: photo||null,
         coords:pendingCoords, dateISO, date:displayDate
       };
+      const isFirstSighting = sightings.length === 0;
       newList = sightings.concat([sighting]);
       state.sightings[s.id] = newList;
-      renderModal(s, newList, false);
-      showToast('Avistamiento guardado');
+      if(isFirstSighting){
+        // Animación de desbloqueo: mostrar la tarjeta desbloqueándose y cerrar el modal
+        renderGrid();
+        showToast('¡'+s.name+' desbloqueado!');
+        setTimeout(()=>{
+          const card = document.querySelector(`.card[data-id="${s.id}"]`);
+          if(card) card.classList.add('unlocking');
+          setTimeout(()=>{ closeModal(); }, 700);
+        }, 80);
+      } else {
+        renderModal(s, newList, false);
+        showToast('Avistamiento guardado');
+      }
     }
   };
 }
@@ -3213,65 +3278,62 @@ function initBottomNav(){
   const btns = Array.from(nav.querySelectorAll('[data-bnav]'));
   const ICON_BASE = 22;
 
-  // En dispositivos táctiles (móvil/tablet) no hay hover — saltamos la animación
-  const isTouch = window.matchMedia('(hover:none) and (pointer:coarse)').matches;
+  // Spring physics (desktop con ratón) — usa width/height para resolución nativa del SVG
+  const STIFFNESS = 150, DAMPING = 12, MASS = 0.1;
+  const ICON_MAG = 46, DIST = 200;
 
-  if(!isTouch){
-    // --- spring physics solo en desktop con ratón ---
-    const STIFFNESS = 150, DAMPING = 12, MASS = 0.1;
-    const ICON_MAG = 46, DIST = 200;
-
-    class Spring {
-      constructor(init){ this.v = init; this.vel = 0; this.target = init; }
-      tick(dt){
-        const f = -STIFFNESS*(this.v - this.target);
-        const d = -DAMPING*this.vel;
-        this.vel += (f+d)/MASS * dt;
-        this.v   += this.vel * dt;
-        return this.v;
-      }
-      settled(){ return Math.abs(this.vel)<0.05 && Math.abs(this.v-this.target)<0.05; }
+  class Spring {
+    constructor(init){ this.v = init; this.vel = 0; this.target = init; }
+    tick(dt){
+      const f = -STIFFNESS*(this.v - this.target);
+      const d = -DAMPING*this.vel;
+      this.vel += (f+d)/MASS * dt;
+      this.v   += this.vel * dt;
+      return this.v;
     }
-
-    const springs = btns.map(()=>new Spring(1)); // escala base 1
-    let rafId = null, lastT = null;
-
-    // Caché de referencias para evitar querySelector en cada frame
-    const icos = btns.map(btn=>btn.querySelector('.bnav-icon'));
-
-    function loop(t){
-      const dt = lastT ? Math.min((t-lastT)/1000, 0.05) : 0.016;
-      lastT = t;
-      let running = false;
-      springs.forEach((s,i)=>{
-        const scale = s.tick(dt);
-        // transform:scale no provoca reflow, solo compositing
-        if(icos[i]) icos[i].style.transform = `scale(${Math.max(1, scale)})`;
-        if(!s.settled()) running = true;
-      });
-      if(running){ rafId = requestAnimationFrame(loop); }
-      else{ rafId = null; lastT = null; }
-    }
-
-    function kick(){ if(!rafId) rafId = requestAnimationFrame(loop); }
-
-    function setTargets(mouseX){
-      btns.forEach((btn,i)=>{
-        const r = btn.getBoundingClientRect();
-        const cx = r.left + r.width/2;
-        const d  = Math.abs(mouseX - cx);
-        const maxScale = ICON_MAG / ICON_BASE;
-        springs[i].target = d < DIST ? 1 + (maxScale-1)*(1-d/DIST) : 1;
-      });
-      kick();
-    }
-
-    // will-change para que el compositor promueva los iconos a su propia capa
-    icos.forEach(ico=>{ if(ico) ico.style.willChange='transform'; });
-
-    nav.addEventListener('mousemove', e=>setTargets(e.clientX));
-    nav.addEventListener('mouseleave',()=>{ springs.forEach(s=>s.target=1); kick(); });
+    settled(){ return Math.abs(this.vel)<0.05 && Math.abs(this.v-this.target)<0.05; }
   }
+
+  const springs = btns.map(()=>new Spring(ICON_BASE));
+  let rafId = null, lastT = null;
+
+  function loop(t){
+    const dt = lastT ? Math.min((t-lastT)/1000, 0.05) : 0.016;
+    lastT = t;
+    let running = false;
+    springs.forEach((s,i)=>{
+      const px = Math.max(ICON_BASE, Math.round(s.tick(dt)*10)/10);
+      const ico = btns[i].querySelector('.bnav-icon');
+      if(ico){ ico.style.width=px+'px'; ico.style.height=px+'px'; }
+      const svg = ico?.querySelector('svg');
+      if(svg){ svg.style.width=px+'px'; svg.style.height=px+'px'; }
+      if(!s.settled()) running = true;
+    });
+    if(running){ rafId = requestAnimationFrame(loop); }
+    else{ rafId = null; lastT = null; }
+  }
+
+  function kick(){ if(!rafId) rafId = requestAnimationFrame(loop); }
+
+  function setTargets(mouseX){
+    btns.forEach((btn,i)=>{
+      const r = btn.getBoundingClientRect();
+      const cx = r.left + r.width/2;
+      const d  = Math.abs(mouseX - cx);
+      springs[i].target = d < DIST ? ICON_BASE + (ICON_MAG-ICON_BASE)*(1-d/DIST) : ICON_BASE;
+    });
+    kick();
+  }
+
+  btns.forEach(btn=>{
+    const ico = btn.querySelector('.bnav-icon');
+    if(ico){ ico.style.width=ICON_BASE+'px'; ico.style.height=ICON_BASE+'px'; }
+    const svg = ico?.querySelector('svg');
+    if(svg){ svg.style.width=ICON_BASE+'px'; svg.style.height=ICON_BASE+'px'; }
+  });
+
+  nav.addEventListener('mousemove', e=>setTargets(e.clientX));
+  nav.addEventListener('mouseleave',()=>{ springs.forEach(s=>s.target=ICON_BASE); kick(); });
 
   // --- navegación ---
   btns.forEach(btn=>{
@@ -3313,6 +3375,93 @@ function initBottomNav(){
       saveUIPrefs();
     });
   });
+}
+
+// ── Mobile FAB ────────────────────────────────────────────────────────
+function initMobileFAB(){
+  const fabBtn   = document.getElementById('mobFabBtn');
+  const backdrop = document.getElementById('mobFabBackdrop');
+  if(!fabBtn) return;
+
+  const FAB_ITEMS = [
+    { bnav:'explore',  label:'Explorar',  svg:'<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>' },
+    { bnav:'map',      label:'Mapa',      svg:'<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>' },
+    { bnav:'sightings',label:'Registros', svg:'<path d="M8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="5" rx="1.5"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>' },
+    { bnav:'saved',    label:'Guardados', svg:'<path d="M12 21s-6.7-4.35-9.3-8.2C.9 9.7 1.7 6 5 4.7 7.2 3.8 9.4 4.6 12 7c2.6-2.4 4.8-3.2 7-2.3 3.3 1.3 4.1 5 1.3 8.8C18.7 16.65 12 21 12 21z"/>' },
+    { bnav:'tree',     label:'Clave',     svg:'<circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="M7.97 10.65 15.03 7 M7.97 13.35 15.03 17"/><line x1="6" y1="3" x2="6" y2="10"/><line x1="6" y1="14" x2="6" y2="21"/>' },
+    { bnav:'profile',  label:'Perfil',    svg:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+    { bnav:'admin',    label:'Admin',     svg:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>', adminOnly:true },
+  ];
+
+  let isOpen = false;
+  let itemEls = [];
+
+  function buildItems(){
+    // Limpia items previos
+    itemEls.forEach(el=>el.remove());
+    itemEls = [];
+
+    const items = FAB_ITEMS.filter(it=>!it.adminOnly || document.body.classList.contains('is-admin'));
+    const N = items.length;
+    const R = 115; // radio del arco en px
+    // Ángulos: semicírculo de 165° a 15°
+    const startDeg = 165, endDeg = 15;
+    const step = (startDeg - endDeg) / (N - 1);
+
+    // Posición del centro del FAB en viewport
+    const fabRect = fabBtn.getBoundingClientRect();
+    const cx = fabRect.left + fabRect.width / 2;
+    const cy = fabRect.top  + fabRect.height / 2;
+
+    items.forEach((it, i)=>{
+      const deg = startDeg - step * i;
+      const rad = deg * Math.PI / 180;
+      const tx1 = Math.round(R * Math.cos(rad));
+      const ty1 = Math.round(-R * Math.sin(rad));
+
+      const el = document.createElement('button');
+      el.className = 'mob-fab-item';
+      el.style.cssText = `left:${cx - 26}px; top:${cy - 26}px; --tx0:0px; --ty0:0px; --tx1:${tx1}px; --ty1:${ty1}px; transition-delay:${i*35}ms`;
+      el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${it.svg}</svg><span class="mob-fab-item-label">${it.label}</span>`;
+      el.addEventListener('click', ()=>{ closeFab(); handleFabNav(it.bnav); });
+      document.body.appendChild(el);
+      itemEls.push(el);
+      // trigger reflow para que la transición arranque
+      void el.offsetWidth;
+    });
+  }
+
+  function openFab(){
+    isOpen = true;
+    fabBtn.classList.add('open');
+    backdrop.classList.add('open');
+    buildItems();
+    requestAnimationFrame(()=>{ itemEls.forEach(el=>el.classList.add('open')); });
+  }
+
+  function closeFab(){
+    isOpen = false;
+    fabBtn.classList.remove('open');
+    backdrop.classList.remove('open');
+    itemEls.forEach((el,i)=>{
+      el.style.transitionDelay = (itemEls.length - 1 - i) * 25 + 'ms';
+      el.classList.remove('open');
+    });
+    setTimeout(()=>{ itemEls.forEach(el=>el.remove()); itemEls=[]; }, 350);
+  }
+
+  function handleFabNav(tab){
+    if(tab==='map')      { openGlobalMap(); return; }
+    if(tab==='tree')     { openTreeOverlay(); return; }
+    if(tab==='profile')  { if(currentProfile) openProfilePage(); else openProfilePicker(); return; }
+    if(tab==='admin')    { openAdminPanel(); return; }
+    if(tab==='explore')  { showFavOnly=false; currentLock='todos'; renderLockNav(); renderCatNav(); renderGrid(); }
+    else if(tab==='sightings'){ showFavOnly=false; currentLock='desbloqueado'; renderLockNav(); renderGrid(); }
+    else if(tab==='saved')   { showFavOnly=true; renderCatNav(); renderGrid(); }
+  }
+
+  fabBtn.addEventListener('click', ()=>{ isOpen ? closeFab() : openFab(); });
+  backdrop.addEventListener('click', closeFab);
 }
 
 // ── Admin panel ───────────────────────────────────────────────────────
@@ -3387,12 +3536,14 @@ async function init(){
   if(session){
     await _alEnterAccount(session.user);
     initBottomNav();
+    initMobileFAB();
     initTreePan();
     const hash=location.hash.slice(1);
     if(hash&&SPECIES.find(x=>x.id===hash)){ modalFromHistory=true; openModal(hash); }
     return;
   }
   initBottomNav();
+  initMobileFAB();
   initTreePan();
   await openAuthLanding();
 }
