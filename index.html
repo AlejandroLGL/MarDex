@@ -286,6 +286,72 @@
   .pp-edit-save:hover{ background:var(--turq); }
   .pp-edit-cancel{ font-size:12px; font-weight:700; font-family:var(--sans); background:none; color:var(--muted); border:1.5px solid var(--blue-soft); border-radius:8px; padding:7px 14px; cursor:pointer; }
   .pp-edit-cancel:hover{ color:var(--ink); }
+
+  /* ── Admin panel ─────────────────────────────────────────────────── */
+  .admin-overlay{
+    display:none; position:fixed; inset:0; background:rgba(8,18,34,0.82); z-index:90;
+    overflow-y:auto; justify-content:center;
+  }
+  .admin-overlay.open{ display:flex; }
+  .admin-sheet{
+    background:var(--bg); width:100%; max-width:960px; min-height:100vh;
+    padding:28px 24px 60px; position:relative;
+  }
+  .admin-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:28px; padding-bottom:16px; border-bottom:1px solid var(--border);
+  }
+  .admin-title{ font-size:20px; font-weight:800; color:var(--ink); }
+  .admin-subtitle{ font-size:13px; color:var(--muted); margin-top:2px; }
+  .admin-close{
+    width:32px; height:32px; border-radius:50%; border:none;
+    background:rgba(0,0,0,0.06); color:var(--muted); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:background .15s;
+  }
+  .admin-close:hover{ background:rgba(0,0,0,0.12); color:var(--ink); }
+  .admin-stats{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+    gap:14px; margin-bottom:32px;
+  }
+  .admin-stat-card{
+    background:var(--card); border-radius:var(--r-md); padding:18px 16px;
+    text-align:center; box-shadow:0 2px 8px rgba(5,46,74,0.07);
+  }
+  .admin-stat-num{ font-size:30px; font-weight:800; color:var(--ocean); line-height:1; }
+  .admin-stat-label{ font-size:11px; color:var(--muted); font-weight:600; margin-top:6px; text-transform:uppercase; letter-spacing:.04em; }
+  .admin-section-title{
+    font-size:14px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.05em; margin-bottom:12px;
+  }
+  .admin-table-wrap{ overflow-x:auto; border-radius:var(--r-md); box-shadow:0 2px 8px rgba(5,46,74,0.07); }
+  .admin-table{
+    width:100%; border-collapse:collapse; background:var(--card); font-size:13px;
+  }
+  .admin-table th{
+    text-align:left; color:var(--muted); font-weight:700; padding:10px 14px;
+    border-bottom:2px solid var(--border); white-space:nowrap; font-size:11px;
+    text-transform:uppercase; letter-spacing:.04em;
+  }
+  .admin-table td{ padding:11px 14px; border-bottom:1px solid var(--border); color:var(--ink); }
+  .admin-table tr:last-child td{ border-bottom:none; }
+  .admin-table tr:hover td{ background:rgba(47,128,237,0.04); }
+  .admin-badge-admin{
+    display:inline-block; padding:2px 7px; border-radius:20px; font-size:10px;
+    font-weight:700; background:var(--ocean); color:#fff; margin-left:4px; vertical-align:middle;
+  }
+  .admin-user-name{ font-weight:700; }
+  .admin-user-username{ color:var(--muted); font-size:12px; }
+  .admin-num{ font-weight:700; color:var(--ocean); }
+  .admin-refresh{
+    padding:6px 14px; border-radius:20px; border:1.5px solid var(--ocean);
+    background:none; color:var(--ocean); font-size:13px; font-weight:600;
+    cursor:pointer; transition:background .15s;
+  }
+  .admin-refresh:hover{ background:var(--ocean); color:#fff; }
+  .bottom-nav [data-bnav="admin"]{ display:none; }
+  body.is-admin .bottom-nav [data-bnav="admin"]{ display:flex; }
+
   .pp-placeholder{
     display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px;
     background:var(--bg); color:var(--faint); font-size:13px; font-weight:600;
@@ -1017,6 +1083,12 @@
   </div>
 </div>
 
+<div class="admin-overlay" id="adminOverlay">
+  <div class="admin-sheet" id="adminSheet">
+    <!-- populated by renderAdminPanel() -->
+  </div>
+</div>
+
 <div class="tree-overlay" id="treeOverlay">
   <div class="tree-sheet">
     <div class="tree-header">
@@ -1077,6 +1149,10 @@
   <button class="bnav-btn" data-bnav="profile">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
     <span class="bnav-label">Perfil</span>
+  </button>
+  <button class="bnav-btn" data-bnav="admin">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+    <span class="bnav-label">Admin</span>
   </button>
 </nav>
 
@@ -3219,6 +3295,11 @@ function initBottomNav(){
         else openProfilePicker();
         return;
       }
+      if(tab==='admin'){
+        btns[0].classList.add('active');
+        openAdminPanel();
+        return;
+      }
       btn.classList.add('active');
       if(tab==='explore'){
         showFavOnly=false; currentLock='todos';
@@ -3233,6 +3314,72 @@ function initBottomNav(){
       saveUIPrefs();
     });
   });
+}
+
+// ── Admin panel ───────────────────────────────────────────────────────
+function openAdminPanel(){
+  document.getElementById('adminOverlay').classList.add('open');
+  renderAdminPanel();
+}
+function closeAdminPanel(){
+  document.getElementById('adminOverlay').classList.remove('open');
+}
+document.getElementById('adminOverlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('adminOverlay')) closeAdminPanel();
+});
+
+async function renderAdminPanel(){
+  const sheet = document.getElementById('adminSheet');
+  sheet.innerHTML = `<div class="admin-header">
+    <div>
+      <div class="admin-title">Panel de administración</div>
+      <div class="admin-subtitle">Estadísticas y usuarios de MarDex</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="admin-refresh" id="adminRefreshBtn">Actualizar</button>
+      <button class="admin-close" id="adminCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  </div>
+  <div class="admin-stats" id="adminStatsGrid"><div style="color:var(--muted);font-size:13px;grid-column:1/-1">Cargando stats…</div></div>
+  <div class="admin-section-title">Usuarios registrados</div>
+  <div class="admin-table-wrap"><table class="admin-table" id="adminUserTable">
+    <thead><tr><th>Usuario</th><th>Correo</th><th>Avistamientos</th><th>Especies</th><th>Favoritos</th><th>Registro</th></tr></thead>
+    <tbody id="adminUserBody"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Cargando…</td></tr></tbody>
+  </table></div>`;
+
+  document.getElementById('adminCloseBtn').onclick = closeAdminPanel;
+  document.getElementById('adminRefreshBtn').onclick = ()=>renderAdminPanel();
+
+  const [{data:stats,error:e1},{data:users,error:e2}] = await Promise.all([
+    _sb.rpc('get_admin_stats'),
+    _sb.rpc('get_admin_users')
+  ]);
+
+  if(e1||e2){
+    document.getElementById('adminStatsGrid').innerHTML = `<div style="color:#e74c3c;grid-column:1/-1">Error al cargar datos. ¿Eres admin?</div>`;
+    return;
+  }
+
+  document.getElementById('adminStatsGrid').innerHTML = [
+    ['Total usuarios', stats.total_users],
+    ['Con avistamientos', stats.users_with_sightings],
+    ['Avistamientos', stats.total_sightings],
+    ['Especies vistas', stats.species_unlocked],
+    ['Favoritos', stats.total_favorites],
+  ].map(([label,num])=>`<div class="admin-stat-card"><div class="admin-stat-num">${num}</div><div class="admin-stat-label">${label}</div></div>`).join('');
+
+  const sorted = (users||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  document.getElementById('adminUserBody').innerHTML = sorted.map(u=>`<tr>
+    <td>
+      <div class="admin-user-name">${u.name||'—'}${u.is_admin?'<span class="admin-badge-admin">admin</span>':''}</div>
+      <div class="admin-user-username">@${u.username||'—'}</div>
+    </td>
+    <td>${u.email}</td>
+    <td class="admin-num">${u.sightings_count}</td>
+    <td class="admin-num">${u.species_unlocked}</td>
+    <td class="admin-num">${u.favorites_count}</td>
+    <td style="color:var(--muted);font-size:12px">${new Date(u.created_at).toLocaleDateString('es-ES')}</td>
+  </tr>`).join('');
 }
 
 async function init(){
@@ -3671,7 +3818,9 @@ async function _alDoSignup(){
 async function _alEnterAccount(user){
   const {data:profile}=await _sb.from('profiles').select('*').eq('id',user.id).single();
   currentProfile=profile?.name||user.email;
-  currentAccountData={id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email};
+  currentAccountData={id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email,is_admin:!!profile?.is_admin};
+  if(profile?.is_admin) document.body.classList.add('is-admin');
+  else document.body.classList.remove('is-admin');
   renderProfileBadge();
   await loadState();
   renderCatNav();
