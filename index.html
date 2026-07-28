@@ -915,6 +915,7 @@
     position:fixed;inset:0;z-index:300;
     background:linear-gradient(160deg,#040C18 0%,#061525 50%,#091F35 100%);
     display:none;align-items:center;justify-content:center;overflow:hidden;
+    overscroll-behavior:none;
   }
   #authLanding.open{display:flex;}
   #alRaysCanvas,#alParticlesCanvas{
@@ -3209,70 +3210,68 @@ function initBottomNav(){
   const nav = document.getElementById('bottomNav');
   if(!nav) return;
 
-  // --- spring physics (misma config que React Bits) ---
-  const STIFFNESS = 150, DAMPING = 12, MASS = 0.1;
-  const BASE = 52, MAG = 90, DIST = 200;
+  const btns = Array.from(nav.querySelectorAll('[data-bnav]'));
+  const ICON_BASE = 22;
 
-  class Spring {
-    constructor(init){ this.v = init; this.vel = 0; this.target = init; }
-    tick(dt){
-      const f = -STIFFNESS*(this.v - this.target);
-      const d = -DAMPING*this.vel;
-      this.vel += (f+d)/MASS * dt;
-      this.v   += this.vel * dt;
-      return this.v;
+  // En dispositivos táctiles (móvil/tablet) no hay hover — saltamos la animación
+  const isTouch = window.matchMedia('(hover:none) and (pointer:coarse)').matches;
+
+  if(!isTouch){
+    // --- spring physics solo en desktop con ratón ---
+    const STIFFNESS = 150, DAMPING = 12, MASS = 0.1;
+    const ICON_MAG = 46, DIST = 200;
+
+    class Spring {
+      constructor(init){ this.v = init; this.vel = 0; this.target = init; }
+      tick(dt){
+        const f = -STIFFNESS*(this.v - this.target);
+        const d = -DAMPING*this.vel;
+        this.vel += (f+d)/MASS * dt;
+        this.v   += this.vel * dt;
+        return this.v;
+      }
+      settled(){ return Math.abs(this.vel)<0.05 && Math.abs(this.v-this.target)<0.05; }
     }
-    settled(){ return Math.abs(this.vel)<0.05 && Math.abs(this.v-this.target)<0.05; }
+
+    const springs = btns.map(()=>new Spring(1)); // escala base 1
+    let rafId = null, lastT = null;
+
+    // Caché de referencias para evitar querySelector en cada frame
+    const icos = btns.map(btn=>btn.querySelector('.bnav-icon'));
+
+    function loop(t){
+      const dt = lastT ? Math.min((t-lastT)/1000, 0.05) : 0.016;
+      lastT = t;
+      let running = false;
+      springs.forEach((s,i)=>{
+        const scale = s.tick(dt);
+        // transform:scale no provoca reflow, solo compositing
+        if(icos[i]) icos[i].style.transform = `scale(${Math.max(1, scale)})`;
+        if(!s.settled()) running = true;
+      });
+      if(running){ rafId = requestAnimationFrame(loop); }
+      else{ rafId = null; lastT = null; }
+    }
+
+    function kick(){ if(!rafId) rafId = requestAnimationFrame(loop); }
+
+    function setTargets(mouseX){
+      btns.forEach((btn,i)=>{
+        const r = btn.getBoundingClientRect();
+        const cx = r.left + r.width/2;
+        const d  = Math.abs(mouseX - cx);
+        const maxScale = ICON_MAG / ICON_BASE;
+        springs[i].target = d < DIST ? 1 + (maxScale-1)*(1-d/DIST) : 1;
+      });
+      kick();
+    }
+
+    // will-change para que el compositor promueva los iconos a su propia capa
+    icos.forEach(ico=>{ if(ico) ico.style.willChange='transform'; });
+
+    nav.addEventListener('mousemove', e=>setTargets(e.clientX));
+    nav.addEventListener('mouseleave',()=>{ springs.forEach(s=>s.target=1); kick(); });
   }
-
-  const ICON_BASE = 22; // tamaño base del icono en px
-
-  const btns   = Array.from(nav.querySelectorAll('[data-bnav]'));
-  const springs = btns.map(()=>new Spring(ICON_BASE));
-  let rafId = null, lastT = null;
-
-  function loop(t){
-    const dt = lastT ? Math.min((t-lastT)/1000, 0.05) : 0.016;
-    lastT = t;
-    let running = false;
-    springs.forEach((s,i)=>{
-      const val = s.tick(dt);
-      const px  = Math.max(ICON_BASE, Math.round(val*10)/10);
-      // solo anima el icono, el botón se adapta al contenido
-      const ico = btns[i].querySelector('.bnav-icon');
-      if(ico){ ico.style.width=px+'px'; ico.style.height=px+'px'; }
-      const svg = ico?.querySelector('svg');
-      if(svg){ svg.style.width=px+'px'; svg.style.height=px+'px'; }
-      if(!s.settled()) running = true;
-    });
-    if(running){ rafId = requestAnimationFrame(loop); }
-    else{ rafId = null; lastT = null; }
-  }
-
-  function kick(){ if(!rafId) rafId = requestAnimationFrame(loop); }
-
-  const ICON_MAG = 46; // tamaño máximo del icono en px
-
-  function setTargets(mouseX){
-    btns.forEach((btn,i)=>{
-      const r = btn.getBoundingClientRect();
-      const cx = r.left + r.width/2;
-      const d  = Math.abs(mouseX - cx);
-      springs[i].target = d < DIST ? ICON_BASE + (ICON_MAG-ICON_BASE)*(1-d/DIST) : ICON_BASE;
-    });
-    kick();
-  }
-
-  // Tamaño inicial para que los iconos aparezcan desde el primer render
-  btns.forEach(btn=>{
-    const ico = btn.querySelector('.bnav-icon');
-    if(ico){ ico.style.width=ICON_BASE+'px'; ico.style.height=ICON_BASE+'px'; }
-    const svg = ico?.querySelector('svg');
-    if(svg){ svg.style.width=ICON_BASE+'px'; svg.style.height=ICON_BASE+'px'; }
-  });
-
-  nav.addEventListener('mousemove', e=>setTargets(e.clientX));
-  nav.addEventListener('mouseleave',()=>{ springs.forEach(s=>s.target=ICON_BASE); kick(); });
 
   // --- navegación ---
   btns.forEach(btn=>{
@@ -3698,6 +3697,7 @@ function openAuthLanding(){
     _alResolve=resolve;
     const el=document.getElementById('authLanding');
     el.classList.add('open');
+    document.body.style.overflow='hidden';
     _alRaysEffect=initAlRays(document.getElementById('alRaysCanvas'));
     _alParticlesEffect=initAlParticles(document.getElementById('alParticlesCanvas'));
     _renderAlForm('login');
@@ -3715,6 +3715,7 @@ function closeAuthLanding(){
   const el=document.getElementById('authLanding');
   if(!el||!el.classList.contains('open')) return;
   el.classList.remove('open');
+  document.body.style.overflow='';
   if(_alRaysEffect){_alRaysEffect.destroy();_alRaysEffect=null;}
   if(_alParticlesEffect){_alParticlesEffect.destroy();_alParticlesEffect=null;}
   if(_alResolve){_alResolve();_alResolve=null;}
