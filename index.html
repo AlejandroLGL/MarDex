@@ -663,6 +663,10 @@
   .confirm-box p{ font-size:13.5px; color:var(--ink); margin:0 0 16px; line-height:1.45; }
 
   /* dock nav */
+  @media(max-width:600px){
+    .bottom-nav [data-bnav="saved"],
+    .bottom-nav [data-bnav="tree"]{ display:none; }
+  }
   .bottom-nav{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:20;
     background:rgba(5,46,74,0.88);
