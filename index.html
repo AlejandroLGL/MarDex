@@ -17,6 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#CCF0FC;
@@ -1080,6 +1081,12 @@
 </nav>
 
 <script>
+// ── Supabase ─────────────────────────────────────────────────────
+const _sb = supabase.createClient(
+  'https://bcstkmnoqwwcsywfdjjm.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjc3RrbW5xb3d3Y3N5d2ZkamptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMjc1OTUsImV4cCI6MjEwMDgwMzU5NX0.7hDOpZgOZFcsSpWqd2GoZBCSJsHhuYk5X_-39r20XCU'
+);
+
 // Cuando la app corre como artifact de Claude, window.storage ya existe.
 // Cuando corre como archivo local (esta versión), la sustituimos por localStorage
 // para que el resto del código funcione exactamente igual sin tocar nada más.
@@ -1354,25 +1361,29 @@ async function hashPassword(password, salt){
 }
 
 async function loadState(){
-  try{
-    const raw = await safeGet('mardex-data:' + currentProfile, true);
-    state = raw ? JSON.parse(raw) : { sightings:{}, favorites:{} };
-  }catch(e){ state = { sightings:{}, favorites:{} }; }
-  if(!state.sightings) state.sightings = {};
-  if(!state.favorites) state.favorites = {};
+  state = { sightings:{}, favorites:{} };
+  const [{data:sgs},{data:favs}] = await Promise.all([
+    _sb.from('sightings').select('*').order('created_at',{ascending:true}),
+    _sb.from('favorites').select('species_id')
+  ]);
+  (sgs||[]).forEach(s=>{
+    if(!state.sightings[s.species_id]) state.sightings[s.species_id]=[];
+    state.sightings[s.species_id].push({
+      id: s.id,
+      title: s.title||'',
+      location: s.location_text||'',
+      comment: s.comment||'',
+      coords: (s.lat!=null&&s.lng!=null)?{lat:s.lat,lng:s.lng}:null,
+      date: new Date(s.date+'T00:00:00').toLocaleDateString('es-ES'),
+      dateISO: s.date,
+      environment: s.environment||'libre',
+      photo: s.photo||null
+    });
+  });
+  (favs||[]).forEach(f=>{ state.favorites[f.species_id]=true; });
 }
 async function persistState(){
-  if(saveInFlight) return;
-  saveInFlight = true;
-  try{
-    const result = await window.storage.set('mardex-data:' + currentProfile, JSON.stringify(state), true);
-    if(!result) showToast('No se pudo guardar. Se reintentará.', true);
-  }catch(e){
-    console.error('storage set failed', e);
-    showToast('No se pudo guardar en este momento.', true);
-  }finally{
-    saveInFlight = false;
-  }
+  // Estado sincronizado con Supabase por operación individual.
 }
 
 function renderProfileBadge(){
@@ -2236,9 +2247,7 @@ document.getElementById('profilePageOverlay').addEventListener('click', e => {
 async function renderProfilePage(){
   const sheet = document.getElementById('profilePageSheet');
   // Buscar datos de la cuenta actual
-  const accounts = await loadAccounts();
-  const acc = accounts.find(a => a.name === currentProfile) || null;
-  currentAccountData = acc;
+  const acc = currentAccountData;
 
   const initials = currentProfile ? currentProfile[0].toUpperCase() : '?';
   const displayName = acc ? acc.name : (currentProfile || 'Usuario');
@@ -2413,38 +2422,14 @@ async function renderProfilePage(){
         showErr('El usuario solo puede tener letras, números y _'); return;
       }
 
-      const accs = await loadAccounts();
-      const idx  = accs.findIndex(a => a.name === currentProfile);
-      if(idx === -1){ showErr('No se encontró la cuenta.'); return; }
-
-      // Comprobar que el nuevo nombre no lo usa otra cuenta
-      if(newName !== accs[idx].name && accs.some((a,i)=> i!==idx && a.name===newName)){
-        showErr('Ese nombre ya está en uso.'); return;
-      }
-      // Comprobar username único
-      if(newUsername && newUsername !== (accs[idx].username||'') && accs.some((a,i)=> i!==idx && a.username===newUsername)){
-        showErr('Ese usuario ya está en uso.'); return;
-      }
-
-      const oldName = accs[idx].name;
-      accs[idx].name     = newName;
-      accs[idx].username = newUsername || '';
-      await saveAccounts(accs);
-
-      // Si el nombre cambió, actualizar currentProfile y last-profile
-      if(oldName !== newName){
-        // Migrar datos de estado al nuevo nombre
-        const oldData = await safeGet('mardex-data:' + oldName, true);
-        if(oldData) await safeSet('mardex-data:' + newName, oldData, true);
-        const oldAvatar = await safeGet('mardex-avatar:' + oldName, false);
-        if(oldAvatar) await safeSet('mardex-avatar:' + newName, oldAvatar, false);
-        currentProfile = newName;
-        currentAccountData = accs[idx];
-        await safeSet('last-profile', newName, false);
-        renderProfileBadge();
-      } else {
-        currentAccountData = accs[idx];
-      }
+      if(!currentAccountData?.id){ showErr('No se encontró la cuenta.'); return; }
+      const {error:upErr} = await _sb.from('profiles').update({
+        name: newName, username: newUsername||''
+      }).eq('id', currentAccountData.id);
+      if(upErr){ showErr('Error al guardar: ' + upErr.message); return; }
+      currentProfile = newName;
+      currentAccountData = { ...currentAccountData, name: newName, username: newUsername||'' };
+      renderProfileBadge();
 
       showToast('Perfil actualizado');
       await renderProfilePage();
@@ -2454,11 +2439,11 @@ async function renderProfilePage(){
   document.getElementById('ppLogoutBtn').onclick = async ()=>{
     const ok = await askConfirm('¿Cerrar sesión? Tendrás que volver a iniciar sesión para acceder a tu colección.');
     if(!ok) return;
+    await _sb.auth.signOut();
     currentProfile = null;
     currentAccountData = null;
-    await safeSet('last-profile', '', false);
-    renderProfileBadge();
     state = { sightings:{}, favorites:{} };
+    renderProfileBadge();
     renderGrid();
     closeProfilePage();
     openProfilePicker();
@@ -2657,15 +2642,17 @@ function renderGrid(){
     });
   });
   grid.querySelectorAll('.fav-btn').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
       const id = btn.dataset.fav;
-      state.favorites[id] = !state.favorites[id];
-      if(!state.favorites[id]) delete state.favorites[id];
+      const nowFav = !state.favorites[id];
+      state.favorites[id] = nowFav;
+      if(!nowFav) delete state.favorites[id];
       btn.classList.add('fav-pop');
       setTimeout(()=>btn.classList.remove('fav-pop'), 350);
       renderGrid();
-      persistState();
+      if(nowFav) await _sb.from('favorites').insert({species_id:id});
+      else await _sb.from('favorites').delete().eq('species_id',id);
     });
   });
 }
@@ -2772,13 +2759,15 @@ function renderModal(s, sightings, showForm, editingSighting){
     </div>
   `;
   document.getElementById('modalCloseBtn').onclick = closeModal;
-  document.getElementById('modalFavBtn').onclick = ()=>{
-    state.favorites[s.id] = !state.favorites[s.id];
-    if(!state.favorites[s.id]) delete state.favorites[s.id];
+  document.getElementById('modalFavBtn').onclick = async ()=>{
+    const nowFav = !state.favorites[s.id];
+    state.favorites[s.id] = nowFav;
+    if(!nowFav) delete state.favorites[s.id];
     const b = document.getElementById('modalFavBtn');
-    b.classList.toggle('is-fav', !!state.favorites[s.id]);
-    b.innerHTML = state.favorites[s.id] ? icon('heartFilled') : icon('heartOutline');
-    persistState();
+    b.classList.toggle('is-fav', nowFav);
+    b.innerHTML = nowFav ? icon('heartFilled') : icon('heartOutline');
+    if(nowFav) await _sb.from('favorites').insert({species_id:s.id});
+    else await _sb.from('favorites').delete().eq('species_id',s.id);
   };
   const menuBtn = document.getElementById('modalMenuBtn');
   const menuDrop = document.getElementById('modalMenuDrop');
@@ -2794,7 +2783,7 @@ function renderModal(s, sightings, showForm, editingSighting){
       delete state.sightings[s.id];
       renderModal(s, [], true);
       showToast('Desbloqueo deshecho');
-      persistState();
+      await _sb.from('sightings').delete().eq('species_id', s.id);
     };
   }
   modalEl.querySelectorAll('.sighting').forEach(card=>{
@@ -2822,7 +2811,7 @@ function renderModal(s, sightings, showForm, editingSighting){
       if(newList.length===0){ delete state.sightings[s.id]; } else { state.sightings[s.id] = newList; }
       renderModal(s, newList, newList.length===0);
       showToast('Avistamiento eliminado');
-      persistState();
+      await _sb.from('sightings').delete().eq('id', sid);
     };
   });
   if(showForm){
@@ -2983,24 +2972,40 @@ function wireForm(s, sightings, editingSighting){
     const displayDate = new Date(dateISO + 'T00:00:00').toLocaleDateString('es-ES');
     let newList;
     if(editingSighting){
+      const photo = pendingSightingPhoto !== null ? pendingSightingPhoto : (editingSighting.photo || '');
       const updated = {
         ...editingSighting, title, location, comment,
-        environment: envChoice, photo: pendingSightingPhoto, coords: pendingCoords,
+        environment: envChoice, photo, coords: pendingCoords||editingSighting.coords,
         dateISO, date: displayDate
       };
       newList = sightings.map(x => x.id===editingSighting.id ? updated : x);
+      state.sightings[s.id] = newList;
+      renderModal(s, newList, false);
+      showToast('Avistamiento actualizado');
+      await _sb.from('sightings').update({
+        title, location_text:location, comment,
+        lat: (pendingCoords||editingSighting.coords)?.lat??null,
+        lng: (pendingCoords||editingSighting.coords)?.lng??null,
+        date: dateISO, environment: envChoice, photo
+      }).eq('id', editingSighting.id);
     } else {
+      const photo = pendingSightingPhoto || '';
+      const {data:ins,error} = await _sb.from('sightings').insert({
+        species_id:s.id, title, location_text:location, comment,
+        lat: pendingCoords?.lat??null, lng: pendingCoords?.lng??null,
+        date: dateISO, environment: envChoice, photo
+      }).select().single();
+      if(error){ showToast('Error al guardar',true); return; }
       const sighting = {
-        id: Date.now().toString(), title, location, comment,
-        environment: envChoice, photo: pendingSightingPhoto, coords: pendingCoords,
-        dateISO, date: displayDate
+        id:ins.id, title, location, comment,
+        environment:envChoice, photo: photo||null,
+        coords:pendingCoords, dateISO, date:displayDate
       };
       newList = sightings.concat([sighting]);
+      state.sightings[s.id] = newList;
+      renderModal(s, newList, false);
+      showToast('Avistamiento guardado');
     }
-    state.sightings[s.id] = newList;
-    renderModal(s, newList, false);
-    showToast(editingSighting ? 'Avistamiento actualizado' : 'Avistamiento guardado');
-    persistState();
   };
 }
 
@@ -3232,28 +3237,14 @@ function initBottomNav(){
 
 async function init(){
   loadUIPrefs();
-  const last = await safeGet('last-profile', false);
-  if(last){
-    const accounts = await loadAccounts();
-    if(accounts.some(a => a.name === last)){
-      currentProfile = last;
-      renderProfileBadge();
-      await loadState();
-      renderCatNav();
-      renderOrderNav();
-      renderLockNav();
-      renderEnvNav();
-      renderViewToggle();
-      renderGrid();
-      initBottomNav();
-      initTreePan();
-      const hash = location.hash.slice(1);
-      if(hash && SPECIES.find(x => x.id === hash)){
-        modalFromHistory = true;
-        openModal(hash);
-      }
-      return;
-    }
+  const {data:{session}}=await _sb.auth.getSession();
+  if(session){
+    await _alEnterAccount(session.user);
+    initBottomNav();
+    initTreePan();
+    const hash=location.hash.slice(1);
+    if(hash&&SPECIES.find(x=>x.id===hash)){ modalFromHistory=true; openModal(hash); }
+    return;
   }
   initBottomNav();
   initTreePan();
@@ -3586,8 +3577,8 @@ function _renderAlForm(mode){
   const wrap=document.getElementById('alFormWrap');
   if(mode==='login'){
     wrap.innerHTML=`
-      <div class="al-field"><label>Usuario o correo</label>
-        <input type="text" id="alEmail" placeholder="buceador_ale o tucorreo@mail.com" autocomplete="off">
+      <div class="al-field"><label>Correo electrónico</label>
+        <input type="email" id="alEmail" placeholder="tucorreo@mail.com" autocomplete="off">
       </div>
       <div class="al-field"><label>Contrase&ntilde;a</label>
         <input type="password" id="alPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
@@ -3639,13 +3630,13 @@ async function _alDoLogin(){
   const input=(document.getElementById('alEmail').value||'').trim().toLowerCase();
   const password=document.getElementById('alPassword').value;
   if(!input||!password){_alShowError('Rellena todos los campos.');return;}
-  const accounts=await loadAccounts();
-  const acc=accounts.find(a=>a.email.toLowerCase()===input||(a.username&&a.username.toLowerCase()===input));
-  if(!acc){_alShowError('No existe ninguna cuenta con ese usuario o correo.');return;}
-  const hash=await hashPassword(password,acc.salt);
-  if(hash!==acc.hash){_alShowError('Contrase\xf1a incorrecta.');return;}
+  const btn=document.getElementById('alSubmitBtn');
+  btn.disabled=true;
+  const {data,error}=await _sb.auth.signInWithPassword({email:input,password});
+  btn.disabled=false;
+  if(error){_alShowError('Correo o contraseña incorrectos.');return;}
   closeAuthLanding();
-  await _alEnterAccount(acc);
+  await _alEnterAccount(data.user);
 }
 
 async function _alDoSignup(){
@@ -3656,25 +3647,26 @@ async function _alDoSignup(){
   const p2=document.getElementById('alPassword2').value;
   if(!name){_alShowError('Escribe un nombre.');return;}
   if(!username){_alShowError('Escribe un nombre de usuario.');return;}
-  if(!/^[a-z0-9_]{3,20}$/.test(username)){_alShowError('Usuario: 3-20 caracteres (letras, n\xfameros, _).');return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){_alShowError('Escribe un correo v\xe1lido.');return;}
-  if(p1.length<6){_alShowError('La contrase\xf1a debe tener al menos 6 caracteres.');return;}
-  if(p1!==p2){_alShowError('Las contrase\xf1as no coinciden.');return;}
-  const accounts=await loadAccounts();
-  if(accounts.some(a=>a.email.toLowerCase()===email)){_alShowError('Ya existe una cuenta con ese correo.');return;}
-  if(accounts.some(a=>(a.username||'').toLowerCase()===username)){_alShowError('Ese nombre de usuario ya est\xe1 en uso.');return;}
-  const salt=randomSalt();
-  const hash=await hashPassword(p1,salt);
-  const account={name,username,email,salt,hash};
-  accounts.push(account);
-  await saveAccounts(accounts);
+  if(!/^[a-z0-9_]{3,20}$/.test(username)){_alShowError('Usuario: 3-20 car. (letras, números, _).');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){_alShowError('Escribe un correo válido.');return;}
+  if(p1.length<6){_alShowError('La contraseña debe tener al menos 6 caracteres.');return;}
+  if(p1!==p2){_alShowError('Las contraseñas no coinciden.');return;}
+  const btn=document.getElementById('alSubmitBtn');
+  btn.disabled=true;
+  const {data,error}=await _sb.auth.signUp({
+    email, password:p1,
+    options:{data:{name,username}}
+  });
+  btn.disabled=false;
+  if(error){_alShowError(error.message);return;}
   closeAuthLanding();
-  await _alEnterAccount(account);
+  await _alEnterAccount(data.user);
 }
 
-async function _alEnterAccount(account){
-  currentProfile=account.name;
-  await safeSet('last-profile',account.name,false);
+async function _alEnterAccount(user){
+  const {data:profile}=await _sb.from('profiles').select('*').eq('id',user.id).single();
+  currentProfile=profile?.name||user.email;
+  currentAccountData={id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email};
   renderProfileBadge();
   await loadState();
   renderCatNav();
