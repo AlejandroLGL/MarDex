@@ -590,6 +590,7 @@
   .grid.view-list .card{ flex-direction:row; height:82px; border-radius:var(--r-sm); }
   .grid.view-list .card .photo-box{ width:120px; flex-shrink:0; aspect-ratio:unset; height:100%; border-radius:0; }
   .grid.view-list .card .photo-box::after{ background:none; }
+  .grid.view-list .card:not(.is-unlocked) .photo-box::before{ animation-duration:3s; }
   .grid.view-list .card:not(.is-unlocked) .photo-box img{ filter:saturate(0.15) brightness(0.7); }
   .grid.view-list .card .card-photo-overlay{ display:none; }
   .grid.view-list .card .status-overlay{ display:none; }
@@ -661,6 +662,21 @@
   .status-overlay{ position:absolute; inset:0; z-index:1; pointer-events:none; transition:background .3s; }
   .status-overlay.locked{ background:rgba(5,12,24,0.32); }
   .card:not(.is-unlocked) .photo-box img{ filter:saturate(0.15) brightness(0.7); }
+  @keyframes cardShimmer{
+    0%  { transform:translateX(-120%) skewX(-18deg); }
+    100%{ transform:translateX(220%)  skewX(-18deg); }
+  }
+  .card:not(.is-unlocked) .photo-box::before{
+    content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
+    width:45%;
+    background:linear-gradient(105deg,
+      transparent 0%,
+      rgba(255,255,255,0.08) 30%,
+      rgba(255,255,255,0.22) 50%,
+      rgba(255,255,255,0.08) 70%,
+      transparent 100%);
+    animation:cardShimmer 4s ease-in-out infinite;
+  }
 
   /* text overlay on photo */
   .card-photo-overlay{
@@ -905,6 +921,22 @@
     overflow:visible;
     box-shadow:0 12px 48px rgba(5,46,74,0.55), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.09);
   }
+  /* ─── GlassSurface: Chromium-only displacement effect ─────────────── */
+  body.glass-ok .bottom-nav{
+    background:rgba(5,46,74,0.68);
+    backdrop-filter:url(#glass-distort) blur(22px) saturate(1.8) brightness(1.06);
+    -webkit-backdrop-filter:url(#glass-distort) blur(22px) saturate(1.8) brightness(1.06);
+  }
+  body.glass-ok .search-wrap input{
+    background:rgba(255,255,255,0.72);
+    backdrop-filter:url(#glass-distort) blur(14px) saturate(1.9);
+    -webkit-backdrop-filter:url(#glass-distort) blur(14px) saturate(1.9);
+  }
+  body.glass-ok .search-wrap input:focus{
+    background:rgba(255,255,255,0.88);
+  }
+  /* ──────────────────────────────────────────────────────────────────── */
+
   .bnav-btn{
     position:relative;
     flex-shrink:0;
@@ -3902,8 +3934,26 @@ async function renderAdminPanel(){
   </tr>`).join('');
 }
 
+function initGlassSurface(){
+  /* Solo funciona en Chromium; en Safari/Firefox el fallback CSS hace blur normal */
+  const isChromium=/Chrome\//.test(navigator.userAgent)&&/Google Inc/.test(navigator.vendor);
+  if(!isChromium) return;
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('aria-hidden','true');
+  svg.style.cssText='position:fixed;width:0;height:0;overflow:hidden;pointer-events:none;z-index:-1;';
+  svg.innerHTML=`<defs>
+    <filter id="glass-distort" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.032" numOctaves="3" seed="42" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>`;
+  document.body.prepend(svg);
+  document.body.classList.add('glass-ok');
+}
+
 async function init(){
   loadUIPrefs();
+  initGlassSurface();
   const {data:{session}}=await _sb.auth.getSession();
   if(session){
     await _alEnterAccount(session.user);
