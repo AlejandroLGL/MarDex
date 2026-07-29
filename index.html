@@ -915,9 +915,9 @@
     background:rgba(5,46,74,0.88);
     backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
     border:1px solid rgba(76,206,245,0.22);
-    border-radius:16px; padding:0 18px;
-    height:30px;
-    display:flex; gap:14px; align-items:flex-end;
+    border-radius:20px; padding:0 22px;
+    height:42px;
+    display:flex; gap:16px; align-items:flex-end;
     overflow:visible;
     box-shadow:0 12px 48px rgba(5,46,74,0.55), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.09);
   }
@@ -945,18 +945,18 @@
     background:rgb(88, 112, 190);
     border:1px solid rgba(255,255,255,0.22);
     cursor:pointer; color:rgba(255,255,255,0.75);
-    transform:translateY(-10px);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
-    padding:10px 14px;
+    transform:translateY(-14px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    padding:13px 16px;
     box-shadow:0 2px 6px rgba(0,0,0,0.2);
     transition:background .15s, color .15s;
   }
   .bnav-btn:hover{ color:rgba(255,255,255,0.9); background:rgba(0, 185, 241, 0.808); }
   .bnav-btn.active{ background:rgb(0, 64, 107); border-color:rgba(45,212,164,0.35); color:var(--lagoon); }
-  .bnav-icon{ width:22px; height:22px; pointer-events:none; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .bnav-icon{ width:26px; height:26px; pointer-events:none; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
   .bnav-icon svg{ display:block; width:100%; height:100%; }
   .bnav-label{
-    font-size:10px; font-weight:600; font-family:var(--sans); letter-spacing:0.2px;
+    font-size:11px; font-weight:600; font-family:var(--sans); letter-spacing:0.2px;
     white-space:nowrap; pointer-events:none; line-height:1;
   }
 
@@ -3462,11 +3462,11 @@ function initBottomNav(){
   if(!nav) return;
 
   const btns = Array.from(nav.querySelectorAll('[data-bnav]'));
-  const ICON_BASE = 22;
+  const ICON_BASE = 26;
 
   // Spring physics (desktop con ratón) — usa width/height para resolución nativa del SVG
   const STIFFNESS = 150, DAMPING = 12, MASS = 0.1;
-  const ICON_MAG = 46, DIST = 200;
+  const ICON_MAG = 54, DIST = 200;
 
   class Spring {
     constructor(init){ this.v = init; this.vel = 0; this.target = init; }
@@ -4019,13 +4019,13 @@ function initGlassSurface(){
 
   applyGlass(document.querySelector('.bottom-nav'),{
     distortionScale:-180, redOffset:0, greenOffset:10, blueOffset:20,
-    brightness:50, opacity:0.93, blur:11, borderRadius:16, borderWidth:0.07,
-    mixBlendMode:'difference', displace:0.7, saturation:1
+    brightness:50, opacity:0.93, blur:11, borderRadius:20, borderWidth:0.07,
+    mixBlendMode:'normal', displace:0.7, saturation:1
   });
   applyGlass(document.querySelector('.search-wrap input'),{
     distortionScale:-160, redOffset:0, greenOffset:8, blueOffset:18,
     brightness:70, opacity:0.9, blur:8, borderRadius:999, borderWidth:0.04,
-    mixBlendMode:'difference', displace:0.5, saturation:1.2
+    mixBlendMode:'normal', displace:0.5, saturation:1.2
   });
 }
 
