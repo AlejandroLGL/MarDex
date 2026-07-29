@@ -930,12 +930,7 @@
       0 0 12px 4px rgba(255,255,255,0.05) inset,
       0 12px 48px rgba(5,46,74,0.55), 0 2px 8px rgba(0,0,0,0.3);
   }
-  body.glass-ok .search-wrap input{
-    background:rgba(255,255,255,0.22);
-  }
-  body.glass-ok .search-wrap input:focus{
-    background:rgba(255,255,255,0.36);
-  }
+  /* search bar: sin glass-filter (la lupa duplicaría con backdrop-filter) */
   /* ──────────────────────────────────────────────────────────────────── */
 
   .bnav-btn{
@@ -4018,14 +4013,9 @@ function initGlassSurface(){
   document.body.classList.add('glass-ok');
 
   applyGlass(document.querySelector('.bottom-nav'),{
-    distortionScale:-180, redOffset:0, greenOffset:10, blueOffset:20,
+    distortionScale:-55, redOffset:0, greenOffset:6, blueOffset:12,
     brightness:50, opacity:0.93, blur:11, borderRadius:20, borderWidth:0.07,
     mixBlendMode:'normal', displace:0.7, saturation:1
-  });
-  applyGlass(document.querySelector('.search-wrap input'),{
-    distortionScale:-160, redOffset:0, greenOffset:8, blueOffset:18,
-    brightness:70, opacity:0.9, blur:8, borderRadius:999, borderWidth:0.04,
-    mixBlendMode:'normal', displace:0.5, saturation:1.2
   });
 }
 
