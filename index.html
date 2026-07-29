@@ -923,17 +923,17 @@
   }
   /* ─── GlassSurface: Chromium-only displacement effect ─────────────── */
   body.glass-ok .bottom-nav{
-    background:rgba(5,46,74,0.68);
-    backdrop-filter:url(#glass-distort) blur(22px) saturate(1.8) brightness(1.06);
-    -webkit-backdrop-filter:url(#glass-distort) blur(22px) saturate(1.8) brightness(1.06);
+    background:rgba(5,46,74,0.42);
+    backdrop-filter:url(#glass-distort) blur(4px) saturate(1.6) brightness(1.08);
+    -webkit-backdrop-filter:url(#glass-distort) blur(4px) saturate(1.6) brightness(1.08);
   }
   body.glass-ok .search-wrap input{
-    background:rgba(255,255,255,0.72);
-    backdrop-filter:url(#glass-distort) blur(14px) saturate(1.9);
-    -webkit-backdrop-filter:url(#glass-distort) blur(14px) saturate(1.9);
+    background:rgba(255,255,255,0.38);
+    backdrop-filter:url(#glass-distort) blur(4px) saturate(1.8) brightness(1.05);
+    -webkit-backdrop-filter:url(#glass-distort) blur(4px) saturate(1.8) brightness(1.05);
   }
   body.glass-ok .search-wrap input:focus{
-    background:rgba(255,255,255,0.88);
+    background:rgba(255,255,255,0.55);
   }
   /* ──────────────────────────────────────────────────────────────────── */
 
@@ -3942,9 +3942,9 @@ function initGlassSurface(){
   svg.setAttribute('aria-hidden','true');
   svg.style.cssText='position:fixed;width:0;height:0;overflow:hidden;pointer-events:none;z-index:-1;';
   svg.innerHTML=`<defs>
-    <filter id="glass-distort" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.032" numOctaves="3" seed="42" result="noise"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    <filter id="glass-distort" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+      <feTurbulence type="turbulence" baseFrequency="0.006 0.010" numOctaves="2" seed="8" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="42" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </defs>`;
   document.body.prepend(svg);
