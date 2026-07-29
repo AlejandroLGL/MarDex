@@ -663,19 +663,19 @@
   .status-overlay.locked{ background:rgba(5,12,24,0.32); }
   .card:not(.is-unlocked) .photo-box img{ filter:saturate(0.15) brightness(0.7); }
   @keyframes cardShimmer{
-    0%  { transform:translateX(-120%) skewX(-18deg); }
-    100%{ transform:translateX(220%)  skewX(-18deg); }
+    0%  { transform:translateX(-150%) skewX(-18deg); }
+    100%{ transform:translateX(380%)  skewX(-18deg); }
   }
   .card:not(.is-unlocked) .photo-box::before{
     content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
-    width:45%;
+    width:38%;
     background:linear-gradient(105deg,
       transparent 0%,
-      rgba(255,255,255,0.08) 30%,
-      rgba(255,255,255,0.22) 50%,
-      rgba(255,255,255,0.08) 70%,
+      rgba(255,255,255,0.03) 30%,
+      rgba(255,255,255,0.09) 50%,
+      rgba(255,255,255,0.03) 70%,
       transparent 100%);
-    animation:cardShimmer 4s ease-in-out infinite;
+    animation:cardShimmer 5s ease-in-out infinite;
   }
 
   /* text overlay on photo */
@@ -921,19 +921,20 @@
     overflow:visible;
     box-shadow:0 12px 48px rgba(5,46,74,0.55), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.09);
   }
-  /* ─── GlassSurface: Chromium-only displacement effect ─────────────── */
+  /* ─── GlassSurface: backdrop-filter vía JS (solo Chromium) ─────────── */
+  /* backdrop-filter se aplica inline por JS; aquí solo ajustamos opacidad */
   body.glass-ok .bottom-nav{
-    background:rgba(5,46,74,0.42);
-    backdrop-filter:url(#glass-distort) blur(4px) saturate(1.6) brightness(1.08);
-    -webkit-backdrop-filter:url(#glass-distort) blur(4px) saturate(1.6) brightness(1.08);
+    background:rgba(5,46,74,0.40);
+    box-shadow:
+      0 0 2px 1px rgba(255,255,255,0.10) inset,
+      0 0 12px 4px rgba(255,255,255,0.05) inset,
+      0 12px 48px rgba(5,46,74,0.55), 0 2px 8px rgba(0,0,0,0.3);
   }
   body.glass-ok .search-wrap input{
-    background:rgba(255,255,255,0.38);
-    backdrop-filter:url(#glass-distort) blur(4px) saturate(1.8) brightness(1.05);
-    -webkit-backdrop-filter:url(#glass-distort) blur(4px) saturate(1.8) brightness(1.05);
+    background:rgba(255,255,255,0.22);
   }
   body.glass-ok .search-wrap input:focus{
-    background:rgba(255,255,255,0.55);
+    background:rgba(255,255,255,0.36);
   }
   /* ──────────────────────────────────────────────────────────────────── */
 
@@ -3935,20 +3936,97 @@ async function renderAdminPanel(){
 }
 
 function initGlassSurface(){
-  /* Solo funciona en Chromium; en Safari/Firefox el fallback CSS hace blur normal */
+  /* Port de GlassSurface (React Bits) a vanilla JS.
+     Usa feImage + feDisplacementMap con separación RGB → aberración cromática.
+     Solo funciona en Chromium; Safari/Firefox mantienen el blur existente. */
   const isChromium=/Chrome\//.test(navigator.userAgent)&&/Google Inc/.test(navigator.vendor);
   if(!isChromium) return;
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.setAttribute('aria-hidden','true');
-  svg.style.cssText='position:fixed;width:0;height:0;overflow:hidden;pointer-events:none;z-index:-1;';
-  svg.innerHTML=`<defs>
-    <filter id="glass-distort" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
-      <feTurbulence type="turbulence" baseFrequency="0.006 0.010" numOctaves="2" seed="8" result="noise"/>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="42" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs>`;
-  document.body.prepend(svg);
+
+  function applyGlass(el, opts){
+    if(!el) return;
+    const {
+      distortionScale=-180, redOffset=0, greenOffset=10, blueOffset=20,
+      brightness=50, opacity=0.93, blur=11, borderRadius=16, borderWidth=0.07,
+      mixBlendMode='difference', displace=0.7, saturation=1
+    }=opts;
+
+    const uid='gs'+Math.random().toString(36).slice(2,9);
+    const filterId=`glass-filter-${uid}`;
+    const rgId=`rg-${uid}`;
+    const bgId=`bg-${uid}`;
+
+    /* SVG contenedor del filtro (oculto) */
+    const svgWrap=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svgWrap.setAttribute('aria-hidden','true');
+    svgWrap.style.cssText='position:fixed;width:0;height:0;overflow:hidden;pointer-events:none;';
+    svgWrap.innerHTML=`<defs>
+      <filter id="${filterId}" colorInterpolationFilters="sRGB" x="0%" y="0%" width="100%" height="100%">
+        <feImage id="feim-${uid}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="${distortionScale+redOffset}" xChannelSelector="R" yChannelSelector="G" result="dispRed"/>
+        <feColorMatrix in="dispRed" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="red"/>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="${distortionScale+greenOffset}" xChannelSelector="R" yChannelSelector="G" result="dispGreen"/>
+        <feColorMatrix in="dispGreen" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="green"/>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="${distortionScale+blueOffset}" xChannelSelector="R" yChannelSelector="G" result="dispBlue"/>
+        <feColorMatrix in="dispBlue" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blue"/>
+        <feBlend in="red" in2="green" mode="screen" result="rg"/>
+        <feBlend in="rg" in2="blue" mode="screen" result="output"/>
+        <feGaussianBlur in="output" stdDeviation="${displace}"/>
+      </filter>
+    </defs>`;
+    document.body.prepend(svgWrap);
+    const feImg=document.getElementById(`feim-${uid}`);
+
+    /* Genera el mapa de desplazamiento SVG basado en dimensiones reales del elemento */
+    const generateMap=()=>{
+      const rect=el.getBoundingClientRect();
+      const w=Math.round(rect.width)||400;
+      const h=Math.round(rect.height)||80;
+      const edge=Math.min(w,h)*(borderWidth*0.5);
+      const br=borderRadius;
+      const s=`<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="${rgId}" x1="100%" y1="0%" x2="0%" y2="0%">
+            <stop offset="0%" stop-color="#0000"/>
+            <stop offset="100%" stop-color="red"/>
+          </linearGradient>
+          <linearGradient id="${bgId}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#0000"/>
+            <stop offset="100%" stop-color="blue"/>
+          </linearGradient>
+        </defs>
+        <rect width="${w}" height="${h}" fill="black"/>
+        <rect width="${w}" height="${h}" rx="${br}" fill="url(#${rgId})"/>
+        <rect width="${w}" height="${h}" rx="${br}" fill="url(#${bgId})" style="mix-blend-mode:${mixBlendMode}"/>
+        <rect x="${edge}" y="${edge}" width="${w-edge*2}" height="${h-edge*2}" rx="${br}"
+          fill="hsl(0 0% ${brightness}%/${opacity})" style="filter:blur(${blur}px)"/>
+      </svg>`;
+      return 'data:image/svg+xml,'+encodeURIComponent(s);
+    };
+
+    const updateMap=()=>{ if(feImg) feImg.setAttribute('href',generateMap()); };
+
+    /* Aplica backdrop-filter vía JS (el CSS solo ajusta background/shadow) */
+    const bf=`url(#${filterId}) saturate(${saturation})`;
+    el.style.backdropFilter=bf;
+    el.style.webkitBackdropFilter=bf;
+
+    setTimeout(updateMap,0); /* primer render tras layout */
+    const ro=new ResizeObserver(()=>setTimeout(updateMap,0));
+    ro.observe(el);
+  }
+
   document.body.classList.add('glass-ok');
+
+  applyGlass(document.querySelector('.bottom-nav'),{
+    distortionScale:-180, redOffset:0, greenOffset:10, blueOffset:20,
+    brightness:50, opacity:0.93, blur:11, borderRadius:16, borderWidth:0.07,
+    mixBlendMode:'difference', displace:0.7, saturation:1
+  });
+  applyGlass(document.querySelector('.search-wrap input'),{
+    distortionScale:-160, redOffset:0, greenOffset:8, blueOffset:18,
+    brightness:70, opacity:0.9, blur:8, borderRadius:999, borderWidth:0.04,
+    mixBlendMode:'difference', displace:0.5, saturation:1.2
+  });
 }
 
 async function init(){
