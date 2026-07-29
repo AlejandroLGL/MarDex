@@ -287,6 +287,120 @@
   .pp-edit-cancel{ font-size:12px; font-weight:700; font-family:var(--sans); background:none; color:var(--muted); border:1.5px solid var(--blue-soft); border-radius:8px; padding:7px 14px; cursor:pointer; }
   .pp-edit-cancel:hover{ color:var(--ink); }
 
+  /* ── Friends panel ──────────────────────────────────────────────── */
+  .friends-overlay, .friend-profile-overlay{
+    display:none; position:fixed; inset:0; background:rgba(8,18,34,0.75); z-index:80;
+    align-items:flex-end; justify-content:center;
+  }
+  .friends-overlay.open, .friend-profile-overlay.open{ display:flex; }
+  @media(min-width:600px){
+    .friends-overlay, .friend-profile-overlay{ align-items:center; }
+    .friends-sheet, .friend-profile-sheet{ max-height:88vh; border-radius:var(--r-lg) !important; }
+  }
+  .friends-sheet, .friend-profile-sheet{
+    background:var(--card); width:100%; max-width:520px; border-radius:var(--r-lg) var(--r-lg) 0 0;
+    max-height:92vh; overflow-y:auto; padding:24px 20px 40px;
+    box-shadow:0 -8px 48px rgba(5,46,74,0.22); position:relative;
+  }
+  .friend-profile-overlay{ z-index:90; }
+  .fr-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .fr-title{ font-size:18px; font-weight:800; color:var(--ink); }
+  .fr-close{
+    width:32px; height:32px; border-radius:50%; border:none; background:rgba(0,0,0,0.06);
+    color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background .15s;
+  }
+  .fr-close:hover{ background:rgba(0,0,0,0.12); color:var(--ink); }
+  .fr-search-wrap{ display:flex; gap:8px; margin-bottom:20px; }
+  .fr-search-input{
+    flex:1; padding:9px 14px; border-radius:20px; border:1.5px solid var(--border);
+    background:var(--bg); font-family:var(--sans); font-size:13px; color:var(--ink);
+    outline:none; transition:border-color .15s;
+  }
+  .fr-search-input:focus{ border-color:var(--ocean); }
+  .fr-search-btn{
+    padding:9px 16px; border-radius:20px; border:none; background:var(--ocean);
+    color:#fff; font-weight:700; font-size:13px; cursor:pointer; transition:opacity .15s;
+  }
+  .fr-search-btn:hover{ opacity:.85; }
+  .fr-section-title{
+    font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.06em; margin:16px 0 8px;
+  }
+  .fr-user-row{
+    display:flex; align-items:center; gap:12px; padding:10px 12px;
+    border-radius:12px; transition:background .12s; cursor:pointer;
+  }
+  .fr-user-row:hover{ background:var(--bg); }
+  .fr-avatar{
+    width:40px; height:40px; border-radius:50%; background:var(--ocean);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:16px; color:#fff; flex-shrink:0;
+  }
+  .fr-user-info{ flex:1; min-width:0; }
+  .fr-user-name{ font-size:14px; font-weight:700; color:var(--ink); }
+  .fr-user-username{ font-size:12px; color:var(--muted); }
+  .fr-user-stats{ font-size:11px; color:var(--faint); margin-top:2px; }
+  .fr-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .fr-btn{
+    padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700;
+    cursor:pointer; border:1.5px solid; transition:background .15s, color .15s;
+  }
+  .fr-btn-accept{ border-color:var(--lagoon); color:var(--lagoon); background:none; }
+  .fr-btn-accept:hover{ background:var(--lagoon); color:#fff; }
+  .fr-btn-reject, .fr-btn-cancel{ border-color:var(--muted); color:var(--muted); background:none; }
+  .fr-btn-reject:hover, .fr-btn-cancel:hover{ background:var(--muted); color:#fff; }
+  .fr-btn-add{ border-color:var(--ocean); color:var(--ocean); background:none; }
+  .fr-btn-add:hover{ background:var(--ocean); color:#fff; }
+  .fr-btn-unfriend{ border-color:#e74c3c; color:#e74c3c; background:none; }
+  .fr-btn-unfriend:hover{ background:#e74c3c; color:#fff; }
+  .fr-empty{ color:var(--muted); font-size:13px; padding:12px 12px; }
+  .fr-pending-badge{
+    display:inline-block; min-width:16px; height:16px; padding:0 4px;
+    border-radius:8px; background:#e74c3c; color:#fff; font-size:10px;
+    font-weight:800; text-align:center; line-height:16px; margin-left:6px;
+  }
+  /* Friend profile */
+  .frp-avatar{
+    width:64px; height:64px; border-radius:50%; background:var(--ocean);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:26px; color:#fff; margin:0 auto 10px;
+  }
+  .frp-name{ text-align:center; font-size:20px; font-weight:800; color:var(--ink); }
+  .frp-username{ text-align:center; font-size:13px; color:var(--muted); margin-bottom:20px; }
+  .frp-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+  .frp-stat{ background:var(--bg); border-radius:12px; padding:12px 8px; text-align:center; }
+  .frp-stat-num{ font-size:22px; font-weight:800; color:var(--ocean); }
+  .frp-stat-label{ font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+  .frp-section{ margin-bottom:20px; }
+  .frp-section-title{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .frp-compare-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .frp-compare-col{ background:var(--bg); border-radius:10px; padding:10px; }
+  .frp-compare-col-title{ font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+  .frp-compare-item{ font-size:11px; color:var(--ink); padding:2px 0; }
+  .frp-map{ height:200px; border-radius:12px; overflow:hidden; margin-top:8px; }
+  .frp-species-list{ display:flex; flex-wrap:wrap; gap:6px; }
+  .frp-species-chip{
+    padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600;
+    background:rgba(47,128,237,0.12); color:var(--ocean);
+  }
+  .frp-species-chip.common{ background:rgba(81,196,211,0.15); color:#2a9faf; }
+  .frp-species-chip.theirs{ background:rgba(200,200,200,0.2); color:var(--muted); }
+  /* Map species filter */
+  .map-filter-bar{
+    padding:8px 14px; display:flex; align-items:center; gap:8px;
+    flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .map-filter-label{ font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:.05em; flex-shrink:0; }
+  .map-filter-chip{
+    padding:4px 11px; border-radius:20px; font-size:11px; font-weight:600;
+    border:1px solid rgba(76,206,245,0.25); background:rgba(5,46,74,0.5);
+    color:rgba(255,255,255,0.7); cursor:pointer; transition:background .15s, color .15s;
+    white-space:nowrap;
+  }
+  .map-filter-chip.active{ background:var(--ocean); border-color:var(--ocean); color:#fff; }
+  .map-filter-chip.all{ border-color:rgba(76,206,245,0.4); }
+
   /* ── Admin panel ─────────────────────────────────────────────────── */
   .admin-overlay{
     display:none; position:fixed; inset:0; background:rgba(8,18,34,0.82); z-index:90;
@@ -476,7 +590,7 @@
   .grid.view-list .card{ flex-direction:row; height:82px; border-radius:var(--r-sm); }
   .grid.view-list .card .photo-box{ width:120px; flex-shrink:0; aspect-ratio:unset; height:100%; border-radius:0; }
   .grid.view-list .card .photo-box::after{ background:none; }
-  .grid.view-list .card:not(.is-unlocked) .photo-box img{ filter:saturate(0.2) brightness(0.65) blur(6px); transform:scale(1.1); }
+  .grid.view-list .card:not(.is-unlocked) .photo-box img{ filter:saturate(0.15) brightness(0.7); }
   .grid.view-list .card .card-photo-overlay{ display:none; }
   .grid.view-list .card .status-overlay{ display:none; }
   .grid.view-list .card .card-body{ padding:10px 14px; display:flex !important; flex-direction:column; justify-content:center; gap:2px; }
@@ -546,7 +660,7 @@
 
   .status-overlay{ position:absolute; inset:0; z-index:1; pointer-events:none; transition:background .3s; }
   .status-overlay.locked{ background:rgba(5,12,24,0.32); }
-  .card:not(.is-unlocked) .photo-box img{ filter:saturate(0.2) brightness(0.65) blur(5px); transform:scale(1.12); }
+  .card:not(.is-unlocked) .photo-box img{ filter:saturate(0.15) brightness(0.7); }
 
   /* text overlay on photo */
   .card-photo-overlay{
@@ -775,9 +889,9 @@
   .mob-fab-item svg{ width:20px; height:20px; display:block; flex-shrink:0; }
   .mob-fab-item-label{ font-size:8px; font-weight:700; color:rgba(255,255,255,0.6); letter-spacing:.03em; }
   @keyframes unlockReveal{
-    0%  { filter:blur(8px) brightness(0.7); transform:scale(0.97); }
-    60% { filter:blur(0px) brightness(1.15); transform:scale(1.03); }
-    100%{ filter:blur(0px) brightness(1);   transform:scale(1); }
+    0%  { filter:saturate(0.15) brightness(0.7); transform:scale(0.97); }
+    60% { filter:saturate(1.2)  brightness(1.15); transform:scale(1.03); }
+    100%{ filter:saturate(1)    brightness(1);    transform:scale(1); }
   }
   .card.unlocking{ animation:unlockReveal 0.7s cubic-bezier(.22,1,.36,1) forwards; }
   .bottom-nav{
@@ -1130,6 +1244,14 @@
   </div>
 </div>
 
+<div class="friends-overlay" id="friendsOverlay">
+  <div class="friends-sheet" id="friendsSheet"></div>
+</div>
+
+<div class="friend-profile-overlay" id="friendProfileOverlay">
+  <div class="friend-profile-sheet" id="friendProfileSheet"></div>
+</div>
+
 <div class="admin-overlay" id="adminOverlay">
   <div class="admin-sheet" id="adminSheet">
     <!-- populated by renderAdminPanel() -->
@@ -1166,6 +1288,7 @@
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg>
     </button>
   </div>
+  <div class="map-filter-bar" id="mapFilterBar"></div>
   <div id="globalMapEl"></div>
   <div class="global-map-empty" id="globalMapEmpty" style="display:none">Ningún avistamiento tiene ubicación registrada aún</div>
 </div>
@@ -1191,6 +1314,10 @@
   <button class="bnav-btn" data-bnav="sightings">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="5" rx="1.5"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg></span>
     <span class="bnav-label">Registros</span>
+  </button>
+  <button class="bnav-btn" data-bnav="friends">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+    <span class="bnav-label">Amigos</span>
   </button>
   <button class="bnav-btn" data-bnav="saved">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.7-4.35-9.3-8.2C.9 9.7 1.7 6 5 4.7 7.2 3.8 9.4 4.6 12 7c2.6-2.4 4.8-3.2 7-2.3 3.3 1.3 4.1 5 1.3 8.8C18.7 16.65 12 21 12 21z"/></svg></span>
@@ -3205,30 +3332,53 @@ document.getElementById('search').addEventListener('input', (e)=>{
 // ======================================================
 // FEATURE 2 – Mapa global de avistamientos
 // ======================================================
+let mapFilterSpecies = null; // null = todas
+
 function openGlobalMap(){
   const overlay = document.getElementById('globalMapOverlay');
   overlay.classList.add('open');
+  mapFilterSpecies = null;
 
-  // Gather sightings with coords
-  const pins = [];
+  // Recoger todas las especies con avistamientos geolocalizados
+  const allPins = [];
   Object.entries(state.sightings).forEach(([speciesId, sgs])=>{
-    (sgs||[]).forEach(sg=>{
-      if(sg.coords) pins.push({speciesId, sg});
-    });
+    (sgs||[]).forEach(sg=>{ if(sg.coords) allPins.push({speciesId, sg}); });
   });
+
+  // Especies únicas con pins
+  const speciesWithPins = [...new Set(allPins.map(p=>p.speciesId))];
+
+  // Barra de filtros
+  const filterBar = document.getElementById('mapFilterBar');
+  if(speciesWithPins.length > 1){
+    filterBar.style.display='flex';
+    function renderFilterChips(){
+      filterBar.innerHTML = `<span class="map-filter-label">Filtrar:</span>
+        <button class="map-filter-chip all ${!mapFilterSpecies?'active':''}" data-filter="all">Todas</button>` +
+        speciesWithPins.map(id=>{ const sp=SPECIES.find(x=>x.id===id);
+          return `<button class="map-filter-chip ${mapFilterSpecies===id?'active':''}" data-filter="${id}">${sp?escapeHtml(sp.name):id}</button>`;
+        }).join('');
+      filterBar.querySelectorAll('[data-filter]').forEach(btn=>{
+        btn.onclick=()=>{
+          mapFilterSpecies = btn.dataset.filter==='all' ? null : btn.dataset.filter;
+          renderFilterChips();
+          renderMapPins(allPins);
+        };
+      });
+    }
+    renderFilterChips();
+  } else { filterBar.style.display='none'; }
 
   const countEl = document.getElementById('globalMapCount');
   const emptyEl = document.getElementById('globalMapEmpty');
   const mapEl   = document.getElementById('globalMapEl');
-  countEl.textContent = pins.length + ' avistamiento'+(pins.length!==1?'s':'')+' localizado'+(pins.length!==1?'s':'');
 
-  if(pins.length===0){
-    mapEl.style.display='none';
-    emptyEl.style.display='flex';
+  if(allPins.length===0){
+    mapEl.style.display='none'; emptyEl.style.display='flex';
+    countEl.textContent='';
     return;
   }
-  emptyEl.style.display='none';
-  mapEl.style.display='';
+  emptyEl.style.display='none'; mapEl.style.display='';
 
   setTimeout(()=>{
     if(!globalMapInstance){
@@ -3238,29 +3388,32 @@ function openGlobalMap(){
       }).addTo(globalMapInstance);
     }
     globalMapInstance.invalidateSize();
-    // Remove old markers
-    globalMapInstance.eachLayer(layer=>{
-      if(layer instanceof L.Marker) globalMapInstance.removeLayer(layer);
-    });
-    const bounds=[];
-    pins.forEach(({speciesId,sg})=>{
-      const sp = SPECIES.find(x=>x.id===speciesId);
-      const {lat,lng} = sg.coords;
-      bounds.push([lat,lng]);
-      const thumbHtml = sg.photo
-        ? `<img src="${sg.photo}" style="width:80px;height:55px;object-fit:cover;border-radius:6px;margin-top:6px;display:block;">`
-        : '';
-      const popup = `<div style="font-family:Inter,sans-serif;min-width:150px;">
-        <strong style="font-size:13px;">${sp ? escapeHtml(sp.name) : escapeHtml(speciesId)}</strong>
-        <div style="font-size:11px;color:#5A7E94;margin-top:2px;">${escapeHtml(sg.date||'')}</div>
-        ${sg.location ? `<div style="font-size:11px;color:#5A7E94;">${escapeHtml(sg.location)}</div>` : ''}
-        ${thumbHtml}
-      </div>`;
-      L.marker([lat,lng]).addTo(globalMapInstance).bindPopup(popup);
-    });
-    if(bounds.length===1) globalMapInstance.setView(bounds[0],10);
-    else globalMapInstance.fitBounds(bounds,{padding:[30,30]});
+    renderMapPins(allPins);
   },60);
+}
+
+function renderMapPins(allPins){
+  const pins = mapFilterSpecies ? allPins.filter(p=>p.speciesId===mapFilterSpecies) : allPins;
+  const countEl = document.getElementById('globalMapCount');
+  countEl.textContent = pins.length+' avistamiento'+(pins.length!==1?'s':'')+' localizado'+(pins.length!==1?'s':'');
+
+  globalMapInstance.eachLayer(layer=>{ if(layer instanceof L.Marker) globalMapInstance.removeLayer(layer); });
+  const bounds=[];
+  pins.forEach(({speciesId,sg})=>{
+    const sp=SPECIES.find(x=>x.id===speciesId);
+    const {lat,lng}=sg.coords;
+    bounds.push([lat,lng]);
+    const thumbHtml=sg.photo?`<img src="${sg.photo}" style="width:80px;height:55px;object-fit:cover;border-radius:6px;margin-top:6px;display:block;">`:'';
+    const popup=`<div style="font-family:Inter,sans-serif;min-width:150px;">
+      <strong style="font-size:13px;">${sp?escapeHtml(sp.name):escapeHtml(speciesId)}</strong>
+      <div style="font-size:11px;color:#5A7E94;margin-top:2px;">${escapeHtml(sg.date||'')}</div>
+      ${sg.location?`<div style="font-size:11px;color:#5A7E94;">${escapeHtml(sg.location)}</div>`:''}
+      ${thumbHtml}
+    </div>`;
+    L.marker([lat,lng]).addTo(globalMapInstance).bindPopup(popup);
+  });
+  if(bounds.length===1) globalMapInstance.setView(bounds[0],10);
+  else if(bounds.length>1) globalMapInstance.fitBounds(bounds,{padding:[30,30]});
 }
 
 function closeGlobalMap(){
@@ -3356,6 +3509,11 @@ function initBottomNav(){
         else openProfilePicker();
         return;
       }
+      if(tab==='friends'){
+        btns[0].classList.add('active');
+        openFriendsPanel();
+        return;
+      }
       if(tab==='admin'){
         btns[0].classList.add('active');
         openAdminPanel();
@@ -3377,6 +3535,218 @@ function initBottomNav(){
   });
 }
 
+// ── Friends panel ─────────────────────────────────────────────────────
+function openFriendsPanel(){ document.getElementById('friendsOverlay').classList.add('open'); renderFriendsPanel(); }
+function closeFriendsPanel(){ document.getElementById('friendsOverlay').classList.remove('open'); }
+document.getElementById('friendsOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('friendsOverlay')) closeFriendsPanel(); });
+document.getElementById('friendProfileOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('friendProfileOverlay')) closeFriendProfile(); });
+
+async function renderFriendsPanel(){
+  const sheet = document.getElementById('friendsSheet');
+  sheet.innerHTML = `<div class="fr-header">
+    <div class="fr-title">Amigos</div>
+    <button class="fr-close" id="frCloseBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="fr-search-wrap">
+    <input class="fr-search-input" id="frSearchInput" placeholder="Buscar por @usuario o nombre…" autocomplete="off">
+    <button class="fr-search-btn" id="frSearchBtn">Buscar</button>
+  </div>
+  <div id="frSearchResults"></div>
+  <div id="frPendingSection"></div>
+  <div id="frFriendsList"></div>`;
+
+  document.getElementById('frCloseBtn').onclick = closeFriendsPanel;
+  const searchBtn = document.getElementById('frSearchBtn');
+  const searchInput = document.getElementById('frSearchInput');
+  searchBtn.onclick = ()=>doFriendSearch(searchInput.value.trim());
+  searchInput.onkeydown = e=>{ if(e.key==='Enter') doFriendSearch(searchInput.value.trim()); };
+
+  await loadFriendsData();
+}
+
+async function loadFriendsData(){
+  const [{data:friends},{data:pending}] = await Promise.all([
+    _sb.rpc('get_friends'),
+    _sb.rpc('get_pending_requests')
+  ]);
+
+  // Pending requests
+  const pendingEl = document.getElementById('frPendingSection');
+  const pendingList = pending||[];
+  if(pendingList.length>0){
+    pendingEl.innerHTML = `<div class="fr-section-title">Solicitudes recibidas <span class="fr-pending-badge">${pendingList.length}</span></div>` +
+      pendingList.map(r=>`<div class="fr-user-row">
+        <div class="fr-avatar">${(r.name||r.username||'?')[0].toUpperCase()}</div>
+        <div class="fr-user-info">
+          <div class="fr-user-name">${escapeHtml(r.name||r.username)}</div>
+          <div class="fr-user-username">@${escapeHtml(r.username||'')}</div>
+        </div>
+        <div class="fr-actions">
+          <button class="fr-btn fr-btn-accept" data-accept="${r.sender_id}">Aceptar</button>
+          <button class="fr-btn fr-btn-reject" data-reject="${r.id}">Rechazar</button>
+        </div>
+      </div>`).join('');
+    pendingEl.querySelectorAll('[data-accept]').forEach(btn=>{
+      btn.onclick = async()=>{ await _sb.from('friend_requests').update({status:'accepted'}).eq('sender_id',btn.dataset.accept).eq('receiver_id',currentAccountData.id); await loadFriendsData(); };
+    });
+    pendingEl.querySelectorAll('[data-reject]').forEach(btn=>{
+      btn.onclick = async()=>{ await _sb.from('friend_requests').delete().eq('id',btn.dataset.reject); await loadFriendsData(); };
+    });
+  } else { pendingEl.innerHTML=''; }
+
+  // Friends list
+  const listEl = document.getElementById('frFriendsList');
+  const friendsList = friends||[];
+  listEl.innerHTML = `<div class="fr-section-title">Mis amigos (${friendsList.length})</div>`;
+  if(friendsList.length===0){
+    listEl.innerHTML += `<div class="fr-empty">Aún no tienes amigos en MarDex. ¡Búscalos por arriba!</div>`;
+  } else {
+    listEl.innerHTML += friendsList.map(f=>`<div class="fr-user-row" data-friend-id="${f.id}" style="cursor:pointer">
+      <div class="fr-avatar">${(f.name||f.username||'?')[0].toUpperCase()}</div>
+      <div class="fr-user-info">
+        <div class="fr-user-name">${escapeHtml(f.name||f.username)}</div>
+        <div class="fr-user-username">@${escapeHtml(f.username||'')}</div>
+        <div class="fr-user-stats">${f.species_count} especies · ${f.sightings_count} avistamientos · ${f.favorites_count} favoritos</div>
+      </div>
+      <button class="fr-btn fr-btn-unfriend" data-unfriend="${f.id}" style="font-size:11px">Eliminar</button>
+    </div>`).join('');
+    listEl.querySelectorAll('[data-friend-id]').forEach(row=>{
+      row.onclick = e=>{ if(e.target.closest('[data-unfriend]')) return; openFriendProfile(row.dataset.friendId); };
+    });
+    listEl.querySelectorAll('[data-unfriend]').forEach(btn=>{
+      btn.onclick = async(e)=>{ e.stopPropagation();
+        const ok = await askConfirm('¿Eliminar a este amigo?'); if(!ok) return;
+        await _sb.from('friend_requests').delete()
+          .or(`and(sender_id.eq.${currentAccountData.id},receiver_id.eq.${btn.dataset.unfriend}),and(sender_id.eq.${btn.dataset.unfriend},receiver_id.eq.${currentAccountData.id})`);
+        await loadFriendsData();
+      };
+    });
+  }
+}
+
+async function doFriendSearch(query){
+  if(!query){ document.getElementById('frSearchResults').innerHTML=''; return; }
+  const {data:users} = await _sb.rpc('search_users',{query});
+  const el = document.getElementById('frSearchResults');
+  if(!users||users.length===0){ el.innerHTML=`<div class="fr-section-title">Resultados</div><div class="fr-empty">Sin resultados para "${escapeHtml(query)}"</div>`; return; }
+  // Check existing relationships
+  const {data:requests} = await _sb.from('friend_requests').select('*')
+    .or(`sender_id.eq.${currentAccountData.id},receiver_id.eq.${currentAccountData.id}`);
+  const reqMap = {};
+  (requests||[]).forEach(r=>{ const other=r.sender_id===currentAccountData.id?r.receiver_id:r.sender_id; reqMap[other]={status:r.status,isSender:r.sender_id===currentAccountData.id,id:r.id}; });
+  el.innerHTML = `<div class="fr-section-title">Resultados</div>` + users.map(u=>{
+    const rel = reqMap[u.id];
+    let btn = '';
+    if(!rel) btn = `<button class="fr-btn fr-btn-add" data-add="${u.id}">Añadir</button>`;
+    else if(rel.status==='accepted') btn = `<span style="font-size:11px;color:var(--lagoon);font-weight:700">Amigos</span>`;
+    else if(rel.status==='pending'&&rel.isSender) btn = `<button class="fr-btn fr-btn-cancel" data-cancel="${rel.id}">Cancelar</button>`;
+    else if(rel.status==='pending'&&!rel.isSender) btn = `<button class="fr-btn fr-btn-accept" data-accept="${u.id}">Aceptar</button>`;
+    return `<div class="fr-user-row">
+      <div class="fr-avatar">${(u.name||u.username||'?')[0].toUpperCase()}</div>
+      <div class="fr-user-info">
+        <div class="fr-user-name">${escapeHtml(u.name||u.username)}</div>
+        <div class="fr-user-username">@${escapeHtml(u.username||'')}</div>
+        <div class="fr-user-stats">${u.species_count} especies · ${u.sightings_count} avistamientos</div>
+      </div>
+      <div class="fr-actions">${btn}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-add]').forEach(btn=>{
+    btn.onclick = async()=>{ await _sb.from('friend_requests').insert({sender_id:currentAccountData.id,receiver_id:btn.dataset.add}); doFriendSearch(document.getElementById('frSearchInput').value.trim()); };
+  });
+  el.querySelectorAll('[data-cancel]').forEach(btn=>{
+    btn.onclick = async()=>{ await _sb.from('friend_requests').delete().eq('id',btn.dataset.cancel); doFriendSearch(document.getElementById('frSearchInput').value.trim()); };
+  });
+  el.querySelectorAll('[data-accept]').forEach(btn=>{
+    btn.onclick = async()=>{ await _sb.from('friend_requests').update({status:'accepted'}).eq('sender_id',btn.dataset.accept).eq('receiver_id',currentAccountData.id); doFriendSearch(document.getElementById('frSearchInput').value.trim()); await loadFriendsData(); };
+  });
+}
+
+let friendMapInstance = null;
+async function openFriendProfile(friendId){
+  const overlay = document.getElementById('friendProfileOverlay');
+  const sheet = document.getElementById('friendProfileSheet');
+  overlay.classList.add('open');
+  sheet.innerHTML = `<div class="fr-header"><div class="fr-title">Cargando…</div><button class="fr-close" id="frpCloseBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+  document.getElementById('frpCloseBtn').onclick = closeFriendProfile;
+
+  const {data, error} = await _sb.rpc('get_friend_data',{friend_id:friendId});
+  if(error||!data){ sheet.innerHTML += `<div class="fr-empty">No se pudo cargar el perfil.</div>`; return; }
+
+  const {profile, sightings:fSightings, favorites:fFavs} = data;
+  const fSightingsArr = fSightings||[];
+  const fFavsArr = fFavs||[];
+  const fSpeciesIds = [...new Set(fSightingsArr.map(s=>s.species_id))];
+  const mySpeciesIds = Object.keys(state.sightings).filter(id=>(state.sightings[id]||[]).length>0);
+  const common = fSpeciesIds.filter(id=>mySpeciesIds.includes(id));
+  const onlyTheirs = fSpeciesIds.filter(id=>!mySpeciesIds.includes(id));
+  const onlyMine = mySpeciesIds.filter(id=>!fSpeciesIds.includes(id));
+  const fPins = fSightingsArr.filter(s=>s.lat!=null&&s.lng!=null);
+
+  sheet.innerHTML = `<div class="fr-header">
+    <div class="fr-title">Perfil de ${escapeHtml(profile.name||profile.username)}</div>
+    <button class="fr-close" id="frpCloseBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="frp-avatar">${(profile.name||profile.username||'?')[0].toUpperCase()}</div>
+  <div class="frp-name">${escapeHtml(profile.name||profile.username)}</div>
+  <div class="frp-username">@${escapeHtml(profile.username||'')}</div>
+  <div class="frp-stats">
+    <div class="frp-stat"><div class="frp-stat-num">${fSpeciesIds.length}</div><div class="frp-stat-label">Especies</div></div>
+    <div class="frp-stat"><div class="frp-stat-num">${fSightingsArr.length}</div><div class="frp-stat-label">Avistamientos</div></div>
+    <div class="frp-stat"><div class="frp-stat-num">${fFavsArr.length}</div><div class="frp-stat-label">Favoritos</div></div>
+  </div>
+  <div class="frp-section">
+    <div class="frp-section-title">Comparativa de colección</div>
+    <div class="frp-compare-grid">
+      <div class="frp-compare-col">
+        <div class="frp-compare-col-title" style="color:var(--lagoon)">En común (${common.length})</div>
+        ${common.length?common.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return `<div class="frp-compare-item">${sp?escapeHtml(sp.name):id}</div>`; }).join(''):'<div class="frp-compare-item" style="color:var(--faint)">—</div>'}
+      </div>
+      <div class="frp-compare-col">
+        <div class="frp-compare-col-title" style="color:var(--ocean)">Solo tú (${onlyMine.length})</div>
+        ${onlyMine.length?onlyMine.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return `<div class="frp-compare-item">${sp?escapeHtml(sp.name):id}</div>`; }).join(''):'<div class="frp-compare-item" style="color:var(--faint)">—</div>'}
+      </div>
+      <div class="frp-compare-col">
+        <div class="frp-compare-col-title" style="color:var(--muted)">Solo ${escapeHtml(profile.name||'él')} (${onlyTheirs.length})</div>
+        ${onlyTheirs.length?onlyTheirs.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return `<div class="frp-compare-item">${sp?escapeHtml(sp.name):id}</div>`; }).join(''):'<div class="frp-compare-item" style="color:var(--faint)">—</div>'}
+      </div>
+    </div>
+  </div>
+  ${fPins.length>0?`<div class="frp-section">
+    <div class="frp-section-title">Mapa de avistamientos (${fPins.length} con ubicación)</div>
+    <div class="frp-map" id="frpMapEl"></div>
+  </div>`:''}
+  <div class="frp-section">
+    <div class="frp-section-title">Especies desbloqueadas</div>
+    <div class="frp-species-list">${fSpeciesIds.length?fSpeciesIds.map(id=>{ const sp=SPECIES.find(x=>x.id===id); const cls=common.includes(id)?'common':''; return `<span class="frp-species-chip ${cls}">${sp?escapeHtml(sp.name):id}</span>`; }).join(''):'<span class="fr-empty">Ninguna aún</span>'}</div>
+  </div>`;
+
+  document.getElementById('frpCloseBtn').onclick = closeFriendProfile;
+
+  // Mapa del amigo
+  if(fPins.length>0){
+    setTimeout(()=>{
+      if(friendMapInstance){ friendMapInstance.remove(); friendMapInstance=null; }
+      friendMapInstance = L.map('frpMapEl').setView([20,0],2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(friendMapInstance);
+      const bounds=[];
+      fPins.forEach(s=>{
+        const sp=SPECIES.find(x=>x.id===s.species_id);
+        bounds.push([s.lat,s.lng]);
+        L.marker([s.lat,s.lng]).addTo(friendMapInstance)
+          .bindPopup(`<strong>${sp?escapeHtml(sp.name):s.species_id}</strong><br><span style="font-size:11px;color:#5A7E94">${s.date||''}</span>`);
+      });
+      if(bounds.length===1) friendMapInstance.setView(bounds[0],10);
+      else friendMapInstance.fitBounds(bounds,{padding:[20,20]});
+    },80);
+  }
+}
+
+function closeFriendProfile(){
+  document.getElementById('friendProfileOverlay').classList.remove('open');
+  if(friendMapInstance){ friendMapInstance.remove(); friendMapInstance=null; }
+}
+
 // ── Mobile FAB ────────────────────────────────────────────────────────
 function initMobileFAB(){
   const fabBtn   = document.getElementById('mobFabBtn');
@@ -3390,6 +3760,7 @@ function initMobileFAB(){
     { bnav:'saved',    label:'Guardados', svg:'<path d="M12 21s-6.7-4.35-9.3-8.2C.9 9.7 1.7 6 5 4.7 7.2 3.8 9.4 4.6 12 7c2.6-2.4 4.8-3.2 7-2.3 3.3 1.3 4.1 5 1.3 8.8C18.7 16.65 12 21 12 21z"/>' },
     { bnav:'tree',     label:'Clave',     svg:'<circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="M7.97 10.65 15.03 7 M7.97 13.35 15.03 17"/><line x1="6" y1="3" x2="6" y2="10"/><line x1="6" y1="14" x2="6" y2="21"/>' },
     { bnav:'profile',  label:'Perfil',    svg:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+    { bnav:'friends',  label:'Amigos',    svg:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
     { bnav:'admin',    label:'Admin',     svg:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>', adminOnly:true },
   ];
 
@@ -3454,6 +3825,7 @@ function initMobileFAB(){
     if(tab==='map')      { openGlobalMap(); return; }
     if(tab==='tree')     { openTreeOverlay(); return; }
     if(tab==='profile')  { if(currentProfile) openProfilePage(); else openProfilePicker(); return; }
+    if(tab==='friends')  { openFriendsPanel(); return; }
     if(tab==='admin')    { openAdminPanel(); return; }
     if(tab==='explore')  { showFavOnly=false; currentLock='todos'; renderLockNav(); renderCatNav(); renderGrid(); }
     else if(tab==='sightings'){ showFavOnly=false; currentLock='desbloqueado'; renderLockNav(); renderGrid(); }
