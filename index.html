@@ -1511,7 +1511,7 @@ function placeholderMarkup(isRay){
   `;
 }
 
-const SPECIES = [
+let SPECIES = [
   {id:'nodriza', cat:'tiburon', order:'Orectolobiformes', name:'Tiburón nodriza', sci:'Ginglymostoma cirratum', region:'Global', code:'TBR-01', size:'3 m', habitat:'Fondos arenosos y cuevas', depth:'1–12 m', speed:'Lenta', diet:'Moluscos y peces pequeños', rarity:2, blurb:'Habitual en acuarios y arrecifes tropicales. Pasa el día inmóvil en el fondo, a menudo bajo salientes rocosos, y caza de noche por succión.'},
   {id:'cebra', cat:'tiburon', order:'Orectolobiformes', name:'Tiburón cebra', sci:'Stegostoma tigrinum', region:'Global', code:'TBR-02', size:'2.5 m', habitat:'Arrecifes de coral', depth:'5–30 m', speed:'Lenta', diet:'Moluscos y crustáceos', rarity:3, blurb:'De joven rayado, de adulto con manchas leopardo. Muy presente en acuarios por su carácter tranquilo y su forma de nadar ondulante.'},
   {id:'ballena', cat:'tiburon', order:'Orectolobiformes', name:'Tiburón ballena', sci:'Rhincodon typus', region:'Global', code:'TBR-03', size:'12 m', habitat:'Aguas abiertas tropicales', depth:'0–200 m', speed:'5 km/h', diet:'Filtrador de plancton', rarity:5, blurb:'El pez más grande del mundo. Filtra plancton y es completamente inofensivo. Algunos grandes acuarios lo mantienen; en libertad se avista en agregaciones estacionales.'},
@@ -4238,6 +4238,10 @@ function initGlassSurface(){
 }
 
 async function init(){
+  try{
+    const r = await fetch('species.json');
+    if(r.ok) SPECIES = await r.json();
+  }catch(e){}
   loadUIPrefs();
   initGlassSurface();
   const {data:{session}}=await _sb.auth.getSession();
