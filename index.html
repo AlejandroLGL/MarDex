@@ -717,9 +717,9 @@
     width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.92); border:none;
     display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink);
   }
-  .modal-close{ position:absolute; top:14px; left:14px; z-index:2; }
-  .modal-menu-btn{ position:absolute; top:14px; right:54px; z-index:2; }
-  .modal-x-btn{ position:absolute; top:14px; right:14px; z-index:2; }
+  .modal-close{ position:absolute; top:14px; left:14px; z-index:10; }
+  .modal-menu-btn{ position:absolute; top:14px; right:54px; z-index:10; }
+  .modal-x-btn{ position:absolute; top:14px; right:14px; z-index:10; }
   .modal-menu-drop{
     position:absolute; top:54px; right:14px; z-index:3; background:var(--card); border:1px solid var(--line);
     border-radius:var(--r-md); box-shadow:var(--shadow-hover); display:none; overflow:hidden; min-width:200px;
@@ -893,6 +893,21 @@
     transition:transform .3s cubic-bezier(.34,1.56,.64,1), background .2s;
   }
   .mob-fab-btn.open{ transform:rotate(135deg); background:rgba(47,128,237,0.9); }
+  /* Barras hamburger → X */
+  .mob-fab-bars{ display:flex; flex-direction:column; gap:5px; align-items:center; pointer-events:none; }
+  .mob-fab-bar{
+    width:22px; height:2.5px; background:currentColor; border-radius:2px;
+    transform-origin:center center;
+    transition:transform 0.42s cubic-bezier(0.77,0,0.175,1),
+               opacity   0.32s cubic-bezier(0.77,0,0.175,1);
+  }
+  /* Estado modal abierto: hamburger se convierte en X */
+  .mob-fab-btn.modal-mode{ transform:none !important; background:rgba(200,60,60,0.88) !important; }
+  .mob-fab-btn.modal-mode .mob-fab-bar:nth-child(1){ transform:translateY(7.5px) rotate(45deg); }
+  .mob-fab-btn.modal-mode .mob-fab-bar:nth-child(2){ opacity:0; transform:scaleX(0); }
+  .mob-fab-btn.modal-mode .mob-fab-bar:nth-child(3){ transform:translateY(-7.5px) rotate(-45deg); }
+  /* En móvil, el FAB hace de botón de cierre; ocultar la X del modal */
+  @media(max-width:600px){ .modal-x-btn{ display:none !important; } }
   .mob-fab-item{
     position:fixed; width:52px; height:52px; border-radius:50%; z-index:51;
     background:rgba(5,46,74,0.92); border:1.5px solid rgba(76,206,245,0.22);
@@ -1335,7 +1350,11 @@
 <div class="mob-fab-backdrop" id="mobFabBackdrop"></div>
 <div class="mob-fab-wrap" id="mobFabWrap">
   <button class="mob-fab-btn" id="mobFabBtn" aria-label="Menú">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <div class="mob-fab-bars">
+      <span class="mob-fab-bar"></span>
+      <span class="mob-fab-bar"></span>
+      <span class="mob-fab-bar"></span>
+    </div>
   </button>
 </div>
 
@@ -2955,6 +2974,7 @@ function renderGrid(){
 function openModal(id){
   openSpeciesId = id;
   expandedSightings = new Set();
+  document.getElementById('mobFabBtn')?.classList.add('modal-mode');
   const s = SPECIES.find(x=>x.id===id);
   const sightings = sightingsFor(id);
   renderModal(s, sightings, sightings.length===0);
@@ -2966,6 +2986,7 @@ function openModal(id){
 }
 function closeModal(){
   document.getElementById('overlay').classList.remove('open');
+  document.getElementById('mobFabBtn')?.classList.remove('modal-mode');
   openSpeciesId = null;
   pendingSightingPhoto = null;
   pendingCoords = null;
@@ -3394,22 +3415,22 @@ function openGlobalMap(){
   filterBar.style.display = 'flex';
 
   function renderFilterChips(){
-    // Categorías presentes en los pins
-    const catsPresent = [...new Set(speciesWithPins.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return sp?.cat; }).filter(Boolean))];
-    // Órdenes presentes según categoría activa
+    // Categorías con algún pin
+    const catsPresent = [...new Set(speciesWithPins.map(id=>SPECIES.find(x=>x.id===id)?.cat).filter(Boolean))];
+    // Órdenes con algún pin, filtrados por cat activa
     const ordersPresent = [...new Set(speciesWithPins
-      .filter(id=>{ const sp=SPECIES.find(x=>x.id===id); return sp && (!mapFilterCat || sp.cat===mapFilterCat); })
+      .filter(id=>{ const sp=SPECIES.find(x=>x.id===id); return sp&&(!mapFilterCat||sp.cat===mapFilterCat); })
       .map(id=>SPECIES.find(x=>x.id===id)?.order).filter(Boolean)
     )].sort();
-    // Especies presentes según categoría + orden activos
+    // Especies con algún pin, filtradas por cat+orden activos
     const speciesFiltered = speciesWithPins.filter(id=>{
       const sp=SPECIES.find(x=>x.id===id);
-      return sp && (!mapFilterCat||sp.cat===mapFilterCat) && (!mapFilterOrder||sp.order===mapFilterOrder);
+      return sp&&(!mapFilterCat||sp.cat===mapFilterCat)&&(!mapFilterOrder||sp.order===mapFilterOrder);
     });
 
     let html = '';
 
-    // Fila 1: Tipo (solo si hay tiburones Y rayas)
+    // Fila 1: Tipo — siempre si hay pins de ambas categorías
     if(catsPresent.length > 1){
       html += `<div class="map-filter-row">
         <span class="map-filter-label">Tipo</span>
@@ -3419,8 +3440,8 @@ function openGlobalMap(){
       </div>`;
     }
 
-    // Fila 2: Orden (solo si hay más de uno)
-    if(ordersPresent.length > 1){
+    // Fila 2: Orden — si hay ≥1 orden
+    if(ordersPresent.length >= 1){
       html += `<div class="map-filter-row">
         <span class="map-filter-label">Orden</span>
         <button class="map-filter-chip ${!mapFilterOrder?'active':''}" data-ford="">Todos</button>` +
@@ -3428,8 +3449,8 @@ function openGlobalMap(){
       `</div>`;
     }
 
-    // Fila 3: Especie (solo si hay más de una)
-    if(speciesFiltered.length > 1){
+    // Fila 3: Especie — si hay ≥1 especie
+    if(speciesFiltered.length >= 1){
       html += `<div class="map-filter-row">
         <span class="map-filter-label">Especie</span>
         <button class="map-filter-chip ${!mapFilterSpecies?'active':''}" data-fsp="">Todas</button>` +
@@ -3439,7 +3460,7 @@ function openGlobalMap(){
       `</div>`;
     }
 
-    filterBar.innerHTML = html || '';
+    filterBar.innerHTML = html;
 
     // Eventos: Tipo
     filterBar.querySelectorAll('[data-fcat]').forEach(btn=>{
@@ -3946,7 +3967,10 @@ function initMobileFAB(){
     else if(tab==='saved')   { showFavOnly=true; renderCatNav(); renderGrid(); }
   }
 
-  fabBtn.addEventListener('click', ()=>{ isOpen ? closeFab() : openFab(); });
+  fabBtn.addEventListener('click', ()=>{
+    if(fabBtn.classList.contains('modal-mode')){ closeModal(); return; }
+    isOpen ? closeFab() : openFab();
+  });
   backdrop.addEventListener('click', closeFab);
 }
 
