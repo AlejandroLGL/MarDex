@@ -388,10 +388,14 @@
   .frp-species-chip.theirs{ background:rgba(200,200,200,0.2); color:var(--muted); }
   /* Map species filter */
   .map-filter-bar{
-    padding:8px 14px; display:flex; align-items:center; gap:8px;
-    flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,0.08);
+    padding:6px 14px 2px; display:flex; flex-direction:column; gap:0;
+    border-bottom:1px solid rgba(255,255,255,0.08);
   }
-  .map-filter-label{ font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:.05em; flex-shrink:0; }
+  .map-filter-row{
+    display:flex; align-items:center; gap:7px; flex-wrap:wrap; padding:5px 0;
+  }
+  .map-filter-row+.map-filter-row{ border-top:1px solid rgba(255,255,255,0.05); }
+  .map-filter-label{ font-size:10px; font-weight:700; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:.07em; flex-shrink:0; min-width:52px; }
   .map-filter-chip{
     padding:4px 11px; border-radius:20px; font-size:11px; font-weight:600;
     border:1px solid rgba(76,206,245,0.25); background:rgba(5,46,74,0.5);
@@ -399,7 +403,8 @@
     white-space:nowrap;
   }
   .map-filter-chip.active{ background:var(--ocean); border-color:var(--ocean); color:#fff; }
-  .map-filter-chip.all{ border-color:rgba(76,206,245,0.4); }
+  .map-filter-chip.shark.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .map-filter-chip.ray.active{ background:var(--lagoon); border-color:var(--lagoon); color:var(--ink); }
 
   /* ── Admin panel ─────────────────────────────────────────────────── */
   .admin-overlay{
@@ -713,7 +718,8 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink);
   }
   .modal-close{ position:absolute; top:14px; left:14px; z-index:2; }
-  .modal-menu-btn{ position:absolute; top:14px; right:14px; z-index:2; }
+  .modal-menu-btn{ position:absolute; top:14px; right:54px; z-index:2; }
+  .modal-x-btn{ position:absolute; top:14px; right:14px; z-index:2; }
   .modal-menu-drop{
     position:absolute; top:54px; right:14px; z-index:3; background:var(--card); border:1px solid var(--line);
     border-radius:var(--r-md); box-shadow:var(--shadow-hover); display:none; overflow:hidden; min-width:200px;
@@ -1312,6 +1318,9 @@
   <div class="global-map-header">
     <h3>Mapa de avistamientos</h3>
     <span class="global-map-count" id="globalMapCount"></span>
+    <button type="button" class="tree-close-btn" id="globalMapFsBtn" title="Pantalla completa">
+      <svg id="globalMapFsIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    </button>
     <button type="button" class="tree-close-btn" id="globalMapCloseBtn" title="Cerrar">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg>
     </button>
@@ -3007,6 +3016,7 @@ function renderModal(s, sightings, showForm, editingSighting){
   modalEl.className = `modal ${themeClass}`;
   modalEl.innerHTML = `
     <button type="button" class="icon-btn modal-close" id="modalCloseBtn">${icon('chevronLeft')}</button>
+    <button type="button" class="icon-btn modal-x-btn" id="modalXBtn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg></button>
     <button type="button" class="icon-btn modal-menu-btn" id="modalMenuBtn">${icon('more')}</button>
     <div class="modal-menu-drop" id="modalMenuDrop">
       ${unlockedFlag ? `<button type="button" id="undoBtn">${icon('undo','icon-sm')}Deshacer desbloqueo</button>` : `<button type="button" disabled style="color:var(--faint);cursor:default;">Sin registros aún</button>`}
@@ -3044,6 +3054,7 @@ function renderModal(s, sightings, showForm, editingSighting){
     </div>
   `;
   document.getElementById('modalCloseBtn').onclick = closeModal;
+  document.getElementById('modalXBtn').onclick = closeModal;
   document.getElementById('modalFavBtn').onclick = async ()=>{
     const nowFav = !state.favorites[s.id];
     state.favorites[s.id] = nowFav;
@@ -3360,12 +3371,14 @@ document.getElementById('search').addEventListener('input', (e)=>{
 // ======================================================
 // FEATURE 2 – Mapa global de avistamientos
 // ======================================================
-let mapFilterSpecies = null; // null = todas
+let mapFilterCat     = null; // null | 'tiburon' | 'raya'
+let mapFilterOrder   = null; // null | order string
+let mapFilterSpecies = null; // null | species id
 
 function openGlobalMap(){
   const overlay = document.getElementById('globalMapOverlay');
   overlay.classList.add('open');
-  mapFilterSpecies = null;
+  mapFilterCat = null; mapFilterOrder = null; mapFilterSpecies = null;
 
   // Recoger todas las especies con avistamientos geolocalizados
   const allPins = [];
@@ -3376,26 +3389,72 @@ function openGlobalMap(){
   // Especies únicas con pins
   const speciesWithPins = [...new Set(allPins.map(p=>p.speciesId))];
 
-  // Barra de filtros
+  // Barra de filtros multi-nivel
   const filterBar = document.getElementById('mapFilterBar');
-  if(speciesWithPins.length > 1){
-    filterBar.style.display='flex';
-    function renderFilterChips(){
-      filterBar.innerHTML = `<span class="map-filter-label">Filtrar:</span>
-        <button class="map-filter-chip all ${!mapFilterSpecies?'active':''}" data-filter="all">Todas</button>` +
-        speciesWithPins.map(id=>{ const sp=SPECIES.find(x=>x.id===id);
-          return `<button class="map-filter-chip ${mapFilterSpecies===id?'active':''}" data-filter="${id}">${sp?escapeHtml(sp.name):id}</button>`;
-        }).join('');
-      filterBar.querySelectorAll('[data-filter]').forEach(btn=>{
-        btn.onclick=()=>{
-          mapFilterSpecies = btn.dataset.filter==='all' ? null : btn.dataset.filter;
-          renderFilterChips();
-          renderMapPins(allPins);
-        };
-      });
+  filterBar.style.display = 'flex';
+
+  function renderFilterChips(){
+    // Categorías presentes en los pins
+    const catsPresent = [...new Set(speciesWithPins.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return sp?.cat; }).filter(Boolean))];
+    // Órdenes presentes según categoría activa
+    const ordersPresent = [...new Set(speciesWithPins
+      .filter(id=>{ const sp=SPECIES.find(x=>x.id===id); return sp && (!mapFilterCat || sp.cat===mapFilterCat); })
+      .map(id=>SPECIES.find(x=>x.id===id)?.order).filter(Boolean)
+    )].sort();
+    // Especies presentes según categoría + orden activos
+    const speciesFiltered = speciesWithPins.filter(id=>{
+      const sp=SPECIES.find(x=>x.id===id);
+      return sp && (!mapFilterCat||sp.cat===mapFilterCat) && (!mapFilterOrder||sp.order===mapFilterOrder);
+    });
+
+    let html = '';
+
+    // Fila 1: Tipo (solo si hay tiburones Y rayas)
+    if(catsPresent.length > 1){
+      html += `<div class="map-filter-row">
+        <span class="map-filter-label">Tipo</span>
+        <button class="map-filter-chip ${!mapFilterCat?'active':''}" data-fcat="">Todos</button>
+        <button class="map-filter-chip shark ${mapFilterCat==='tiburon'?'active':''}" data-fcat="tiburon">Tiburones</button>
+        <button class="map-filter-chip ray ${mapFilterCat==='raya'?'active':''}" data-fcat="raya">Rayas</button>
+      </div>`;
     }
-    renderFilterChips();
-  } else { filterBar.style.display='none'; }
+
+    // Fila 2: Orden (solo si hay más de uno)
+    if(ordersPresent.length > 1){
+      html += `<div class="map-filter-row">
+        <span class="map-filter-label">Orden</span>
+        <button class="map-filter-chip ${!mapFilterOrder?'active':''}" data-ford="">Todos</button>` +
+        ordersPresent.map(o=>`<button class="map-filter-chip ${mapFilterOrder===o?'active':''}" data-ford="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join('') +
+      `</div>`;
+    }
+
+    // Fila 3: Especie (solo si hay más de una)
+    if(speciesFiltered.length > 1){
+      html += `<div class="map-filter-row">
+        <span class="map-filter-label">Especie</span>
+        <button class="map-filter-chip ${!mapFilterSpecies?'active':''}" data-fsp="">Todas</button>` +
+        speciesFiltered.map(id=>{ const sp=SPECIES.find(x=>x.id===id);
+          return `<button class="map-filter-chip ${mapFilterSpecies===id?'active':''}" data-fsp="${id}">${sp?escapeHtml(sp.name):id}</button>`;
+        }).join('') +
+      `</div>`;
+    }
+
+    filterBar.innerHTML = html || '';
+
+    // Eventos: Tipo
+    filterBar.querySelectorAll('[data-fcat]').forEach(btn=>{
+      btn.onclick=()=>{ mapFilterCat=btn.dataset.fcat||null; mapFilterOrder=null; mapFilterSpecies=null; renderFilterChips(); renderMapPins(allPins); };
+    });
+    // Eventos: Orden
+    filterBar.querySelectorAll('[data-ford]').forEach(btn=>{
+      btn.onclick=()=>{ mapFilterOrder=btn.dataset.ford||null; mapFilterSpecies=null; renderFilterChips(); renderMapPins(allPins); };
+    });
+    // Eventos: Especie
+    filterBar.querySelectorAll('[data-fsp]').forEach(btn=>{
+      btn.onclick=()=>{ mapFilterSpecies=btn.dataset.fsp||null; renderFilterChips(); renderMapPins(allPins); };
+    });
+  }
+  renderFilterChips();
 
   const countEl = document.getElementById('globalMapCount');
   const emptyEl = document.getElementById('globalMapEmpty');
@@ -3421,7 +3480,14 @@ function openGlobalMap(){
 }
 
 function renderMapPins(allPins){
-  const pins = mapFilterSpecies ? allPins.filter(p=>p.speciesId===mapFilterSpecies) : allPins;
+  const pins = allPins.filter(p=>{
+    const sp=SPECIES.find(x=>x.id===p.speciesId);
+    if(!sp) return false;
+    if(mapFilterCat     && sp.cat   !==mapFilterCat)     return false;
+    if(mapFilterOrder   && sp.order !==mapFilterOrder)   return false;
+    if(mapFilterSpecies && p.speciesId!==mapFilterSpecies) return false;
+    return true;
+  });
   const countEl = document.getElementById('globalMapCount');
   countEl.textContent = pins.length+' avistamiento'+(pins.length!==1?'s':'')+' localizado'+(pins.length!==1?'s':'');
 
@@ -3450,6 +3516,26 @@ function closeGlobalMap(){
 document.getElementById('globalMapCloseBtn').onclick = closeGlobalMap;
 document.getElementById('globalMapOverlay').addEventListener('click',e=>{
   if(e.target===document.getElementById('globalMapOverlay')) closeGlobalMap();
+});
+
+// Fullscreen del mapa
+document.getElementById('globalMapFsBtn').onclick = ()=>{
+  const overlay = document.getElementById('globalMapOverlay');
+  if(!document.fullscreenElement){
+    overlay.requestFullscreen?.().catch(()=>{});
+  } else {
+    document.exitFullscreen?.();
+  }
+};
+document.addEventListener('fullscreenchange',()=>{
+  const icon = document.getElementById('globalMapFsIcon');
+  const btn  = document.getElementById('globalMapFsBtn');
+  if(!icon||!btn) return;
+  const isFs = !!document.fullscreenElement;
+  btn.title = isFs ? 'Salir de pantalla completa' : 'Pantalla completa';
+  icon.innerHTML = isFs
+    ? '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>'
+    : '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
 });
 
 function initBottomNav(){
