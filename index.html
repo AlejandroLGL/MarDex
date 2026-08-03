@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Desregistrar service workers obsoletos (evita el error de Safari "SW has redirections") -->
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(sw=>sw.unregister()));}</script>
 <title>MarDex Buceo</title>
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
@@ -387,24 +389,37 @@
   .frp-species-chip.common{ background:rgba(81,196,211,0.15); color:#2a9faf; }
   .frp-species-chip.theirs{ background:rgba(200,200,200,0.2); color:var(--muted); }
   /* Map species filter */
-  .map-filter-bar{
-    padding:6px 14px 2px; display:flex; flex-direction:column; gap:0;
-    border-bottom:1px solid rgba(255,255,255,0.08);
+  /* Map sync-filter bar */
+  .map-sync-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:11px 18px; border-bottom:1px solid var(--line);
+    background:#fff;
   }
-  .map-filter-row{
-    display:flex; align-items:center; gap:7px; flex-wrap:wrap; padding:5px 0;
+  .map-sync-info{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .map-sync-title{ font-size:13px; font-weight:700; color:var(--ink); }
+  .map-sync-desc{ font-size:11px; color:var(--muted); }
+  /* Slider toggle */
+  .map-sync-toggle{
+    flex-shrink:0; width:54px; height:30px; border-radius:15px; border:none; cursor:pointer;
+    background:#140d2b; position:relative; padding:0;
+    transition:background 0.35s cubic-bezier(0.45,0.05,0.55,0.95);
   }
-  .map-filter-row+.map-filter-row{ border-top:1px solid rgba(255,255,255,0.05); }
-  .map-filter-label{ font-size:10px; font-weight:700; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:.07em; flex-shrink:0; min-width:52px; }
-  .map-filter-chip{
-    padding:4px 11px; border-radius:20px; font-size:11px; font-weight:600;
-    border:1px solid rgba(76,206,245,0.25); background:rgba(5,46,74,0.5);
-    color:rgba(255,255,255,0.7); cursor:pointer; transition:background .15s, color .15s;
-    white-space:nowrap;
+  .map-sync-knob{
+    position:absolute; top:3px; left:3px;
+    width:24px; height:24px; border-radius:50%;
+    background:#7c3aed;
+    box-shadow:0 0 8px rgba(124,58,237,0.6), 0 0 2px rgba(124,58,237,0.4);
+    transition:transform 0.35s cubic-bezier(0.45,0.05,0.55,0.95),
+               background 0.35s cubic-bezier(0.45,0.05,0.55,0.95),
+               box-shadow 0.35s cubic-bezier(0.45,0.05,0.55,0.95);
+    pointer-events:none;
   }
-  .map-filter-chip.active{ background:var(--ocean); border-color:var(--ocean); color:#fff; }
-  .map-filter-chip.shark.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
-  .map-filter-chip.ray.active{ background:var(--lagoon); border-color:var(--lagoon); color:var(--ink); }
+  .map-sync-toggle.on{ background:#1e1040; }
+  .map-sync-toggle.on .map-sync-knob{
+    transform:translateX(24px);
+    background:#a855f7;
+    box-shadow:0 0 14px rgba(168,85,247,0.8), 0 0 4px rgba(168,85,247,0.5);
+  }
 
   /* ── Admin panel ─────────────────────────────────────────────────── */
   .admin-overlay{
@@ -902,6 +917,7 @@
                opacity   0.32s cubic-bezier(0.77,0,0.175,1);
   }
   /* Estado modal abierto: hamburger se convierte en X */
+  .mob-fab-wrap.modal-mode{ z-index:200; }
   .mob-fab-btn.modal-mode{ transform:none !important; background:rgba(200,60,60,0.88) !important; }
   .mob-fab-btn.modal-mode .mob-fab-bar:nth-child(1){ transform:translateY(7.5px) rotate(45deg); }
   .mob-fab-btn.modal-mode .mob-fab-bar:nth-child(2){ opacity:0; transform:scaleX(0); }
@@ -1340,7 +1356,15 @@
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg>
     </button>
   </div>
-  <div class="map-filter-bar" id="mapFilterBar"></div>
+  <div class="map-sync-bar" id="mapSyncBar">
+    <div class="map-sync-info">
+      <span class="map-sync-title">Filtros del explorador</span>
+      <span class="map-sync-desc" id="mapSyncDesc">Ver todos los avistamientos</span>
+    </div>
+    <button class="map-sync-toggle" id="mapSyncToggle" aria-label="Activar filtros">
+      <span class="map-sync-knob"></span>
+    </button>
+  </div>
   <div id="globalMapEl"></div>
   <div class="global-map-empty" id="globalMapEmpty" style="display:none">Ningún avistamiento tiene ubicación registrada aún</div>
 </div>
@@ -2974,7 +2998,11 @@ function renderGrid(){
 function openModal(id){
   openSpeciesId = id;
   expandedSightings = new Set();
-  document.getElementById('mobFabBtn')?.classList.add('modal-mode');
+  window._closeFabMenu?.();
+  const _fab = document.getElementById('mobFabBtn');
+  const _fabWrap = document.getElementById('mobFabWrap');
+  _fab?.classList.add('modal-mode');
+  _fabWrap?.classList.add('modal-mode');
   const s = SPECIES.find(x=>x.id===id);
   const sightings = sightingsFor(id);
   renderModal(s, sightings, sightings.length===0);
@@ -2987,6 +3015,7 @@ function openModal(id){
 function closeModal(){
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('mobFabBtn')?.classList.remove('modal-mode');
+  document.getElementById('mobFabWrap')?.classList.remove('modal-mode');
   openSpeciesId = null;
   pendingSightingPhoto = null;
   pendingCoords = null;
@@ -3392,90 +3421,42 @@ document.getElementById('search').addEventListener('input', (e)=>{
 // ======================================================
 // FEATURE 2 – Mapa global de avistamientos
 // ======================================================
-let mapFilterCat     = null; // null | 'tiburon' | 'raya'
-let mapFilterOrder   = null; // null | order string
-let mapFilterSpecies = null; // null | species id
+let mapSyncActive = false; // toggle "aplicar filtros del explorador"
 
 function openGlobalMap(){
   const overlay = document.getElementById('globalMapOverlay');
   overlay.classList.add('open');
-  mapFilterCat = null; mapFilterOrder = null; mapFilterSpecies = null;
 
-  // Recoger todas las especies con avistamientos geolocalizados
+  // Recoger todos los pins geolocalizados
   const allPins = [];
   Object.entries(state.sightings).forEach(([speciesId, sgs])=>{
     (sgs||[]).forEach(sg=>{ if(sg.coords) allPins.push({speciesId, sg}); });
   });
 
-  // Especies únicas con pins
-  const speciesWithPins = [...new Set(allPins.map(p=>p.speciesId))];
-
-  // Barra de filtros multi-nivel
-  const filterBar = document.getElementById('mapFilterBar');
-  filterBar.style.display = 'flex';
-
-  function renderFilterChips(){
-    // Categorías con algún pin
-    const catsPresent = [...new Set(speciesWithPins.map(id=>SPECIES.find(x=>x.id===id)?.cat).filter(Boolean))];
-    // Órdenes con algún pin, filtrados por cat activa
-    const ordersPresent = [...new Set(speciesWithPins
-      .filter(id=>{ const sp=SPECIES.find(x=>x.id===id); return sp&&(!mapFilterCat||sp.cat===mapFilterCat); })
-      .map(id=>SPECIES.find(x=>x.id===id)?.order).filter(Boolean)
-    )].sort();
-    // Especies con algún pin, filtradas por cat+orden activos
-    const speciesFiltered = speciesWithPins.filter(id=>{
-      const sp=SPECIES.find(x=>x.id===id);
-      return sp&&(!mapFilterCat||sp.cat===mapFilterCat)&&(!mapFilterOrder||sp.order===mapFilterOrder);
-    });
-
-    let html = '';
-
-    // Fila 1: Tipo — siempre si hay pins de ambas categorías
-    if(catsPresent.length > 1){
-      html += `<div class="map-filter-row">
-        <span class="map-filter-label">Tipo</span>
-        <button class="map-filter-chip ${!mapFilterCat?'active':''}" data-fcat="">Todos</button>
-        <button class="map-filter-chip shark ${mapFilterCat==='tiburon'?'active':''}" data-fcat="tiburon">Tiburones</button>
-        <button class="map-filter-chip ray ${mapFilterCat==='raya'?'active':''}" data-fcat="raya">Rayas</button>
-      </div>`;
+  // Toggle sync — refleja el estado actual y actualiza el descriptor
+  function updateSyncUI(){
+    const toggle = document.getElementById('mapSyncToggle');
+    const desc   = document.getElementById('mapSyncDesc');
+    if(!toggle) return;
+    toggle.classList.toggle('on', mapSyncActive);
+    if(mapSyncActive){
+      const parts = [];
+      if(currentCat !== 'todos') parts.push(currentCat === 'tiburon' ? 'Tiburones' : 'Rayas');
+      if(selectedOrders.size) parts.push([...selectedOrders].join(', '));
+      if(showFavOnly) parts.push('Favoritos');
+      if(searchTerm) parts.push(`"${searchTerm}"`);
+      desc.textContent = parts.length ? parts.join(' · ') : 'Sin filtros activos';
+    } else {
+      desc.textContent = 'Ver todos los avistamientos';
     }
-
-    // Fila 2: Orden — si hay ≥1 orden
-    if(ordersPresent.length >= 1){
-      html += `<div class="map-filter-row">
-        <span class="map-filter-label">Orden</span>
-        <button class="map-filter-chip ${!mapFilterOrder?'active':''}" data-ford="">Todos</button>` +
-        ordersPresent.map(o=>`<button class="map-filter-chip ${mapFilterOrder===o?'active':''}" data-ford="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join('') +
-      `</div>`;
-    }
-
-    // Fila 3: Especie — si hay ≥1 especie
-    if(speciesFiltered.length >= 1){
-      html += `<div class="map-filter-row">
-        <span class="map-filter-label">Especie</span>
-        <button class="map-filter-chip ${!mapFilterSpecies?'active':''}" data-fsp="">Todas</button>` +
-        speciesFiltered.map(id=>{ const sp=SPECIES.find(x=>x.id===id);
-          return `<button class="map-filter-chip ${mapFilterSpecies===id?'active':''}" data-fsp="${id}">${sp?escapeHtml(sp.name):id}</button>`;
-        }).join('') +
-      `</div>`;
-    }
-
-    filterBar.innerHTML = html;
-
-    // Eventos: Tipo
-    filterBar.querySelectorAll('[data-fcat]').forEach(btn=>{
-      btn.onclick=()=>{ mapFilterCat=btn.dataset.fcat||null; mapFilterOrder=null; mapFilterSpecies=null; renderFilterChips(); renderMapPins(allPins); };
-    });
-    // Eventos: Orden
-    filterBar.querySelectorAll('[data-ford]').forEach(btn=>{
-      btn.onclick=()=>{ mapFilterOrder=btn.dataset.ford||null; mapFilterSpecies=null; renderFilterChips(); renderMapPins(allPins); };
-    });
-    // Eventos: Especie
-    filterBar.querySelectorAll('[data-fsp]').forEach(btn=>{
-      btn.onclick=()=>{ mapFilterSpecies=btn.dataset.fsp||null; renderFilterChips(); renderMapPins(allPins); };
-    });
+    renderMapPins(allPins);
   }
-  renderFilterChips();
+
+  const toggle = document.getElementById('mapSyncToggle');
+  if(toggle){
+    toggle.onclick = ()=>{ mapSyncActive = !mapSyncActive; updateSyncUI(); };
+  }
+  updateSyncUI();
 
   const countEl = document.getElementById('globalMapCount');
   const emptyEl = document.getElementById('globalMapEmpty');
@@ -3502,11 +3483,17 @@ function openGlobalMap(){
 
 function renderMapPins(allPins){
   const pins = allPins.filter(p=>{
-    const sp=SPECIES.find(x=>x.id===p.speciesId);
+    const sp = SPECIES.find(x=>x.id===p.speciesId);
     if(!sp) return false;
-    if(mapFilterCat     && sp.cat   !==mapFilterCat)     return false;
-    if(mapFilterOrder   && sp.order !==mapFilterOrder)   return false;
-    if(mapFilterSpecies && p.speciesId!==mapFilterSpecies) return false;
+    if(!mapSyncActive) return true;
+    // Aplica los filtros del explorador principal
+    if(currentCat !== 'todos' && sp.cat !== currentCat) return false;
+    if(selectedOrders.size > 0 && !selectedOrders.has(sp.order)) return false;
+    if(showFavOnly && !state.favorites[sp.id]) return false;
+    if(searchTerm){
+      const q = searchTerm.toLowerCase();
+      if(!sp.name.toLowerCase().includes(q) && !sp.sci.toLowerCase().includes(q) && !sp.order.toLowerCase().includes(q)) return false;
+    }
     return true;
   });
   const countEl = document.getElementById('globalMapCount');
@@ -3901,6 +3888,7 @@ function initMobileFAB(){
 
   let isOpen = false;
   let itemEls = [];
+  window._closeFabMenu = ()=>{ if(isOpen) closeFab(); };
 
   function buildItems(){
     // Limpia items previos
