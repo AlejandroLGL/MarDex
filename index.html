@@ -907,8 +907,8 @@
   .avatar-crop-title{ font-size:15px; font-weight:800; color:var(--ink); margin-bottom:4px; }
   .avatar-crop-hint{ font-size:12px; color:var(--muted); margin-bottom:16px; }
   .avatar-crop-stage{
-    width:240px; height:240px; margin:0 auto 16px; border-radius:50%; overflow:hidden;
-    position:relative; background:var(--bg); cursor:grab; touch-action:none;
+    width:240px; height:240px; margin:0 auto 20px; border-radius:50%; overflow:hidden;
+    position:relative; background:#000; cursor:grab; touch-action:none;
     box-shadow:0 0 0 4px rgba(0,128,200,0.12);
   }
   .avatar-crop-stage:active{ cursor:grabbing; }
@@ -916,7 +916,6 @@
     position:absolute; top:0; left:0; max-width:none; transform-origin:0 0;
     user-select:none; -webkit-user-drag:none; pointer-events:none;
   }
-  .avatar-crop-zoom{ width:100%; margin-bottom:18px; accent-color:var(--blue); }
   .avatar-crop-actions{ display:flex; gap:10px; }
   .avatar-crop-actions .btn{ flex:1; }
 
@@ -1385,11 +1384,10 @@
 <div class="avatar-crop-overlay" id="avatarCropOverlay">
   <div class="avatar-crop-box">
     <div class="avatar-crop-title">Ajusta tu foto</div>
-    <div class="avatar-crop-hint">Arrastra para mover, usa el control para acercar</div>
+    <div class="avatar-crop-hint">Arrastra para mover, pellizca para hacer zoom</div>
     <div class="avatar-crop-stage" id="avatarCropStage">
       <img id="avatarCropImg" alt="" draggable="false">
     </div>
-    <input type="range" class="avatar-crop-zoom" id="avatarCropZoom" min="1" max="3" step="0.001" value="1">
     <div class="avatar-crop-actions">
       <button type="button" class="btn secondary" id="avatarCropCancel">Cancelar</button>
       <button type="button" class="btn" id="avatarCropConfirm">Guardar</button>
@@ -2677,9 +2675,11 @@ document.getElementById('profilePageOverlay').addEventListener('click', e => {
 
 // ── Recortador circular de avatar ──────────────────────────────────────────
 const _cropStageSize = 240;
-let _cropImgNatW = 0, _cropImgNatH = 0, _cropScale = 1, _cropMinScale = 1;
+let _cropImgNatW = 0, _cropImgNatH = 0, _cropScale = 1, _cropMinScale = 1, _cropMaxScale = 1;
 let _cropOffX = 0, _cropOffY = 0, _cropResolve = null;
-let _cropDragging = false, _cropDragStartX = 0, _cropDragStartY = 0, _cropStartOffX = 0, _cropStartOffY = 0;
+const _cropPointers = new Map(); // pointerId -> {x,y} en coords locales del stage
+let _cropDragStartX = 0, _cropDragStartY = 0, _cropStartOffX = 0, _cropStartOffY = 0;
+let _cropPinchStartDist = 0, _cropPinchStartScale = 1, _cropPinchMidX = 0, _cropPinchMidY = 0;
 
 function _cropApplyTransform(){
   const img = document.getElementById('avatarCropImg');
@@ -2694,22 +2694,29 @@ function _cropClampOffsets(){
   _cropOffY = Math.min(0, Math.max(_cropStageSize - h, _cropOffY));
 }
 
+// Cambia el zoom manteniendo fijo el punto (px,py) del stage bajo el dedo/cursor
+function _cropZoomAt(px, py, newScale){
+  newScale = Math.min(_cropMaxScale, Math.max(_cropMinScale, newScale));
+  const imgX = (px - _cropOffX) / _cropScale, imgY = (py - _cropOffY) / _cropScale;
+  _cropScale = newScale;
+  _cropOffX = px - imgX * _cropScale;
+  _cropOffY = py - imgY * _cropScale;
+  _cropClampOffsets();
+  _cropApplyTransform();
+}
+
 function openAvatarCropper(file){
   return new Promise(resolve=>{
     _cropResolve = resolve;
     const overlay = document.getElementById('avatarCropOverlay');
     const img = document.getElementById('avatarCropImg');
-    const zoom = document.getElementById('avatarCropZoom');
     const url = URL.createObjectURL(file);
     img.onload = ()=>{
       _cropImgNatW = img.naturalWidth;
       _cropImgNatH = img.naturalHeight;
       _cropMinScale = _cropStageSize / Math.min(_cropImgNatW, _cropImgNatH);
+      _cropMaxScale = _cropMinScale * 4;
       _cropScale = _cropMinScale;
-      zoom.min = _cropMinScale;
-      zoom.max = _cropMinScale * 3;
-      zoom.step = (_cropMinScale * 3 - _cropMinScale) / 200 || 0.001;
-      zoom.value = _cropScale;
       _cropOffX = (_cropStageSize - _cropImgNatW * _cropScale) / 2;
       _cropOffY = (_cropStageSize - _cropImgNatH * _cropScale) / 2;
       _cropApplyTransform();
@@ -2721,37 +2728,71 @@ function openAvatarCropper(file){
 
 function _cropClose(result){
   document.getElementById('avatarCropOverlay').classList.remove('open');
+  _cropPointers.clear();
   const img = document.getElementById('avatarCropImg');
   if(img.src) URL.revokeObjectURL(img.src);
   if(_cropResolve){ _cropResolve(result); _cropResolve = null; }
 }
 
-document.getElementById('avatarCropStage').addEventListener('pointerdown', e=>{
-  _cropDragging = true;
-  e.currentTarget.setPointerCapture(e.pointerId);
-  _cropDragStartX = e.clientX; _cropDragStartY = e.clientY;
-  _cropStartOffX = _cropOffX; _cropStartOffY = _cropOffY;
+function _cropDist(p1, p2){ return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
+function _cropLocalPoint(e, stage){
+  const r = stage.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+const _cropStageEl = document.getElementById('avatarCropStage');
+
+_cropStageEl.addEventListener('pointerdown', e=>{
+  try{ _cropStageEl.setPointerCapture(e.pointerId); }catch(err){}
+  _cropPointers.set(e.pointerId, _cropLocalPoint(e, _cropStageEl));
+  if(_cropPointers.size === 1){
+    const p = [..._cropPointers.values()][0];
+    _cropDragStartX = p.x; _cropDragStartY = p.y;
+    _cropStartOffX = _cropOffX; _cropStartOffY = _cropOffY;
+  } else if(_cropPointers.size === 2){
+    const [p1, p2] = [..._cropPointers.values()];
+    _cropPinchStartDist = _cropDist(p1, p2) || 1;
+    _cropPinchStartScale = _cropScale;
+    _cropPinchMidX = (p1.x + p2.x) / 2;
+    _cropPinchMidY = (p1.y + p2.y) / 2;
+  }
 });
-document.getElementById('avatarCropStage').addEventListener('pointermove', e=>{
-  if(!_cropDragging) return;
-  _cropOffX = _cropStartOffX + (e.clientX - _cropDragStartX);
-  _cropOffY = _cropStartOffY + (e.clientY - _cropDragStartY);
-  _cropClampOffsets();
-  _cropApplyTransform();
+_cropStageEl.addEventListener('pointermove', e=>{
+  if(!_cropPointers.has(e.pointerId)) return;
+  _cropPointers.set(e.pointerId, _cropLocalPoint(e, _cropStageEl));
+  if(_cropPointers.size === 1){
+    const p = [..._cropPointers.values()][0];
+    _cropOffX = _cropStartOffX + (p.x - _cropDragStartX);
+    _cropOffY = _cropStartOffY + (p.y - _cropDragStartY);
+    _cropClampOffsets();
+    _cropApplyTransform();
+  } else if(_cropPointers.size === 2){
+    const [p1, p2] = [..._cropPointers.values()];
+    const ratio = _cropDist(p1, p2) / _cropPinchStartDist;
+    _cropZoomAt(_cropPinchMidX, _cropPinchMidY, _cropPinchStartScale * ratio);
+  }
 });
+function _cropEndPointer(e){
+  if(!_cropPointers.has(e.pointerId)) return;
+  _cropPointers.delete(e.pointerId);
+  if(_cropPointers.size === 1){
+    // retoma el arrastre con el dedo que queda, sin salto brusco
+    const p = [..._cropPointers.values()][0];
+    _cropDragStartX = p.x; _cropDragStartY = p.y;
+    _cropStartOffX = _cropOffX; _cropStartOffY = _cropOffY;
+  }
+}
 ['pointerup','pointerleave','pointercancel'].forEach(evt=>{
-  document.getElementById('avatarCropStage').addEventListener(evt, ()=>{ _cropDragging = false; });
+  _cropStageEl.addEventListener(evt, _cropEndPointer);
 });
-document.getElementById('avatarCropZoom').addEventListener('input', e=>{
-  const newScale = parseFloat(e.target.value);
-  const c = _cropStageSize / 2;
-  const imgCx = (c - _cropOffX) / _cropScale, imgCy = (c - _cropOffY) / _cropScale;
-  _cropScale = newScale;
-  _cropOffX = c - imgCx * _cropScale;
-  _cropOffY = c - imgCy * _cropScale;
-  _cropClampOffsets();
-  _cropApplyTransform();
-});
+// Zoom con rueda/trackpad en escritorio, equivalente al pellizco en móvil
+_cropStageEl.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const p = _cropLocalPoint(e, _cropStageEl);
+  const factor = Math.pow(1.0015, -e.deltaY);
+  _cropZoomAt(p.x, p.y, _cropScale * factor);
+}, {passive:false});
+
 document.getElementById('avatarCropCancel').onclick = ()=> _cropClose(null);
 document.getElementById('avatarCropConfirm').onclick = ()=>{
   const outSize = 512;
