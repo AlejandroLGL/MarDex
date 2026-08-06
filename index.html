@@ -1781,7 +1781,7 @@ async function persistState(){
 }
 
 function renderProfileBadge(){
-  document.getElementById('profileAvatar').textContent = currentProfile ? currentProfile[0] : '?';
+  document.getElementById('profileAvatar').innerHTML = avatarInner(currentAccountData || {name:currentProfile});
   document.getElementById('profileNameLabel').textContent = currentProfile || '';
 }
 
@@ -2750,7 +2750,7 @@ async function renderProfilePage(){
   const avatarInput = document.getElementById('ppAvatarInput');
   const avatarImg = document.getElementById('ppAvatarImg');
   const avatarInitials = document.getElementById('ppAvatarInitials');
-  const savedPhoto = await safeGet('mardex-avatar:' + currentProfile, false);
+  const savedPhoto = currentAccountData?.avatar_url || await safeGet('mardex-avatar:' + currentProfile, false);
   if(savedPhoto){
     avatarImg.src = savedPhoto;
     avatarImg.classList.add('loaded');
@@ -2760,15 +2760,33 @@ async function renderProfilePage(){
   avatarInput.addEventListener('change', async ()=>{
     const file = avatarInput.files[0];
     if(!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e)=>{
-      const dataUrl = e.target.result;
-      await safeSet('mardex-avatar:' + currentProfile, dataUrl, false);
-      avatarImg.src = dataUrl;
-      avatarImg.classList.add('loaded');
-      avatarInitials.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    if(!file.type.startsWith('image/')){ showToast('Elige un archivo de imagen.', true); return; }
+    if(file.size > 5*1024*1024){ showToast('La imagen no puede superar los 5 MB.', true); return; }
+
+    // Vista previa inmediata mientras se sube
+    const previewUrl = URL.createObjectURL(file);
+    avatarImg.src = previewUrl;
+    avatarImg.classList.add('loaded');
+    avatarInitials.style.display = 'none';
+
+    try{
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+      const path = `${currentAccountData.id}/avatar.${ext}`;
+      const {error:upErr} = await _sb.storage.from('avatars').upload(path, file, {upsert:true, cacheControl:'3600'});
+      if(upErr) throw upErr;
+      const {data:pub} = _sb.storage.from('avatars').getPublicUrl(path);
+      const publicUrl = pub.publicUrl + '?t=' + Date.now();
+      const {error:dbErr} = await _sb.from('profiles').update({avatar_url: publicUrl}).eq('id', currentAccountData.id);
+      if(dbErr) throw dbErr;
+      currentAccountData.avatar_url = publicUrl;
+      avatarImg.src = publicUrl;
+      await safeSet('mardex-avatar:' + currentProfile, publicUrl, false);
+      renderProfileBadge();
+      showToast('Foto de perfil actualizada.');
+    }catch(err){
+      console.error('[avatar]', err);
+      showToast('No se pudo subir la foto: ' + (err.message||'error desconocido'), true);
+    }
   });
 
   initActivityCalendar();
@@ -3546,6 +3564,13 @@ function escapeHtml(str){
   return d.innerHTML;
 }
 
+function avatarInner(person){
+  const url = person && person.avatar_url;
+  if(url) return `<img src="${escapeHtml(url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+  const letter = ((person && (person.name || person.username)) || '?')[0].toUpperCase();
+  return escapeHtml(letter);
+}
+
 document.getElementById('overlay').addEventListener('click', (e)=>{
   if(e.target.id === 'overlay') closeModal();
 });
@@ -3853,7 +3878,7 @@ async function loadFriendsData(){
   if(pendingList.length>0){
     pendingEl.innerHTML = `<div class="fr-section-title">Solicitudes recibidas <span class="fr-pending-badge">${pendingList.length}</span></div>` +
       pendingList.map(r=>`<div class="fr-user-row">
-        <div class="fr-avatar">${(r.name||r.username||'?')[0].toUpperCase()}</div>
+        <div class="fr-avatar">${avatarInner(r)}</div>
         <div class="fr-user-info">
           <div class="fr-user-name">${escapeHtml(r.name||r.username)}</div>
           <div class="fr-user-username">@${escapeHtml(r.username||'')}</div>
@@ -3879,7 +3904,7 @@ async function loadFriendsData(){
     listEl.innerHTML += `<div class="fr-empty">Aún no tienes amigos en MarDex. ¡Búscalos por arriba!</div>`;
   } else {
     listEl.innerHTML += friendsList.map(f=>`<div class="fr-user-row" data-friend-id="${f.id}" style="cursor:pointer">
-      <div class="fr-avatar">${(f.name||f.username||'?')[0].toUpperCase()}</div>
+      <div class="fr-avatar">${avatarInner(f)}</div>
       <div class="fr-user-info">
         <div class="fr-user-name">${escapeHtml(f.name||f.username)}</div>
         <div class="fr-user-username">@${escapeHtml(f.username||'')}</div>
@@ -3919,7 +3944,7 @@ async function doFriendSearch(query){
     else if(rel.status==='pending'&&rel.isSender) btn = `<button class="fr-btn fr-btn-cancel" data-cancel="${rel.id}">Cancelar</button>`;
     else if(rel.status==='pending'&&!rel.isSender) btn = `<button class="fr-btn fr-btn-accept" data-accept="${u.id}">Aceptar</button>`;
     return `<div class="fr-user-row">
-      <div class="fr-avatar">${(u.name||u.username||'?')[0].toUpperCase()}</div>
+      <div class="fr-avatar">${avatarInner(u)}</div>
       <div class="fr-user-info">
         <div class="fr-user-name">${escapeHtml(u.name||u.username)}</div>
         <div class="fr-user-username">@${escapeHtml(u.username||'')}</div>
@@ -3964,7 +3989,7 @@ async function openFriendProfile(friendId){
     <div class="fr-title">Perfil de ${escapeHtml(profile.name||profile.username)}</div>
     <button class="fr-close" id="frpCloseBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
-  <div class="frp-avatar">${(profile.name||profile.username||'?')[0].toUpperCase()}</div>
+  <div class="frp-avatar">${avatarInner(profile)}</div>
   <div class="frp-name">${escapeHtml(profile.name||profile.username)}</div>
   <div class="frp-username">@${escapeHtml(profile.username||'')}</div>
   <div class="frp-stats">
@@ -4819,7 +4844,7 @@ async function _alDoSignup(){
 async function _alEnterAccount(user){
   const {data:profile}=await _sb.from('profiles').select('*').eq('id',user.id).single();
   currentProfile=profile?.name||user.email;
-  currentAccountData={id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email,is_admin:!!profile?.is_admin};
+  currentAccountData={id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email,is_admin:!!profile?.is_admin,avatar_url:profile?.avatar_url||''};
   if(profile?.is_admin) document.body.classList.add('is-admin');
   else document.body.classList.remove('is-admin');
   renderProfileBadge();
