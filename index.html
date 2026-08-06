@@ -1218,6 +1218,26 @@
   }
   .al-field input:focus{border-color:rgba(76,206,245,0.45);background:rgba(76,206,245,0.05);}
   .al-field input::placeholder{color:rgba(255,255,255,0.22);}
+  .al-pw-wrap{position:relative;}
+  .al-pw-wrap input{padding-right:42px;}
+  .al-eye-btn{
+    position:absolute;top:0;right:0;height:100%;width:40px;
+    display:flex;align-items:center;justify-content:center;
+    background:none;border:none;padding:0;margin:0;cursor:pointer;
+    color:rgba(255,255,255,0.4);
+  }
+  .al-eye-btn:hover{color:#4CCEF5;}
+  .al-eye-btn svg{width:18px;height:18px;}
+  .al-eye-icon{
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%) scaleY(1);
+    opacity:1;
+    transition:opacity 0.22s ease, transform 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+  .al-eye-btn .al-eye-open{opacity:0;transform:translate(-50%,-50%) scaleY(0.1);}
+  .al-eye-btn .al-eye-closed{opacity:1;transform:translate(-50%,-50%) scaleY(1);}
+  .al-eye-btn.show .al-eye-open{opacity:1;transform:translate(-50%,-50%) scaleY(1);}
+  .al-eye-btn.show .al-eye-closed{opacity:0;transform:translate(-50%,-50%) scaleY(0.1);}
   .al-submit{
     width:100%;padding:13px;margin-top:8px;
     background:var(--blue);color:#fff;border:none;border-radius:11px;
@@ -4610,6 +4630,39 @@ function closeAuthLanding(){
   if(_alResolve){_alResolve();_alResolve=null;}
 }
 
+function _alPwField(label,id,placeholder){
+  return `<div class="al-field"><label>${label}</label>
+        <div class="al-pw-wrap">
+          <input type="password" id="${id}" placeholder="${placeholder}" autocomplete="off">
+          <button type="button" class="al-eye-btn" data-target="${id}" aria-label="Mostrar contraseña" aria-pressed="false">
+            <svg class="al-eye-icon al-eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg class="al-eye-icon al-eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 5.06-5.94M9.9 4.24A10.6 10.6 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.5 3.5"/>
+              <path d="M14.12 14.12A3 3 0 1 1 9.88 9.88"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+      </div>`;
+}
+
+function _alBindPwToggles(wrap){
+  wrap.querySelectorAll('.al-eye-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      const input=document.getElementById(btn.dataset.target);
+      if(!input) return;
+      const show=input.type==='password';
+      input.type=show?'text':'password';
+      btn.classList.toggle('show',show);
+      btn.setAttribute('aria-pressed',String(show));
+      btn.setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');
+    };
+  });
+}
+
 function _renderAlForm(mode){
   const wrap=document.getElementById('alFormWrap');
   if(mode==='login'){
@@ -4617,13 +4670,12 @@ function _renderAlForm(mode){
       <div class="al-field"><label>Usuario o correo</label>
         <input type="text" id="alEmail" placeholder="@usuario o tucorreo@mail.com" autocomplete="off">
       </div>
-      <div class="al-field"><label>Contrase&ntilde;a</label>
-        <input type="password" id="alPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
-      </div>
+      ${_alPwField('Contrase&ntilde;a','alPassword','&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;')}
       <button class="al-submit" id="alSubmitBtn">Entrar</button>
       <div class="al-error" id="alError"></div>
       <div class="al-forgot"><a id="alForgotLink">He olvidado mi contraseña</a></div>
       <div class="al-switch">&iquest;No tienes cuenta? <a id="alSwitchLink">Crear cuenta</a></div>`;
+    _alBindPwToggles(wrap);
     document.getElementById('alSubmitBtn').onclick=_alDoLogin;
     document.getElementById('alPassword').onkeydown=e=>{if(e.key==='Enter')_alDoLogin();};
     document.getElementById('alSwitchLink').onclick=()=>{
@@ -4654,14 +4706,11 @@ function _renderAlForm(mode){
   } else if(mode==='reset'){
     wrap.innerHTML=`
       <div class="al-hint">Elige una contrase&ntilde;a nueva para tu cuenta.</div>
-      <div class="al-field"><label>Nueva contrase&ntilde;a</label>
-        <input type="password" id="alResetPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
-      </div>
-      <div class="al-field"><label>Confirmar contrase&ntilde;a</label>
-        <input type="password" id="alResetPassword2" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
-      </div>
+      ${_alPwField('Nueva contrase&ntilde;a','alResetPassword','&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;')}
+      ${_alPwField('Confirmar contrase&ntilde;a','alResetPassword2','&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;')}
       <button class="al-submit" id="alSubmitBtn">Guardar contrase&ntilde;a</button>
       <div class="al-error" id="alError"></div>`;
+    _alBindPwToggles(wrap);
     document.getElementById('alSubmitBtn').onclick=_alDoResetPassword;
     document.getElementById('alResetPassword2').onkeydown=e=>{if(e.key==='Enter')_alDoResetPassword();};
   } else {
@@ -4675,15 +4724,12 @@ function _renderAlForm(mode){
       <div class="al-field"><label>Correo</label>
         <input type="email" id="alEmail" placeholder="tucorreo@mail.com" autocomplete="off">
       </div>
-      <div class="al-field"><label>Contrase&ntilde;a</label>
-        <input type="password" id="alPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
-      </div>
-      <div class="al-field"><label>Confirmar contrase&ntilde;a</label>
-        <input type="password" id="alPassword2" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
-      </div>
+      ${_alPwField('Contrase&ntilde;a','alPassword','&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;')}
+      ${_alPwField('Confirmar contrase&ntilde;a','alPassword2','&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;')}
       <button class="al-submit" id="alSubmitBtn">Crear cuenta</button>
       <div class="al-error" id="alError"></div>
       <div class="al-switch">&iquest;Ya tienes cuenta? <a id="alSwitchLink">Iniciar sesi&oacute;n</a></div>`;
+    _alBindPwToggles(wrap);
     document.getElementById('alSubmitBtn').onclick=_alDoSignup;
     document.getElementById('alSwitchLink').onclick=()=>{
       document.getElementById('alTabs').querySelectorAll('.al-tab').forEach((b,i)=>b.classList.toggle('active',i===0));
