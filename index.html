@@ -1237,6 +1237,19 @@
   .al-switch{text-align:center;margin-top:15px;font-size:12.5px;color:rgba(255,255,255,0.35);}
   .al-switch a{color:#4CCEF5;cursor:pointer;font-weight:600;}
   .al-switch a:hover{text-decoration:underline;}
+  .al-forgot{text-align:center;margin-top:12px;}
+  .al-forgot a{color:rgba(255,255,255,0.45);font-size:12px;font-weight:600;cursor:pointer;}
+  .al-forgot a:hover{color:#4CCEF5;text-decoration:underline;}
+  .al-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.45);font-size:12.5px;font-weight:700;background:none;border:none;cursor:pointer;padding:0;margin-bottom:16px;font-family:var(--sans);}
+  .al-back:hover{color:#4CCEF5;}
+  .al-hint{font-size:12.5px;color:rgba(255,255,255,0.4);margin-bottom:16px;line-height:1.5;}
+  .al-success{
+    margin-top:10px;padding:10px 13px;
+    background:rgba(76,206,245,0.13);border:1.5px solid rgba(76,206,245,0.3);
+    border-radius:9px;color:#4CCEF5;font-size:12.5px;font-weight:600;
+    display:none;
+  }
+  .al-success.show{display:block;}
 </style>
 </head>
 <body>
@@ -4246,7 +4259,18 @@ async function init(){
   }catch(e){}
   loadUIPrefs();
   initGlassSurface();
+  const isRecovery = location.hash.includes('type=recovery') || new URLSearchParams(location.search).get('type')==='recovery';
   const {data:{session}}=await _sb.auth.getSession();
+  if(session && isRecovery){
+    history.replaceState(null,'',location.pathname);
+    initBottomNav();
+    initMobileFAB();
+    initTreePan();
+    await openAuthLanding();
+    document.getElementById('alTabs').style.display='none';
+    _renderAlForm('reset');
+    return;
+  }
   if(session){
     await _alEnterAccount(session.user);
     initBottomNav();
@@ -4598,6 +4622,7 @@ function _renderAlForm(mode){
       </div>
       <button class="al-submit" id="alSubmitBtn">Entrar</button>
       <div class="al-error" id="alError"></div>
+      <div class="al-forgot"><a id="alForgotLink">He olvidado mi contraseña</a></div>
       <div class="al-switch">&iquest;No tienes cuenta? <a id="alSwitchLink">Crear cuenta</a></div>`;
     document.getElementById('alSubmitBtn').onclick=_alDoLogin;
     document.getElementById('alPassword').onkeydown=e=>{if(e.key==='Enter')_alDoLogin();};
@@ -4605,6 +4630,40 @@ function _renderAlForm(mode){
       document.getElementById('alTabs').querySelectorAll('.al-tab').forEach((b,i)=>b.classList.toggle('active',i===1));
       _renderAlForm('signup');
     };
+    document.getElementById('alForgotLink').onclick=()=>{
+      document.getElementById('alTabs').style.display='none';
+      _renderAlForm('forgot');
+    };
+  } else if(mode==='forgot'){
+    wrap.innerHTML=`
+      <button type="button" class="al-back" id="alBackBtn">&larr; Volver</button>
+      <div class="al-hint">Escribe el correo de tu cuenta y te enviaremos un enlace para elegir una contrase&ntilde;a nueva.</div>
+      <div class="al-field"><label>Correo</label>
+        <input type="email" id="alForgotEmail" placeholder="tucorreo@mail.com" autocomplete="off">
+      </div>
+      <button class="al-submit" id="alSubmitBtn">Enviar enlace</button>
+      <div class="al-error" id="alError"></div>
+      <div class="al-success" id="alSuccess"></div>`;
+    document.getElementById('alSubmitBtn').onclick=_alDoForgot;
+    document.getElementById('alForgotEmail').onkeydown=e=>{if(e.key==='Enter')_alDoForgot();};
+    document.getElementById('alBackBtn').onclick=()=>{
+      document.getElementById('alTabs').style.display='';
+      document.getElementById('alTabs').querySelectorAll('.al-tab').forEach((b,i)=>b.classList.toggle('active',i===0));
+      _renderAlForm('login');
+    };
+  } else if(mode==='reset'){
+    wrap.innerHTML=`
+      <div class="al-hint">Elige una contrase&ntilde;a nueva para tu cuenta.</div>
+      <div class="al-field"><label>Nueva contrase&ntilde;a</label>
+        <input type="password" id="alResetPassword" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
+      </div>
+      <div class="al-field"><label>Confirmar contrase&ntilde;a</label>
+        <input type="password" id="alResetPassword2" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off">
+      </div>
+      <button class="al-submit" id="alSubmitBtn">Guardar contrase&ntilde;a</button>
+      <div class="al-error" id="alError"></div>`;
+    document.getElementById('alSubmitBtn').onclick=_alDoResetPassword;
+    document.getElementById('alResetPassword2').onkeydown=e=>{if(e.key==='Enter')_alDoResetPassword();};
   } else {
     wrap.innerHTML=`
       <div class="al-field"><label>Nombre</label>
@@ -4653,6 +4712,36 @@ async function _alDoLogin(){
   const {data,error}=await _sb.auth.signInWithPassword({email:input,password});
   btn.disabled=false;
   if(error){_alShowError('Correo o contraseña incorrectos.');return;}
+  closeAuthLanding();
+  await _alEnterAccount(data.user);
+}
+
+async function _alDoForgot(){
+  const email=(document.getElementById('alForgotEmail').value||'').trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){_alShowError('Escribe un correo válido.');return;}
+  const btn=document.getElementById('alSubmitBtn');
+  btn.disabled=true;
+  const {error}=await _sb.auth.resetPasswordForEmail(email,{
+    redirectTo:window.location.origin+window.location.pathname
+  });
+  btn.disabled=false;
+  if(error){_alShowError(error.message);return;}
+  const success=document.getElementById('alSuccess');
+  success.textContent='Si existe una cuenta con ese correo, te hemos enviado un enlace para restablecer tu contraseña.';
+  success.classList.add('show');
+  document.getElementById('alForgotEmail').value='';
+}
+
+async function _alDoResetPassword(){
+  const p1=document.getElementById('alResetPassword').value;
+  const p2=document.getElementById('alResetPassword2').value;
+  if(p1.length<6){_alShowError('La contraseña debe tener al menos 6 caracteres.');return;}
+  if(p1!==p2){_alShowError('Las contraseñas no coinciden.');return;}
+  const btn=document.getElementById('alSubmitBtn');
+  btn.disabled=true;
+  const {data,error}=await _sb.auth.updateUser({password:p1});
+  btn.disabled=false;
+  if(error){_alShowError(error.message);return;}
   closeAuthLanding();
   await _alEnterAccount(data.user);
 }
