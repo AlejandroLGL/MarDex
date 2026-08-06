@@ -1,7 +1,7 @@
 // MarDex Service Worker
 // Estrategia: cache-first para el shell de la app, network-first para imágenes
 
-const CACHE_NAME = 'mardex-v1';
+const CACHE_NAME = 'mardex-v2';
 const CACHE_DURATION_IMAGES = 30 * 24 * 60 * 60 * 1000; // 30 días
 
 // Recursos del shell de la app que se cachean en la instalación
@@ -50,6 +50,13 @@ self.addEventListener('fetch', event => {
   // Imágenes de fondo → cache-first
   if (url.pathname.includes('/background_images/')) {
     event.respondWith(cacheFirstStrategy(event.request));
+    return;
+  }
+
+  // Catálogo de especies → network-first (cambia con cada especie añadida;
+  // preferimos datos frescos y solo caemos al caché si no hay conexión)
+  if (url.pathname.endsWith('/species.json')) {
+    event.respondWith(networkFirstStrategy(event.request));
     return;
   }
 
