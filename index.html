@@ -946,7 +946,7 @@
     display:flex; align-items:center; justify-content:center;
     transition:transform .3s cubic-bezier(.34,1.56,.64,1), background .2s;
   }
-  .mob-fab-btn.open{ transform:rotate(135deg); background:rgba(47,128,237,0.9); }
+  .mob-fab-btn.open{ background:rgba(47,128,237,0.9); }
   /* Barras hamburger → X */
   .mob-fab-bars{ display:flex; flex-direction:column; gap:5px; align-items:center; pointer-events:none; }
   .mob-fab-bar{
@@ -955,6 +955,9 @@
     transition:transform 0.42s cubic-bezier(0.77,0,0.175,1),
                opacity   0.32s cubic-bezier(0.77,0,0.175,1);
   }
+  .mob-fab-btn.open .mob-fab-bar:nth-child(1){ transform:translateY(7.5px) rotate(45deg); }
+  .mob-fab-btn.open .mob-fab-bar:nth-child(2){ opacity:0; transform:scaleX(0); }
+  .mob-fab-btn.open .mob-fab-bar:nth-child(3){ transform:translateY(-7.5px) rotate(-45deg); }
   /* Estado modal abierto: hamburger se convierte en X */
   .mob-fab-wrap.modal-mode{ z-index:200; }
   .mob-fab-btn.modal-mode{ transform:none !important; background:rgba(200,60,60,0.88) !important; }
@@ -4248,10 +4251,13 @@ function initMobileFAB(){
 
     const items = FAB_ITEMS.filter(it=>!it.adminOnly || document.body.classList.contains('is-admin'));
     const N = items.length;
-    const R = 115; // radio del arco en px
-    // Ángulos: semicírculo de 165° a 15°
-    const startDeg = 165, endDeg = 15;
-    const step = (startDeg - endDeg) / (N - 1);
+    // Dos radios alternados (cerca/lejos) para que los items no se amontonen
+    // al repartir muchos en un semicírculo — "pétalos" en zigzag en vez de un
+    // único arco apretado.
+    const R_NEAR = 98, R_FAR = 168;
+    // Ángulos: semicírculo de 160° a 20°
+    const startDeg = 160, endDeg = 20;
+    const step = N > 1 ? (startDeg - endDeg) / (N - 1) : 0;
 
     // Posición del centro del FAB en viewport
     const fabRect = fabBtn.getBoundingClientRect();
@@ -4261,6 +4267,7 @@ function initMobileFAB(){
     items.forEach((it, i)=>{
       const deg = startDeg - step * i;
       const rad = deg * Math.PI / 180;
+      const R = (i % 2 === 0) ? R_FAR : R_NEAR;
       const tx1 = Math.round(R * Math.cos(rad));
       const ty1 = Math.round(-R * Math.sin(rad));
 
