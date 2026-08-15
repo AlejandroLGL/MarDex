@@ -4,8 +4,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<!-- Desregistrar service workers obsoletos (evita el error de Safari "SW has redirections") -->
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(sw=>sw.unregister()));}</script>
+<!-- Desregistrar service workers obsoletos (evita el error de Safari "SW has redirections").
+     Solo una vez por navegador: hacerlo en cada carga competía con el registro normal del
+     Service Worker más abajo, creando una carrera que a veces servía contenido cacheado
+     de una sesión anterior. -->
+<script>
+if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')){
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(sw=>sw.unregister());
+    localStorage.setItem('mardex-sw-cleaned-v2','1');
+  });
+}
+</script>
 <title>MarDex Buceo</title>
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
