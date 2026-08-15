@@ -1454,6 +1454,15 @@
       <span class="map-sync-knob"></span>
     </button>
   </div>
+  <div class="map-sync-bar" id="mapFriendsBar">
+    <div class="map-sync-info">
+      <span class="map-sync-title">Avistamientos de amigos</span>
+      <span class="map-sync-desc" id="mapFriendsDesc">Solo se ven los tuyos</span>
+    </div>
+    <button class="map-sync-toggle" id="mapFriendsToggle" aria-label="Mostrar avistamientos de amigos">
+      <span class="map-sync-knob"></span>
+    </button>
+  </div>
   <div id="globalMapEl"></div>
   <div class="global-map-empty" id="globalMapEmpty" style="display:none">Ningún avistamiento tiene ubicación registrada aún</div>
 </div>
@@ -3029,6 +3038,8 @@ async function renderProfilePage(){
     currentProfile = null;
     currentAccountData = null;
     state = { sightings:{}, favorites:{} };
+    friendsMapPins = null;
+    showFriendsOnMap = false;
     renderProfileBadge();
     renderGrid();
     closeProfilePage();
@@ -3775,16 +3786,50 @@ document.getElementById('search').addEventListener('input', (e)=>{
 // FEATURE 2 – Mapa global de avistamientos
 // ======================================================
 let mapSyncActive = false; // toggle "aplicar filtros del explorador"
+let showFriendsOnMap = false; // toggle "ver avistamientos de amigos"
+let friendsMapPins = null; // cache: null = aún no cargado
+let friendsMapLoading = false;
+
+function ownMapPins(){
+  const pins = [];
+  Object.entries(state.sightings).forEach(([speciesId, sgs])=>{
+    (sgs||[]).forEach(sg=>{ if(sg.coords) pins.push({speciesId, sg}); });
+  });
+  return pins;
+}
+
+async function fetchFriendsMapPins(){
+  const {data:friends, error:friendsErr} = await _sb.rpc('get_friends');
+  if(friendsErr || !friends || !friends.length) return [];
+  const results = await Promise.all(friends.map(f=>
+    _sb.rpc('get_friend_data',{friend_id:f.id}).then(({data})=>({f,data})).catch(()=>({f,data:null}))
+  ));
+  const pins = [];
+  results.forEach(({f,data})=>{
+    const sightings = data?.sightings || [];
+    sightings.forEach(sg=>{
+      if(sg.lat==null || sg.lng==null) return;
+      pins.push({
+        speciesId: sg.species_id,
+        sg: { coords:{lat:sg.lat,lng:sg.lng}, date:sg.date, location:sg.location_text },
+        ownerName: f.name || f.username
+      });
+    });
+  });
+  return pins;
+}
 
 function openGlobalMap(){
   const overlay = document.getElementById('globalMapOverlay');
   overlay.classList.add('open');
 
-  // Recoger todos los pins geolocalizados
-  const allPins = [];
-  Object.entries(state.sightings).forEach(([speciesId, sgs])=>{
-    (sgs||[]).forEach(sg=>{ if(sg.coords) allPins.push({speciesId, sg}); });
-  });
+  const countEl = document.getElementById('globalMapCount');
+  const emptyEl = document.getElementById('globalMapEmpty');
+  const mapEl   = document.getElementById('globalMapEl');
+
+  function currentPins(){
+    return showFriendsOnMap ? ownMapPins().concat(friendsMapPins||[]) : ownMapPins();
+  }
 
   // Toggle sync — refleja el estado actual y actualiza el descriptor
   function updateSyncUI(){
@@ -3802,36 +3847,61 @@ function openGlobalMap(){
     } else {
       desc.textContent = 'Ver todos los avistamientos';
     }
-    renderMapPins(allPins);
+    refresh();
+  }
+
+  function updateFriendsUI(){
+    const toggle = document.getElementById('mapFriendsToggle');
+    const desc   = document.getElementById('mapFriendsDesc');
+    if(!toggle) return;
+    toggle.classList.toggle('on', showFriendsOnMap);
+    if(friendsMapLoading) desc.textContent = 'Cargando…';
+    else if(!showFriendsOnMap) desc.textContent = 'Solo se ven los tuyos';
+    else desc.textContent = (friendsMapPins?.length||0) + ' avistamiento' + ((friendsMapPins?.length||0)!==1?'s':'') + ' de amigos';
+  }
+
+  function refresh(){
+    const pins = currentPins();
+    if(pins.length===0){
+      mapEl.style.display='none'; emptyEl.style.display='flex';
+      countEl.textContent='';
+      return;
+    }
+    emptyEl.style.display='none'; mapEl.style.display='';
+    setTimeout(()=>{
+      if(!globalMapInstance){
+        globalMapInstance = L.map('globalMapEl').setView([20,0],2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+          maxZoom:18, attribution:'&copy; OpenStreetMap'
+        }).addTo(globalMapInstance);
+      }
+      globalMapInstance.invalidateSize();
+      renderMapPins(pins);
+    },60);
   }
 
   const toggle = document.getElementById('mapSyncToggle');
   if(toggle){
     toggle.onclick = ()=>{ mapSyncActive = !mapSyncActive; updateSyncUI(); };
   }
-  updateSyncUI();
-
-  const countEl = document.getElementById('globalMapCount');
-  const emptyEl = document.getElementById('globalMapEmpty');
-  const mapEl   = document.getElementById('globalMapEl');
-
-  if(allPins.length===0){
-    mapEl.style.display='none'; emptyEl.style.display='flex';
-    countEl.textContent='';
-    return;
+  const friendsToggle = document.getElementById('mapFriendsToggle');
+  if(friendsToggle){
+    friendsToggle.onclick = async ()=>{
+      showFriendsOnMap = !showFriendsOnMap;
+      if(showFriendsOnMap && friendsMapPins===null){
+        friendsMapLoading = true;
+        updateFriendsUI();
+        try{ friendsMapPins = await fetchFriendsMapPins(); }
+        catch(err){ console.error('[friends map]', err); friendsMapPins = []; showToast('No se pudieron cargar los avistamientos de amigos.', true); }
+        friendsMapLoading = false;
+      }
+      updateFriendsUI();
+      refresh();
+    };
   }
-  emptyEl.style.display='none'; mapEl.style.display='';
-
-  setTimeout(()=>{
-    if(!globalMapInstance){
-      globalMapInstance = L.map('globalMapEl').setView([20,0],2);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        maxZoom:18, attribution:'&copy; OpenStreetMap'
-      }).addTo(globalMapInstance);
-    }
-    globalMapInstance.invalidateSize();
-    renderMapPins(allPins);
-  },60);
+  updateSyncUI();
+  updateFriendsUI();
+  refresh();
 }
 
 function renderMapPins(allPins){
@@ -3854,19 +3924,26 @@ function renderMapPins(allPins){
   countEl.textContent = pins.length+' avistamiento'+(pins.length!==1?'s':'')+' localizado'+(pins.length!==1?'s':'');
 
   globalMapInstance.eachLayer(layer=>{ if(layer instanceof L.Marker) globalMapInstance.removeLayer(layer); });
+  const friendIcon = L.divIcon({
+    className: '',
+    html: '<div style="width:14px;height:14px;border-radius:50%;background:#f5a524;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
+    iconSize:[14,14], iconAnchor:[7,7]
+  });
   const bounds=[];
-  pins.forEach(({speciesId,sg})=>{
+  pins.forEach(({speciesId,sg,ownerName})=>{
     const sp=SPECIES.find(x=>x.id===speciesId);
     const {lat,lng}=sg.coords;
     bounds.push([lat,lng]);
     const thumbHtml=sg.photo?`<img src="${sg.photo}" style="width:80px;height:55px;object-fit:cover;border-radius:6px;margin-top:6px;display:block;">`:'';
+    const ownerHtml=ownerName?`<div style="font-size:11px;color:#D48806;font-weight:600;margin-top:2px;">Avistado por ${escapeHtml(ownerName)}</div>`:'';
     const popup=`<div style="font-family:Inter,sans-serif;min-width:150px;">
       <strong style="font-size:13px;">${sp?escapeHtml(sp.name):escapeHtml(speciesId)}</strong>
       <div style="font-size:11px;color:#5A7E94;margin-top:2px;">${escapeHtml(sg.date||'')}</div>
       ${sg.location?`<div style="font-size:11px;color:#5A7E94;">${escapeHtml(sg.location)}</div>`:''}
+      ${ownerHtml}
       ${thumbHtml}
     </div>`;
-    L.marker([lat,lng]).addTo(globalMapInstance).bindPopup(popup);
+    L.marker([lat,lng], ownerName?{icon:friendIcon}:undefined).addTo(globalMapInstance).bindPopup(popup);
   });
   if(bounds.length===1) globalMapInstance.setView(bounds[0],10);
   else if(bounds.length>1) globalMapInstance.fitBounds(bounds,{padding:[30,30]});
