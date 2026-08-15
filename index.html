@@ -461,7 +461,7 @@
   /* Ficha de avistamiento de amigo (solo lectura) — tarjeta centrada, igual que la ficha de especie */
   .friend-sighting-overlay{
     display:none; position:fixed; inset:0; background:rgba(8,18,34,0.65); z-index:80;
-    align-items:flex-start; justify-content:center; padding:26px 14px; overflow-y:auto;
+    align-items:center; justify-content:center; padding:26px 14px; overflow-y:auto;
   }
   .friend-sighting-overlay.open{ display:flex; }
   .friend-sighting-sheet{
@@ -491,8 +491,19 @@
   .fs-sighting-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
   .fs-sighting-title{ font-size:15px; font-weight:800; color:var(--ink); }
   .fs-sighting-date{ font-family:var(--mono); font-size:11px; color:var(--faint); white-space:nowrap; }
-  .fs-sighting-meta{ font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:6px; }
-  .fs-sighting-comment{ font-size:13px; margin-top:14px; line-height:1.5; color:var(--ink); }
+  .fs-detail-row{ margin-top:14px; }
+  .fs-env-badge{
+    display:inline-flex; align-items:center; padding:5px 12px; border-radius:20px;
+    font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+  }
+  .fs-env-badge.wild{ background:rgba(45,212,164,0.14); color:#1a8f6d; }
+  .fs-env-badge.aquarium{ background:rgba(245,165,36,0.16); color:#B87507; }
+  .fs-location-row{
+    display:flex; align-items:flex-start; gap:7px; margin-top:11px;
+    font-size:12.5px; color:var(--muted); line-height:1.4;
+  }
+  .fs-location-row .icon{ margin-top:1px; color:var(--faint); }
+  .fs-sighting-comment{ font-size:13px; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); line-height:1.5; color:var(--ink); }
   /* Popup de lista de avistamientos en un mismo punto del mapa */
   .map-pin-list-item{ transition:background .12s; }
   .map-pin-list-item:hover{ background:rgba(47,128,237,0.06); }
@@ -3999,7 +4010,13 @@ function openFriendSightingDetail(p){
         <div class="fs-sighting-title">${escapeHtml(sg.title || 'Avistamiento')}</div>
         <div class="fs-sighting-date">${escapeHtml(sg.date||'')}</div>
       </div>
-      <div class="fs-sighting-meta">${sg.environment==='acuario' ? 'ACUARIO' : 'EN LIBERTAD'} · ${escapeHtml(sg.location||'sin ubicación')}</div>
+      <div class="fs-detail-row">
+        <span class="fs-env-badge ${sg.environment==='acuario'?'aquarium':'wild'}">${sg.environment==='acuario' ? 'Acuario' : 'En libertad'}</span>
+      </div>
+      <div class="fs-location-row">
+        ${icon('mapPin','icon-sm')}
+        <span>${escapeHtml(sg.location||'Sin ubicación registrada')}</span>
+      </div>
       ${sg.comment ? `<div class="fs-sighting-comment">${escapeHtml(sg.comment)}</div>` : ''}
     </div>
   `;
