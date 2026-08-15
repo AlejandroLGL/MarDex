@@ -1124,6 +1124,10 @@
     box-shadow: 0 2px 8px rgba(5,46,74,0.06);
   }
   .global-map-header h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); flex: 1; }
+  @media(max-width:600px){
+    /* Deja hueco para la cámara/notch: la cabecera no debe quedar tapada */
+    .global-map-header{ padding-top: calc(14px + max(env(safe-area-inset-top, 0px), 14px)); }
+  }
   .global-map-count {
     font-size: 11px; color: var(--muted); font-weight: 600;
     background: var(--bg); padding: 3px 10px; border-radius: 20px;
