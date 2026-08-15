@@ -4197,9 +4197,11 @@ function redrawMapMarkers(){
 
     const rows = group.map((p,i)=>{
       const sp = SPECIES.find(x=>x.id===p.speciesId);
-      const thumb = p.sg.photo
-        ? `<img src="${p.sg.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;">`
-        : `<div style="width:36px;height:36px;border-radius:8px;background:#eef4f8;flex-shrink:0;"></div>`;
+      const speciesImgPath = sp ? `especies/imagenes/${sp.cat==='tiburon'?'tiburones':'rayas'}/${sp.order.toLowerCase()}/${sp.id}.jpg` : '';
+      const thumbSrc = p.sg.photo || speciesImgPath;
+      const thumb = `<div style="width:36px;height:36px;border-radius:8px;background:#eef4f8;flex-shrink:0;overflow:hidden;">
+        ${thumbSrc ? `<img src="${thumbSrc}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none';">` : ''}
+      </div>`;
       const who = p.ownerName ? escapeHtml(p.ownerName) : 'Tú';
       return `<div class="map-pin-list-item" data-idx="${i}" style="display:flex;gap:8px;align-items:center;padding:7px 4px;cursor:pointer;border-bottom:1px solid #eef2f5;">
         ${thumb}
