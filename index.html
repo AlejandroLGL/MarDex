@@ -4772,8 +4772,25 @@ function initGlassSurface(){
     el.style.backdropFilter=bf;
     el.style.webkitBackdropFilter=bf;
 
-    setTimeout(updateMap,0); /* primer render tras layout */
-    const ro=new ResizeObserver(()=>setTimeout(updateMap,0));
+    /* Regenerar el filtro fuerza un recálculo de backdrop-filter en Chromium,
+       lo que a veces dispara el propio ResizeObserver de nuevo (bucle de
+       repintado → parpadeo). Con debounce + solo actualizar si el tamaño
+       realmente cambió, el bucle se corta en cuanto el tamaño se estabiliza. */
+    let lastW=-1, lastH=-1, debounceTimer=null;
+    const maybeUpdateMap=()=>{
+      const rect=el.getBoundingClientRect();
+      const w=Math.round(rect.width), h=Math.round(rect.height);
+      if(w===lastW && h===lastH) return;
+      lastW=w; lastH=h;
+      updateMap();
+    };
+    const scheduleUpdate=()=>{
+      clearTimeout(debounceTimer);
+      debounceTimer=setTimeout(maybeUpdateMap,120);
+    };
+
+    setTimeout(maybeUpdateMap,0); /* primer render tras layout */
+    const ro=new ResizeObserver(scheduleUpdate);
     ro.observe(el);
   }
 
