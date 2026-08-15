@@ -1106,11 +1106,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
     opacity:0; pointer-events:none;
     transition:opacity .2s, transform .3s cubic-bezier(.34,1.56,.64,1);
-    transform:translate(var(--tx0), var(--ty0)) scale(0.4);
+    transform:scale(0.4);
   }
   .mob-fab-item.open{
     opacity:1; pointer-events:all;
-    transform:translate(var(--tx1), var(--ty1)) scale(1);
   }
   .mob-fab-item svg{ width:20px; height:20px; display:block; flex-shrink:0; }
   .mob-fab-item-label{ font-size:8px; font-weight:700; color:rgba(255,255,255,0.6); letter-spacing:.03em; }
@@ -4702,13 +4701,19 @@ function initMobileFAB(){
 
       const el = document.createElement('button');
       el.className = 'mob-fab-item';
-      el.style.cssText = `left:${cx - 26}px; top:${cy - 26}px; --tx0:0px; --ty0:0px; --tx1:${tx1}px; --ty1:${ty1}px; transition-delay:${i*35}ms`;
+      el.style.left = (cx - 26) + 'px';
+      el.style.top  = (cy - 26) + 'px';
+      el.style.transitionDelay = (i * 35) + 'ms';
+      el.style.transform = 'scale(0.4)';
+      // Posición final guardada aparte: se aplica como transform explícito
+      // (no vía custom properties) porque WebKit/Safari no siempre interpola
+      // bien transiciones cuyo valor depende de variables CSS.
+      el.dataset.tx = tx1;
+      el.dataset.ty = ty1;
       el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${it.svg}</svg><span class="mob-fab-item-label">${it.label}</span>`;
       el.addEventListener('click', ()=>{ closeFab(); handleFabNav(it.bnav); });
       document.body.appendChild(el);
       itemEls.push(el);
-      // trigger reflow para que la transición arranque
-      void el.offsetWidth;
     });
   }
 
@@ -4717,7 +4722,19 @@ function initMobileFAB(){
     fabBtn.classList.add('open');
     backdrop.classList.add('open');
     buildItems();
-    requestAnimationFrame(()=>{ itemEls.forEach(el=>el.classList.add('open')); });
+    // Doble requestAnimationFrame: garantiza que el navegador pinte el
+    // estado "cerrado" (escala 0.4, posición 0) antes de aplicar el estado
+    // "abierto", para que la transición arranque de forma fiable en todos
+    // los motores (el truco de un solo rAF, o forzar reflow con offsetWidth,
+    // no siempre dispara la animación en Safari/WebKit).
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        itemEls.forEach(el=>{
+          el.classList.add('open');
+          el.style.transform = `translate(${el.dataset.tx}px, ${el.dataset.ty}px) scale(1)`;
+        });
+      });
+    });
   }
 
   function closeFab(){
@@ -4727,6 +4744,7 @@ function initMobileFAB(){
     itemEls.forEach((el,i)=>{
       el.style.transitionDelay = (itemEls.length - 1 - i) * 25 + 'ms';
       el.classList.remove('open');
+      el.style.transform = 'scale(0.4)';
     });
     setTimeout(()=>{ itemEls.forEach(el=>el.remove()); itemEls=[]; }, 350);
   }
@@ -5488,6 +5506,21 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js')
       .then(reg => console.log('[SW] Registrado:', reg.scope))
       .catch(err => console.warn('[SW] Error al registrar:', err));
+  });
+
+  // Auto-recarga cuando un nuevo Service Worker toma el control.
+  // Sin esto, una pestaña que ya tenía la app cargada (p.ej. restaurada
+  // desde el bfcache de Safari o una sesión de fondo) puede seguir
+  // ejecutando el JS antiguo indefinidamente aunque haya una versión
+  // nueva ya cacheada: nada la fuerza a recargar. skipWaiting()+clients.claim()
+  // en sw.js hacen que el nuevo SW tome el control enseguida; este listener
+  // se asegura de que la página se recargue una vez para servir el HTML/JS
+  // actualizado en cuanto eso ocurre.
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
   });
 }
 </script>
