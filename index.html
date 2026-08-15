@@ -458,31 +458,41 @@
     border:1px solid var(--line); font-size:12.5px; font-family:var(--sans); color:var(--ink);
   }
   .map-filter-search:focus{ outline:none; border-color:var(--blue); }
-  /* Ficha de avistamiento de amigo (solo lectura) */
+  /* Ficha de avistamiento de amigo (solo lectura) — tarjeta centrada, igual que la ficha de especie */
   .friend-sighting-overlay{
-    display:none; position:fixed; inset:0; background:rgba(8,18,34,0.75); z-index:80;
-    align-items:flex-end; justify-content:center;
+    display:none; position:fixed; inset:0; background:rgba(8,18,34,0.65); z-index:80;
+    align-items:flex-start; justify-content:center; padding:26px 14px; overflow-y:auto;
   }
   .friend-sighting-overlay.open{ display:flex; }
-  @media(min-width:600px){
-    .friend-sighting-overlay{ align-items:center; }
-    .friend-sighting-sheet{ max-height:88vh; border-radius:var(--r-lg) !important; }
-  }
   .friend-sighting-sheet{
-    background:var(--card); width:100%; max-width:480px; border-radius:var(--r-lg) var(--r-lg) 0 0;
-    max-height:92vh; overflow-y:auto; padding:24px 20px 32px;
-    box-shadow:0 -8px 48px rgba(5,46,74,0.22); position:relative;
+    background:var(--card); width:100%; max-width:420px; border-radius:var(--r-lg);
+    overflow:hidden; position:relative; box-shadow:0 24px 64px rgba(5,46,74,0.35);
   }
+  .fs-close{ position:absolute; top:14px; right:14px; z-index:10; }
+  .fs-photo{
+    position:relative; aspect-ratio:3/2; overflow:hidden;
+    background:linear-gradient(135deg, #0080C8 0%, #00BDD6 50%, #2DD4A4 100%);
+  }
+  .fs-photo img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:2; }
+  .fs-photo::after{
+    content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
+    background:linear-gradient(to bottom, rgba(8,18,34,0) 30%, rgba(8,18,34,0.85) 100%);
+  }
+  .fs-photo-footer{ position:absolute; bottom:0; left:0; right:0; z-index:4; padding:12px 20px 16px; }
+  .fs-photo-name{ font-family:var(--serif); font-size:26px; font-weight:400; color:#fff; line-height:1.05; margin:6px 0 0; }
   .fs-owner-badge{
-    display:inline-flex; align-items:center; gap:6px; padding:5px 12px 5px 5px;
-    background:rgba(245,165,36,0.12); color:#B87507; border-radius:20px;
-    font-size:12px; font-weight:700; margin-bottom:14px;
+    display:inline-flex; align-items:center; gap:6px; padding:4px 10px 4px 4px;
+    background:rgba(255,255,255,0.18); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    color:#fff; border-radius:20px; font-size:11px; font-weight:700;
   }
-  .fs-owner-avatar{ width:20px; height:20px; border-radius:50%; overflow:hidden; background:#f5a524; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; }
-  .fs-species-row{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-  .fs-species-thumb{ width:44px; height:44px; border-radius:12px; object-fit:cover; flex-shrink:0; background:var(--bg); }
-  .fs-species-name{ font-size:16px; font-weight:800; color:var(--ink); }
-  .fs-species-sci{ font-size:11.5px; color:var(--muted); font-style:italic; }
+  .fs-owner-avatar{ width:18px; height:18px; border-radius:50%; overflow:hidden; background:#f5a524; color:#fff; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; flex-shrink:0; }
+  .fs-body{ padding:18px 20px 22px; }
+  .fs-sci{ font-size:12px; color:var(--muted); font-style:italic; margin-bottom:14px; }
+  .fs-sighting-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .fs-sighting-title{ font-size:15px; font-weight:800; color:var(--ink); }
+  .fs-sighting-date{ font-family:var(--mono); font-size:11px; color:var(--faint); white-space:nowrap; }
+  .fs-sighting-meta{ font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:6px; }
+  .fs-sighting-comment{ font-size:13px; margin-top:14px; line-height:1.5; color:var(--ink); }
   /* Popup de lista de avistamientos en un mismo punto del mapa */
   .map-pin-list-item{ transition:background .12s; }
   .map-pin-list-item:hover{ background:rgba(47,128,237,0.06); }
@@ -3921,15 +3931,38 @@ function mapPinIcon(color){
 const OWN_PIN_ICON = mapPinIcon('#2F80ED');
 const FRIEND_PIN_ICON = mapPinIcon('#f5a524');
 
-// Agrupa pines por punto (redondeando a ~100m) para no apilar marcadores idénticos
-function groupPinsByLocation(pins){
-  const groups = new Map();
-  pins.forEach(p=>{
-    const key = p.sg.coords.lat.toFixed(3)+','+p.sg.coords.lng.toFixed(3);
-    if(!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(p);
+function clusterBadgeIcon(count, color){
+  const size = count<10 ? 34 : (count<100 ? 40 : 46);
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;color:#fff;font-family:Inter,sans-serif;font-weight:800;font-size:${count<100?13:11.5}px;">${count}</div>`,
+    iconSize:[size,size], iconAnchor:[size/2,size/2], popupAnchor:[0,-size/2]
   });
-  return [...groups.values()];
+}
+
+// Agrupa pines por proximidad en píxeles al zoom actual del mapa (estilo Google Photos):
+// a menos zoom, los puntos quedan más cerca entre sí en pantalla y se agrupan más;
+// al hacer zoom, la misma distancia geográfica ocupa más píxeles y se van separando.
+const CLUSTER_PIXEL_RADIUS = 45;
+function clusterPinsForZoom(pins, map){
+  const items = pins.map(p=>({p, pt: map.latLngToContainerPoint([p.sg.coords.lat, p.sg.coords.lng])}));
+  const used = new Array(items.length).fill(false);
+  const clusters = [];
+  for(let i=0;i<items.length;i++){
+    if(used[i]) continue;
+    used[i] = true;
+    const group = [items[i].p];
+    for(let j=i+1;j<items.length;j++){
+      if(used[j]) continue;
+      const dx = items[i].pt.x-items[j].pt.x, dy = items[i].pt.y-items[j].pt.y;
+      if(Math.sqrt(dx*dx+dy*dy) <= CLUSTER_PIXEL_RADIUS){
+        group.push(items[j].p);
+        used[j] = true;
+      }
+    }
+    clusters.push(group);
+  }
+  return clusters;
 }
 
 function openPinDetail(p){
@@ -3945,34 +3978,29 @@ function openFriendSightingDetail(p){
   const sheet = document.getElementById('friendSightingSheet');
   const initials = (p.ownerName||'?')[0].toUpperCase();
   const speciesImg = sp ? `especies/imagenes/${sp.cat==='tiburon'?'tiburones':'rayas'}/${sp.order.toLowerCase()}/${sp.id}.jpg` : '';
+  const bannerImg = sg.photo || speciesImg;
   sheet.innerHTML = `
-    <button type="button" class="pp-close" id="fsCloseBtn" title="Cerrar">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+    <button type="button" class="icon-btn fs-close" id="fsCloseBtn" title="Cerrar">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg>
     </button>
-    <div class="fs-owner-badge">
-      <span class="fs-owner-avatar">${escapeHtml(initials)}</span>
-      Avistamiento de ${escapeHtml(p.ownerName)}
-    </div>
-    <div class="fs-species-row">
-      ${sp ? `<img class="fs-species-thumb" src="${speciesImg}" onerror="this.remove()">` : ''}
-      <div>
-        <div class="fs-species-name">${sp?escapeHtml(sp.name):escapeHtml(p.speciesId)}</div>
-        ${sp?`<div class="fs-species-sci">${escapeHtml(sp.sci)}</div>`:''}
-      </div>
-    </div>
-    <div class="sighting expanded" style="cursor:default;">
-      <div class="sighting-top">
-        <div class="sighting-top-left">
-          ${sg.photo ? `<img class="sighting-thumb" src="${sg.photo}">` : ''}
-          <div class="sighting-title">${escapeHtml(sg.title || 'Avistamiento')}</div>
+    <div class="fs-photo">
+      ${bannerImg ? `<img src="${bannerImg}" onerror="this.remove()">` : ''}
+      <div class="fs-photo-footer">
+        <div class="fs-owner-badge">
+          <span class="fs-owner-avatar">${escapeHtml(initials)}</span>
+          Avistado por ${escapeHtml(p.ownerName)}
         </div>
-        <div class="sighting-date">${escapeHtml(sg.date||'')}</div>
+        <h2 class="fs-photo-name">${sp?escapeHtml(sp.name):escapeHtml(p.speciesId)}</h2>
       </div>
-      <div class="sighting-meta">${sg.environment==='acuario' ? 'ACUARIO' : 'EN LIBERTAD'} · ${escapeHtml(sg.location||'sin ubicación')}</div>
-      <div class="sighting-extra">
-        ${sg.comment ? `<div class="sighting-comment">${escapeHtml(sg.comment)}</div>` : ''}
-        ${sg.photo ? `<img class="sighting-photo" src="${sg.photo}">` : ''}
+    </div>
+    <div class="fs-body">
+      ${sp?`<div class="fs-sci">${escapeHtml(sp.sci)}</div>`:''}
+      <div class="fs-sighting-row">
+        <div class="fs-sighting-title">${escapeHtml(sg.title || 'Avistamiento')}</div>
+        <div class="fs-sighting-date">${escapeHtml(sg.date||'')}</div>
       </div>
+      <div class="fs-sighting-meta">${sg.environment==='acuario' ? 'ACUARIO' : 'EN LIBERTAD'} · ${escapeHtml(sg.location||'sin ubicación')}</div>
+      ${sg.comment ? `<div class="fs-sighting-comment">${escapeHtml(sg.comment)}</div>` : ''}
     </div>
   `;
   document.getElementById('fsCloseBtn').onclick = closeFriendSightingDetail;
@@ -4127,6 +4155,49 @@ function openGlobalMap(){
   refresh();
 }
 
+let currentMapPins = [];
+
+function redrawMapMarkers(){
+  if(!globalMapInstance) return;
+  globalMapInstance.eachLayer(layer=>{ if(layer instanceof L.Marker) globalMapInstance.removeLayer(layer); });
+  const clusters = clusterPinsForZoom(currentMapPins, globalMapInstance);
+  clusters.forEach(group=>{
+    const lat = group.reduce((s,p)=>s+p.sg.coords.lat,0)/group.length;
+    const lng = group.reduce((s,p)=>s+p.sg.coords.lng,0)/group.length;
+    const allOwn = group.every(p=>!p.ownerName);
+    const color = allOwn ? '#2F80ED' : '#f5a524';
+    const icon = group.length>1 ? clusterBadgeIcon(group.length, color) : (allOwn ? OWN_PIN_ICON : FRIEND_PIN_ICON);
+
+    const rows = group.map((p,i)=>{
+      const sp = SPECIES.find(x=>x.id===p.speciesId);
+      const thumb = p.sg.photo
+        ? `<img src="${p.sg.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;">`
+        : `<div style="width:36px;height:36px;border-radius:8px;background:#eef4f8;flex-shrink:0;"></div>`;
+      const who = p.ownerName ? escapeHtml(p.ownerName) : 'Tú';
+      return `<div class="map-pin-list-item" data-idx="${i}" style="display:flex;gap:8px;align-items:center;padding:7px 4px;cursor:pointer;border-bottom:1px solid #eef2f5;">
+        ${thumb}
+        <div style="min-width:0;">
+          <div style="font-size:12.5px;font-weight:700;color:#0B2540;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sp?escapeHtml(sp.name):escapeHtml(p.speciesId)}</div>
+          <div style="font-size:10.5px;color:#5A7E94;">${who} · ${escapeHtml(p.sg.date||'')}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const popupHtml = `<div class="map-pin-popup" style="font-family:Inter,sans-serif;min-width:190px;max-width:230px;">
+      <div style="font-size:11px;font-weight:700;color:#5A7E94;margin-bottom:4px;">${group.length} avistamiento${group.length!==1?'s':''} ${group.length!==1?'agrupados':'en este punto'}</div>
+      <div style="max-height:220px;overflow-y:auto;">${rows}</div>
+    </div>`;
+
+    const marker = L.marker([lat,lng], {icon}).addTo(globalMapInstance).bindPopup(popupHtml);
+    marker.on('popupopen', ()=>{
+      const popupEl = marker.getPopup().getElement();
+      if(!popupEl) return;
+      popupEl.querySelectorAll('.map-pin-list-item').forEach(el=>{
+        el.onclick = ()=> openPinDetail(group[Number(el.dataset.idx)]);
+      });
+    });
+  });
+}
+
 function renderMapPins(allPins){
   if(!globalMapInstance) return;
   const pins = allPins.filter(p=>{
@@ -4146,43 +4217,14 @@ function renderMapPins(allPins){
   const countEl = document.getElementById('globalMapCount');
   countEl.textContent = pins.length+' avistamiento'+(pins.length!==1?'s':'')+' localizado'+(pins.length!==1?'s':'');
 
-  globalMapInstance.eachLayer(layer=>{ if(layer instanceof L.Marker) globalMapInstance.removeLayer(layer); });
-  const bounds=[];
-  const groups = groupPinsByLocation(pins);
-  groups.forEach(group=>{
-    const {lat,lng} = group[0].sg.coords;
-    bounds.push([lat,lng]);
-    const allOwn = group.every(p=>!p.ownerName);
-    const icon = allOwn ? OWN_PIN_ICON : FRIEND_PIN_ICON;
+  currentMapPins = pins;
+  if(!globalMapInstance._clusterBound){
+    globalMapInstance._clusterBound = true;
+    globalMapInstance.on('zoomend moveend', redrawMapMarkers);
+  }
+  redrawMapMarkers();
 
-    const rows = group.map((p,i)=>{
-      const sp = SPECIES.find(x=>x.id===p.speciesId);
-      const thumb = p.sg.photo
-        ? `<img src="${p.sg.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;">`
-        : `<div style="width:36px;height:36px;border-radius:8px;background:#eef4f8;flex-shrink:0;"></div>`;
-      const who = p.ownerName ? escapeHtml(p.ownerName) : 'Tú';
-      return `<div class="map-pin-list-item" data-idx="${i}" style="display:flex;gap:8px;align-items:center;padding:7px 4px;cursor:pointer;border-bottom:1px solid #eef2f5;">
-        ${thumb}
-        <div style="min-width:0;">
-          <div style="font-size:12.5px;font-weight:700;color:#0B2540;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sp?escapeHtml(sp.name):escapeHtml(p.speciesId)}</div>
-          <div style="font-size:10.5px;color:#5A7E94;">${who} · ${escapeHtml(p.sg.date||'')}</div>
-        </div>
-      </div>`;
-    }).join('');
-    const popupHtml = `<div class="map-pin-popup" style="font-family:Inter,sans-serif;min-width:190px;max-width:230px;">
-      <div style="font-size:11px;font-weight:700;color:#5A7E94;margin-bottom:4px;">${group.length} avistamiento${group.length!==1?'s':''} en este punto</div>
-      <div style="max-height:220px;overflow-y:auto;">${rows}</div>
-    </div>`;
-
-    const marker = L.marker([lat,lng], {icon}).addTo(globalMapInstance).bindPopup(popupHtml);
-    marker.on('popupopen', ()=>{
-      const popupEl = marker.getPopup().getElement();
-      if(!popupEl) return;
-      popupEl.querySelectorAll('.map-pin-list-item').forEach(el=>{
-        el.onclick = ()=> openPinDetail(group[Number(el.dataset.idx)]);
-      });
-    });
-  });
+  const bounds = pins.map(p=>[p.sg.coords.lat, p.sg.coords.lng]);
   if(bounds.length===1) globalMapInstance.setView(bounds[0],10);
   else if(bounds.length>1) globalMapInstance.fitBounds(bounds,{padding:[30,30]});
 }
