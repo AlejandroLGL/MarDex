@@ -421,6 +421,55 @@
     background:#a855f7;
     box-shadow:0 0 14px rgba(168,85,247,0.8), 0 0 4px rgba(168,85,247,0.5);
   }
+  /* Barra de 3 modos: mis avistamientos / amigos / todos */
+  .map-mode-bar{
+    display:flex; gap:3px; margin:10px 18px 0; padding:3px;
+    background:var(--bg); border-radius:12px;
+  }
+  .map-mode-btn{
+    flex:1; padding:8px 4px; border:none; background:none; border-radius:9px;
+    font-size:11.5px; font-weight:700; color:var(--muted); cursor:pointer;
+    font-family:var(--sans); transition:background .15s, color .15s;
+  }
+  .map-mode-btn.active{ background:var(--card); color:var(--blue); box-shadow:0 1px 3px rgba(24,58,104,0.12); }
+  /* Filtros plegables */
+  .map-filters-toggle{
+    display:flex; align-items:center; gap:6px; width:100%;
+    padding:10px 18px; margin-top:6px; border:none; background:none; cursor:pointer;
+    font-family:var(--sans); font-size:12.5px; font-weight:700; color:var(--muted);
+  }
+  .map-filters-chevron{ transition:transform .2s; flex-shrink:0; }
+  .map-filters-toggle.open .map-filters-chevron{ transform:rotate(180deg); }
+  .map-filters-panel{ display:none; }
+  .map-filters-panel.open{ display:block; }
+  /* Ficha de avistamiento de amigo (solo lectura) */
+  .friend-sighting-overlay{
+    display:none; position:fixed; inset:0; background:rgba(8,18,34,0.75); z-index:80;
+    align-items:flex-end; justify-content:center;
+  }
+  .friend-sighting-overlay.open{ display:flex; }
+  @media(min-width:600px){
+    .friend-sighting-overlay{ align-items:center; }
+    .friend-sighting-sheet{ max-height:88vh; border-radius:var(--r-lg) !important; }
+  }
+  .friend-sighting-sheet{
+    background:var(--card); width:100%; max-width:480px; border-radius:var(--r-lg) var(--r-lg) 0 0;
+    max-height:92vh; overflow-y:auto; padding:24px 20px 32px;
+    box-shadow:0 -8px 48px rgba(5,46,74,0.22); position:relative;
+  }
+  .fs-owner-badge{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 12px 5px 5px;
+    background:rgba(245,165,36,0.12); color:#B87507; border-radius:20px;
+    font-size:12px; font-weight:700; margin-bottom:14px;
+  }
+  .fs-owner-avatar{ width:20px; height:20px; border-radius:50%; overflow:hidden; background:#f5a524; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; }
+  .fs-species-row{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .fs-species-thumb{ width:44px; height:44px; border-radius:12px; object-fit:cover; flex-shrink:0; background:var(--bg); }
+  .fs-species-name{ font-size:16px; font-weight:800; color:var(--ink); }
+  .fs-species-sci{ font-size:11.5px; color:var(--muted); font-style:italic; }
+  /* Popup de lista de avistamientos en un mismo punto del mapa */
+  .map-pin-list-item{ transition:background .12s; }
+  .map-pin-list-item:hover{ background:rgba(47,128,237,0.06); }
 
   /* ── Admin panel ─────────────────────────────────────────────────── */
   .admin-overlay{
@@ -1445,26 +1494,34 @@
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg>
     </button>
   </div>
-  <div class="map-sync-bar" id="mapSyncBar">
-    <div class="map-sync-info">
-      <span class="map-sync-title">Filtros del explorador</span>
-      <span class="map-sync-desc" id="mapSyncDesc">Ver todos los avistamientos</span>
-    </div>
-    <button class="map-sync-toggle" id="mapSyncToggle" aria-label="Activar filtros">
-      <span class="map-sync-knob"></span>
-    </button>
+  <div class="map-mode-bar" id="mapModeBar">
+    <button type="button" class="map-mode-btn" data-mode="mine">Mis avistamientos</button>
+    <button type="button" class="map-mode-btn" data-mode="friends">Amigos</button>
+    <button type="button" class="map-mode-btn" data-mode="all">Todos</button>
   </div>
-  <div class="map-sync-bar" id="mapFriendsBar">
-    <div class="map-sync-info">
-      <span class="map-sync-title">Avistamientos de amigos</span>
-      <span class="map-sync-desc" id="mapFriendsDesc">Solo se ven los tuyos</span>
+  <button type="button" class="map-filters-toggle" id="mapFiltersToggle">
+    <svg class="map-filters-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    <span id="mapFiltersToggleLabel">Filtros</span>
+  </button>
+  <div class="map-filters-panel" id="mapFiltersPanel">
+    <div class="map-sync-bar" id="mapSyncBar">
+      <div class="map-sync-info">
+        <span class="map-sync-title">Filtros del explorador</span>
+        <span class="map-sync-desc" id="mapSyncDesc">Ver todos los avistamientos</span>
+      </div>
+      <button class="map-sync-toggle" id="mapSyncToggle" aria-label="Activar filtros">
+        <span class="map-sync-knob"></span>
+      </button>
     </div>
-    <button class="map-sync-toggle" id="mapFriendsToggle" aria-label="Mostrar avistamientos de amigos">
-      <span class="map-sync-knob"></span>
-    </button>
   </div>
   <div id="globalMapEl"></div>
   <div class="global-map-empty" id="globalMapEmpty" style="display:none">Ningún avistamiento tiene ubicación registrada aún</div>
+</div>
+
+<div class="friend-sighting-overlay" id="friendSightingOverlay">
+  <div class="friend-sighting-sheet" id="friendSightingSheet">
+    <!-- populada por openFriendSightingDetail() -->
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3039,7 +3096,7 @@ async function renderProfilePage(){
     currentAccountData = null;
     state = { sightings:{}, favorites:{} };
     friendsMapPins = null;
-    showFriendsOnMap = false;
+    mapViewMode = 'mine';
     renderProfileBadge();
     renderGrid();
     closeProfilePage();
@@ -3786,7 +3843,7 @@ document.getElementById('search').addEventListener('input', (e)=>{
 // FEATURE 2 – Mapa global de avistamientos
 // ======================================================
 let mapSyncActive = false; // toggle "aplicar filtros del explorador"
-let showFriendsOnMap = false; // toggle "ver avistamientos de amigos"
+let mapViewMode = 'mine'; // 'mine' | 'friends' | 'all'
 let friendsMapPins = null; // cache: null = aún no cargado
 let friendsMapLoading = false;
 
@@ -3811,13 +3868,94 @@ async function fetchFriendsMapPins(){
       if(sg.lat==null || sg.lng==null) return;
       pins.push({
         speciesId: sg.species_id,
-        sg: { coords:{lat:sg.lat,lng:sg.lng}, date:sg.date, location:sg.location_text },
+        sg: {
+          id: sg.id, coords:{lat:sg.lat,lng:sg.lng}, date:sg.date, location:sg.location_text,
+          environment:sg.environment, comment:sg.comment, photo:sg.photo, title:sg.title
+        },
         ownerName: f.name || f.username
       });
     });
   });
   return pins;
 }
+
+// Icono de pin — misma forma para propios y de amigos, distinto color
+function mapPinIcon(color){
+  return L.divIcon({
+    className: '',
+    html: `<svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
+      <path d="M13 0C5.8 0 0 5.8 0 13c0 9.5 13 21 13 21s13-11.5 13-21C26 5.8 20.2 0 13 0z" fill="${color}"/>
+      <circle cx="13" cy="12.5" r="5.2" fill="#fff"/>
+    </svg>`,
+    iconSize:[26,34], iconAnchor:[13,34], popupAnchor:[0,-30]
+  });
+}
+const OWN_PIN_ICON = mapPinIcon('#2F80ED');
+const FRIEND_PIN_ICON = mapPinIcon('#f5a524');
+
+// Agrupa pines por punto (redondeando a ~100m) para no apilar marcadores idénticos
+function groupPinsByLocation(pins){
+  const groups = new Map();
+  pins.forEach(p=>{
+    const key = p.sg.coords.lat.toFixed(3)+','+p.sg.coords.lng.toFixed(3);
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+  return [...groups.values()];
+}
+
+function openPinDetail(p){
+  closeGlobalMap();
+  if(p.ownerName) openFriendSightingDetail(p);
+  else openModal(p.speciesId);
+}
+
+function openFriendSightingDetail(p){
+  const sp = SPECIES.find(x=>x.id===p.speciesId);
+  const sg = p.sg;
+  const overlay = document.getElementById('friendSightingOverlay');
+  const sheet = document.getElementById('friendSightingSheet');
+  const initials = (p.ownerName||'?')[0].toUpperCase();
+  const speciesImg = sp ? `especies/imagenes/${sp.cat==='tiburon'?'tiburones':'rayas'}/${sp.order.toLowerCase()}/${sp.id}.jpg` : '';
+  sheet.innerHTML = `
+    <button type="button" class="pp-close" id="fsCloseBtn" title="Cerrar">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+    </button>
+    <div class="fs-owner-badge">
+      <span class="fs-owner-avatar">${escapeHtml(initials)}</span>
+      Avistamiento de ${escapeHtml(p.ownerName)}
+    </div>
+    <div class="fs-species-row">
+      ${sp ? `<img class="fs-species-thumb" src="${speciesImg}" onerror="this.remove()">` : ''}
+      <div>
+        <div class="fs-species-name">${sp?escapeHtml(sp.name):escapeHtml(p.speciesId)}</div>
+        ${sp?`<div class="fs-species-sci">${escapeHtml(sp.sci)}</div>`:''}
+      </div>
+    </div>
+    <div class="sighting expanded" style="cursor:default;">
+      <div class="sighting-top">
+        <div class="sighting-top-left">
+          ${sg.photo ? `<img class="sighting-thumb" src="${sg.photo}">` : ''}
+          <div class="sighting-title">${escapeHtml(sg.title || 'Avistamiento')}</div>
+        </div>
+        <div class="sighting-date">${escapeHtml(sg.date||'')}</div>
+      </div>
+      <div class="sighting-meta">${sg.environment==='acuario' ? 'ACUARIO' : 'EN LIBERTAD'} · ${escapeHtml(sg.location||'sin ubicación')}</div>
+      <div class="sighting-extra">
+        ${sg.comment ? `<div class="sighting-comment">${escapeHtml(sg.comment)}</div>` : ''}
+        ${sg.photo ? `<img class="sighting-photo" src="${sg.photo}">` : ''}
+      </div>
+    </div>
+  `;
+  document.getElementById('fsCloseBtn').onclick = closeFriendSightingDetail;
+  overlay.classList.add('open');
+}
+function closeFriendSightingDetail(){
+  document.getElementById('friendSightingOverlay').classList.remove('open');
+}
+document.getElementById('friendSightingOverlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('friendSightingOverlay')) closeFriendSightingDetail();
+});
 
 function openGlobalMap(){
   const overlay = document.getElementById('globalMapOverlay');
@@ -3828,7 +3966,9 @@ function openGlobalMap(){
   const mapEl   = document.getElementById('globalMapEl');
 
   function currentPins(){
-    return showFriendsOnMap ? ownMapPins().concat(friendsMapPins||[]) : ownMapPins();
+    if(mapViewMode==='mine') return ownMapPins();
+    if(mapViewMode==='friends') return friendsMapPins||[];
+    return ownMapPins().concat(friendsMapPins||[]);
   }
 
   // Toggle sync — refleja el estado actual y actualiza el descriptor
@@ -3850,20 +3990,25 @@ function openGlobalMap(){
     refresh();
   }
 
-  function updateFriendsUI(){
-    const toggle = document.getElementById('mapFriendsToggle');
-    const desc   = document.getElementById('mapFriendsDesc');
-    if(!toggle) return;
-    toggle.classList.toggle('on', showFriendsOnMap);
-    if(friendsMapLoading) desc.textContent = 'Cargando…';
-    else if(!showFriendsOnMap) desc.textContent = 'Solo se ven los tuyos';
-    else desc.textContent = (friendsMapPins?.length||0) + ' avistamiento' + ((friendsMapPins?.length||0)!==1?'s':'') + ' de amigos';
+  function updateModeUI(){
+    document.querySelectorAll('#mapModeBar .map-mode-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.mode===mapViewMode);
+    });
   }
 
   function refresh(){
     const pins = currentPins();
+    if(friendsMapLoading && mapViewMode!=='mine'){
+      mapEl.style.display='none'; emptyEl.style.display='flex';
+      emptyEl.textContent='Cargando avistamientos de amigos…';
+      countEl.textContent='';
+      return;
+    }
     if(pins.length===0){
       mapEl.style.display='none'; emptyEl.style.display='flex';
+      emptyEl.textContent = mapViewMode==='friends'
+        ? 'Ninguno de tus amigos tiene avistamientos con ubicación'
+        : 'Ningún avistamiento tiene ubicación registrada aún';
       countEl.textContent='';
       return;
     }
@@ -3880,28 +4025,39 @@ function openGlobalMap(){
     },60);
   }
 
+  async function ensureFriendsData(){
+    if(friendsMapPins!==null) return;
+    friendsMapLoading = true;
+    refresh();
+    try{ friendsMapPins = await fetchFriendsMapPins(); }
+    catch(err){ console.error('[friends map]', err); friendsMapPins = []; showToast('No se pudieron cargar los avistamientos de amigos.', true); }
+    friendsMapLoading = false;
+  }
+
   const toggle = document.getElementById('mapSyncToggle');
   if(toggle){
     toggle.onclick = ()=>{ mapSyncActive = !mapSyncActive; updateSyncUI(); };
   }
-  const friendsToggle = document.getElementById('mapFriendsToggle');
-  if(friendsToggle){
-    friendsToggle.onclick = async ()=>{
-      showFriendsOnMap = !showFriendsOnMap;
-      if(showFriendsOnMap && friendsMapPins===null){
-        friendsMapLoading = true;
-        updateFriendsUI();
-        try{ friendsMapPins = await fetchFriendsMapPins(); }
-        catch(err){ console.error('[friends map]', err); friendsMapPins = []; showToast('No se pudieron cargar los avistamientos de amigos.', true); }
-        friendsMapLoading = false;
-      }
-      updateFriendsUI();
+  document.querySelectorAll('#mapModeBar .map-mode-btn').forEach(btn=>{
+    btn.onclick = async ()=>{
+      mapViewMode = btn.dataset.mode;
+      updateModeUI();
+      if(mapViewMode!=='mine') await ensureFriendsData();
       refresh();
     };
+  });
+  const filtersToggle = document.getElementById('mapFiltersToggle');
+  const filtersPanel  = document.getElementById('mapFiltersPanel');
+  if(filtersToggle && !filtersToggle._wired){
+    filtersToggle._wired = true;
+    filtersToggle.onclick = ()=>{
+      const open = filtersToggle.classList.toggle('open');
+      filtersPanel.classList.toggle('open', open);
+    };
   }
+
+  updateModeUI();
   updateSyncUI();
-  updateFriendsUI();
-  refresh();
 }
 
 function renderMapPins(allPins){
@@ -3924,26 +4080,41 @@ function renderMapPins(allPins){
   countEl.textContent = pins.length+' avistamiento'+(pins.length!==1?'s':'')+' localizado'+(pins.length!==1?'s':'');
 
   globalMapInstance.eachLayer(layer=>{ if(layer instanceof L.Marker) globalMapInstance.removeLayer(layer); });
-  const friendIcon = L.divIcon({
-    className: '',
-    html: '<div style="width:14px;height:14px;border-radius:50%;background:#f5a524;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
-    iconSize:[14,14], iconAnchor:[7,7]
-  });
   const bounds=[];
-  pins.forEach(({speciesId,sg,ownerName})=>{
-    const sp=SPECIES.find(x=>x.id===speciesId);
-    const {lat,lng}=sg.coords;
+  const groups = groupPinsByLocation(pins);
+  groups.forEach(group=>{
+    const {lat,lng} = group[0].sg.coords;
     bounds.push([lat,lng]);
-    const thumbHtml=sg.photo?`<img src="${sg.photo}" style="width:80px;height:55px;object-fit:cover;border-radius:6px;margin-top:6px;display:block;">`:'';
-    const ownerHtml=ownerName?`<div style="font-size:11px;color:#D48806;font-weight:600;margin-top:2px;">Avistado por ${escapeHtml(ownerName)}</div>`:'';
-    const popup=`<div style="font-family:Inter,sans-serif;min-width:150px;">
-      <strong style="font-size:13px;">${sp?escapeHtml(sp.name):escapeHtml(speciesId)}</strong>
-      <div style="font-size:11px;color:#5A7E94;margin-top:2px;">${escapeHtml(sg.date||'')}</div>
-      ${sg.location?`<div style="font-size:11px;color:#5A7E94;">${escapeHtml(sg.location)}</div>`:''}
-      ${ownerHtml}
-      ${thumbHtml}
+    const allOwn = group.every(p=>!p.ownerName);
+    const icon = allOwn ? OWN_PIN_ICON : FRIEND_PIN_ICON;
+
+    const rows = group.map((p,i)=>{
+      const sp = SPECIES.find(x=>x.id===p.speciesId);
+      const thumb = p.sg.photo
+        ? `<img src="${p.sg.photo}" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;">`
+        : `<div style="width:36px;height:36px;border-radius:8px;background:#eef4f8;flex-shrink:0;"></div>`;
+      const who = p.ownerName ? escapeHtml(p.ownerName) : 'Tú';
+      return `<div class="map-pin-list-item" data-idx="${i}" style="display:flex;gap:8px;align-items:center;padding:7px 4px;cursor:pointer;border-bottom:1px solid #eef2f5;">
+        ${thumb}
+        <div style="min-width:0;">
+          <div style="font-size:12.5px;font-weight:700;color:#0B2540;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sp?escapeHtml(sp.name):escapeHtml(p.speciesId)}</div>
+          <div style="font-size:10.5px;color:#5A7E94;">${who} · ${escapeHtml(p.sg.date||'')}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const popupHtml = `<div class="map-pin-popup" style="font-family:Inter,sans-serif;min-width:190px;max-width:230px;">
+      <div style="font-size:11px;font-weight:700;color:#5A7E94;margin-bottom:4px;">${group.length} avistamiento${group.length!==1?'s':''} en este punto</div>
+      <div style="max-height:220px;overflow-y:auto;">${rows}</div>
     </div>`;
-    L.marker([lat,lng], ownerName?{icon:friendIcon}:undefined).addTo(globalMapInstance).bindPopup(popup);
+
+    const marker = L.marker([lat,lng], {icon}).addTo(globalMapInstance).bindPopup(popupHtml);
+    marker.on('popupopen', ()=>{
+      const popupEl = marker.getPopup().getElement();
+      if(!popupEl) return;
+      popupEl.querySelectorAll('.map-pin-list-item').forEach(el=>{
+        el.onclick = ()=> openPinDetail(group[Number(el.dataset.idx)]);
+      });
+    });
   });
   if(bounds.length===1) globalMapInstance.setView(bounds[0],10);
   else if(bounds.length>1) globalMapInstance.fitBounds(bounds,{padding:[30,30]});
