@@ -3284,7 +3284,7 @@ function renderCatNav(){
   document.getElementById('searchIcon').innerHTML = ICONS.search;
   document.getElementById('catChevIcon').innerHTML = ICONS.chevronDown;
   const nav = document.getElementById('catNav');
-  const defs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces']];
+  const defs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
   nav.innerHTML = defs.map(([key,label])=>
     `<button class="side-btn ${currentCat===key?'active':''}" data-cat="${key}">${label}</button>`
   ).join('');
@@ -3372,7 +3372,7 @@ function renderProgress(){
       <div class="progress-bar"><div class="progress-fill" style="width:${pctR}%"></div></div>
     </div>
     ${totalFish ? `<div class="progress-item fish">
-      <div class="progress-label"><span>Peces</span><span>${unlockedFish} / ${totalFish}</span></div>
+      <div class="progress-label"><span>Peces óseos</span><span>${unlockedFish} / ${totalFish}</span></div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pctF}%"></div></div>
     </div>` : ''}
   `;
@@ -4153,7 +4153,7 @@ function openGlobalMap(){
   // Filtros — misma lista de categoría/orden/entorno/favoritos/búsqueda
   // que la barra lateral del explorador, compartiendo el mismo estado.
   function renderMapFilters(){
-    const catDefs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces']];
+    const catDefs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
     const catNav = document.getElementById('mapCatNav');
     catNav.innerHTML = catDefs.map(([k,l])=>`<button type="button" class="map-filter-pill ${currentCat===k?'active':''}" data-cat="${k}">${l}</button>`).join('');
     catNav.querySelectorAll('[data-cat]').forEach(btn=>{
