@@ -1,7 +1,7 @@
 // MarDex Service Worker
 // Estrategia: cache-first para el shell de la app, network-first para imágenes
 
-const CACHE_NAME = 'mardex-v2';
+const CACHE_NAME = 'mardex-v3';
 const CACHE_DURATION_IMAGES = 30 * 24 * 60 * 60 * 1000; // 30 días
 
 // Recursos del shell de la app que se cachean en la instalación
