@@ -6,6 +6,6 @@ Especies de este orden:
 - sargoreal.jpg  (Diplodus cervinus — Sargo real)
 - dorada.jpg     (Sparus aurata — Dorada)
 - denton.jpg     (Dentex dentex — Denton)
-- boga.jpg       (Boops boops — Boga)
+- boga.jpg       ✓ presente (Boops boops — Boga)
 - mojarra.jpg    (Diplodus vulgaris — Mojarra)
 - oblada.jpg     (Oblada melanura — Oblada)
