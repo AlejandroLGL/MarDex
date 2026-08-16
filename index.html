@@ -5117,8 +5117,14 @@ async function init(){
   loadUIPrefs();
   initGlassSurface();
   const isRecovery = location.hash.includes('type=recovery') || new URLSearchParams(location.search).get('type')==='recovery';
-  const {data:{session}}=await _sb.auth.getSession();
-  if(session && isRecovery){
+  // Si la URL trae el flag de recuperación, mostramos el formulario de
+  // nueva contraseña de inmediato, sin esperar a getSession(): el cliente
+  // de Supabase procesa el token de recuperación de la URL de forma
+  // asíncrona y puede no haber terminado todavía en este punto exacto —
+  // esperar a que confirmase la sesión antes de decidir provocaba que a
+  // veces perdiera la carrera y el usuario acabase viendo el login normal
+  // en vez del formulario de restablecer contraseña.
+  if(isRecovery){
     history.replaceState(null,'',location.pathname);
     initBottomNav();
     initMobileFAB();
@@ -5128,6 +5134,7 @@ async function init(){
     _renderAlForm('reset');
     return;
   }
+  const {data:{session}}=await _sb.auth.getSession();
   if(session){
     await _alEnterAccount(session.user);
     initBottomNav();
