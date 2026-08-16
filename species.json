@@ -1150,5 +1150,21 @@
     "diet": "Peces, crustáceos y cefalópodos",
     "rarity": 2,
     "blurb": "La mayor de las anguilas mediterráneas, de color gris uniforme y sin escamas. Habitual en pecios y grutas, donde puede alcanzar tamaños considerables."
+  },
+  {
+    "id": "oblada",
+    "cat": "pez",
+    "order": "Spariformes",
+    "name": "Oblada",
+    "sci": "Oblada melanura",
+    "region": "Mediterráneo",
+    "code": "PEZ-23",
+    "size": "0.3 m",
+    "habitat": "Fondos rocosos y praderas de posidonia",
+    "depth": "0–100 m",
+    "speed": "Moderada",
+    "diet": "Pequeños invertebrados y algas",
+    "rarity": 1,
+    "blurb": "Fácil de identificar por la mancha negra bordeada de blanco junto a la cola, que imita un ojo para despistar a los depredadores. Forma bancos numerosos y es una de las presencias más habituales en cualquier inmersión mediterránea."
   }
 ]

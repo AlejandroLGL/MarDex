@@ -77,3 +77,4 @@ especies/imagenes/peces/labriformes/fredi.jpg   →  Fredi
 especies/imagenes/peces/mugiliformes/lisa.jpg   →  Lisa
 especies/imagenes/peces/anguilliformes/morena.jpg   →  Morena
 especies/imagenes/peces/anguilliformes/congrio.jpg   →  Congrio
+especies/imagenes/peces/spariformes/oblada.jpg   →  Oblada

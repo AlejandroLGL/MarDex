@@ -8,3 +8,4 @@ Especies de este orden:
 - denton.jpg     (Dentex dentex — Denton)
 - boga.jpg       (Boops boops — Boga)
 - mojarra.jpg    (Diplodus vulgaris — Mojarra)
+- oblada.jpg     (Oblada melanura — Oblada)
