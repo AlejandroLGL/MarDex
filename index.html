@@ -1735,6 +1735,38 @@ const _sb = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjc3RrbW5xb3d3Y3N5d2ZkamptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMjc1OTUsImV4cCI6MjEwMDgwMzU5NX0.7hDOpZgOZFcsSpWqd2GoZBCSJsHhuYk5X_-39r20XCU'
 );
 
+// Detecta el flujo de "olvidé mi contraseña" de forma fiable, escuchando el
+// evento PASSWORD_RECOVERY del propio cliente de Supabase en vez de fiarnos
+// solo de leer el hash de la URL en init(): el cliente procesa el token de
+// recuperación de forma asíncrona, y ese procesado puede terminar antes o
+// después de que nuestro propio código compruebe la URL o la sesión. Este
+// listener es la señal oficial de Supabase y actúa de respaldo — si init()
+// ya mostró el login o incluso la app normal antes de que el evento
+// llegara, esto lo corrige y fuerza el formulario de nueva contraseña.
+let _handledPasswordRecovery = false;
+async function _showPasswordResetForm(){
+  if(_handledPasswordRecovery) return;
+  _handledPasswordRecovery = true;
+  history.replaceState(null,'',location.pathname);
+  document.getElementById('profilePageOverlay')?.classList.remove('open');
+  document.getElementById('profileOverlay')?.classList.remove('open');
+  initBottomNav();
+  initMobileFAB();
+  initTreePan();
+  // Sin await: openAuthLanding() hace su montaje de DOM de forma síncrona,
+  // pero la promesa que devuelve solo se resuelve cuando se completa un
+  // login o registro normal — si la esperásemos aquí, este código nunca
+  // llegaría a reemplazar el formulario de login por el de nueva
+  // contraseña, y el usuario se quedaría viendo el login para siempre
+  // (esto era precisamente el bug: "el primer click lleva al login normal").
+  openAuthLanding();
+  document.getElementById('alTabs').style.display='none';
+  _renderAlForm('reset');
+}
+_sb.auth.onAuthStateChange((event)=>{
+  if(event==='PASSWORD_RECOVERY') _showPasswordResetForm();
+});
+
 // Cuando la app corre como artifact de Claude, window.storage ya existe.
 // Cuando corre como archivo local (esta versión), la sustituimos por localStorage
 // para que el resto del código funcione exactamente igual sin tocar nada más.
@@ -4193,8 +4225,17 @@ function mapPinIcon(color){
     iconSize:[26,34], iconAnchor:[13,34], popupAnchor:[0,-30]
   });
 }
-const OWN_PIN_ICON = mapPinIcon('#2F80ED');
-const FRIEND_PIN_ICON = mapPinIcon('#f5a524');
+// Perezosos a propósito: si se calculan aquí arriba, de golpe al cargar el
+// script, una falla o retraso del CDN de Leaflet (L no definido todavía)
+// lanzaría una excepción sin capturar en mitad del script principal — y
+// como esto se ejecuta antes que document.addEventListener('DOMContentLoaded',
+// init), esa única línea rota tumbaría el arranque de TODA la app, no solo
+// el mapa. Al aplazar la llamada a mapPinIcon() hasta que de verdad hace
+// falta un pin (para entonces Leaflet ya ha tenido tiempo de cargar, o el
+// fallo queda limitado al mapa en vez de a toda la aplicación).
+let _ownPinIcon = null, _friendPinIcon = null;
+function getOwnPinIcon(){ return _ownPinIcon || (_ownPinIcon = mapPinIcon('#2F80ED')); }
+function getFriendPinIcon(){ return _friendPinIcon || (_friendPinIcon = mapPinIcon('#f5a524')); }
 
 function clusterBadgeIcon(count, color){
   const size = count<10 ? 34 : (count<100 ? 40 : 46);
@@ -4438,7 +4479,7 @@ function redrawMapMarkers(){
     const lng = group.reduce((s,p)=>s+p.sg.coords.lng,0)/group.length;
     const allOwn = group.every(p=>!p.ownerName);
     const color = allOwn ? '#2F80ED' : '#f5a524';
-    const icon = group.length>1 ? clusterBadgeIcon(group.length, color) : (allOwn ? OWN_PIN_ICON : FRIEND_PIN_ICON);
+    const icon = group.length>1 ? clusterBadgeIcon(group.length, color) : (allOwn ? getOwnPinIcon() : getFriendPinIcon());
 
     const rows = group.map((p,i)=>{
       const sp = SPECIES.find(x=>x.id===p.speciesId);
@@ -5156,24 +5197,17 @@ async function init(){
   loadUIPrefs();
   initGlassSurface();
   const isRecovery = location.hash.includes('type=recovery') || new URLSearchParams(location.search).get('type')==='recovery';
-  // Si la URL trae el flag de recuperación, mostramos el formulario de
-  // nueva contraseña de inmediato, sin esperar a getSession(): el cliente
-  // de Supabase procesa el token de recuperación de la URL de forma
-  // asíncrona y puede no haber terminado todavía en este punto exacto —
-  // esperar a que confirmase la sesión antes de decidir provocaba que a
-  // veces perdiera la carrera y el usuario acabase viendo el login normal
-  // en vez del formulario de restablecer contraseña.
+  // Camino rápido si la URL ya trae el flag de recuperación; el listener de
+  // PASSWORD_RECOVERY registrado más arriba actúa de respaldo si esto no
+  // lo detecta a tiempo (ver el comentario junto a _showPasswordResetForm).
   if(isRecovery){
-    history.replaceState(null,'',location.pathname);
-    initBottomNav();
-    initMobileFAB();
-    initTreePan();
-    await openAuthLanding();
-    document.getElementById('alTabs').style.display='none';
-    _renderAlForm('reset');
+    await _showPasswordResetForm();
     return;
   }
   const {data:{session}}=await _sb.auth.getSession();
+  // El listener de PASSWORD_RECOVERY puede haber ganado la carrera mientras
+  // esperábamos aquí — si ya mostró el formulario de reset, no lo pisamos.
+  if(_handledPasswordRecovery) return;
   if(session){
     await _alEnterAccount(session.user);
     initBottomNav();
