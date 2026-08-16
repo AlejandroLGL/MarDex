@@ -1,0 +1,10 @@
+Coloca aquí las fotos de Spariformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- salpa.jpg      (Sarpa salpa — Salpa)
+- sargo.jpg      (Diplodus sargus — Sargo)
+- sargoreal.jpg  (Diplodus cervinus — Sargo real)
+- dorada.jpg     (Sparus aurata — Dorada)
+- denton.jpg     (Dentex dentex — Denton)
+- boga.jpg       (Boops boops — Boga)
+- mojarra.jpg    (Diplodus vulgaris — Mojarra)

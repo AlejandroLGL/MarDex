@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Scorpaeniformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- cabracho.jpg  (Scorpaena scrofa — Cabracho)
