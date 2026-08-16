@@ -660,8 +660,20 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .topbar h2{ margin:0; font-family:var(--serif); font-size:34px; font-weight:400; letter-spacing:-0.2px; color:var(--ink); line-height:1.05; }
   .topbar .subtitle{ color:var(--muted); font-size:13px; margin-top:4px; }
-  .search-wrap{ position:relative; margin-top:18px; max-width:600px; }
+  .search-row{ display:flex; align-items:center; gap:10px; margin-top:18px; max-width:660px; }
+  .search-wrap{ position:relative; flex:1; min-width:0; }
   .search-wrap .icon{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--blue); }
+  .identify-btn{
+    flex-shrink:0; width:46px; height:46px; border-radius:50%;
+    border:1.5px solid rgba(0,128,200,0.35); background:rgba(255,255,255,0.88);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    box-shadow:0 4px 20px rgba(7,59,92,0.12), 0 1px 4px rgba(7,59,92,0.08);
+    color:var(--blue); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .identify-btn:hover{ background:rgba(255,255,255,0.96); }
+  .identify-btn.loading{ opacity:0.55; pointer-events:none; }
+  .identify-btn.loading .icon{ animation:identifySpin 1s linear infinite; }
+  @keyframes identifySpin{ to{ transform:rotate(360deg); } }
   .search-wrap input{
     width:100%; padding:13px 18px 13px 42px; border-radius:999px;
     border:1.5px solid rgba(0,128,200,0.35);
@@ -1505,9 +1517,15 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     <div class="topbar">
       <h2>Explora el océano</h2>
       <div class="subtitle">Explora tiburones, rayas y peces del mundo</div>
-      <div class="search-wrap">
-        <span class="icon" id="searchIcon"></span>
-        <input type="text" id="search" placeholder="Buscar especie, familia o hábitat...">
+      <div class="search-row">
+        <div class="search-wrap">
+          <span class="icon" id="searchIcon"></span>
+          <input type="text" id="search" placeholder="Buscar especie, familia o hábitat...">
+        </div>
+        <button type="button" class="identify-btn" id="identifyBtn" title="Identificar especie por foto">
+          <span class="icon" id="identifyIcon"></span>
+        </button>
+        <input type="file" id="identifyFileInput" accept="image/*" capture="environment" style="display:none">
       </div>
       <div class="grid-controls">
         <div class="view-toggle" id="viewToggle"></div>
@@ -3305,6 +3323,7 @@ function ordersFor(cat){
 
 function renderCatNav(){
   document.getElementById('searchIcon').innerHTML = ICONS.search;
+  document.getElementById('identifyIcon').innerHTML = ICONS.camera;
   document.getElementById('catChevIcon').innerHTML = ICONS.chevronDown;
   const nav = document.getElementById('catNav');
   const defs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
@@ -4010,6 +4029,53 @@ function avatarInner(person){
   const letter = ((person && (person.name || person.username)) || '?')[0].toUpperCase();
   return escapeHtml(letter);
 }
+
+// ── Identificar especie por foto (Gemini vía Supabase Edge Function) ──────
+// Abre la ficha de la especie identificada con el formulario de avistamiento
+// ya desplegado y la foto adjunta, lista para revisar y guardar.
+function openIdentifiedSpecies(sp, dataUrl){
+  openModal(sp.id);
+  const addBtn = document.getElementById('addSightingBtn');
+  if(addBtn) addBtn.click();
+  // wireForm() resetea pendingSightingPhoto a null al construir el formulario
+  // (tanto si ya estaba visible como si se acaba de revelar con el click de
+  // arriba), así que se fija después de que eso haya ocurrido.
+  pendingSightingPhoto = dataUrl;
+  const preview = document.getElementById('photoPreview');
+  if(preview){ preview.src = dataUrl; preview.style.display = 'block'; }
+}
+
+document.getElementById('identifyBtn').addEventListener('click', ()=>{
+  document.getElementById('identifyFileInput').click();
+});
+document.getElementById('identifyFileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  const btn = document.getElementById('identifyBtn');
+  btn.classList.add('loading');
+  try{
+    const dataUrl = await resizeImageFile(file, 900);
+    const base64 = dataUrl.split(',')[1];
+    const catalog = SPECIES.map(s=>({id:s.id, name:s.name, sci:s.sci}));
+    const { data, error } = await _sb.functions.invoke('identify-species', {
+      body: { imageBase64: base64, mimeType: 'image/jpeg', species: catalog }
+    });
+    if(error){ showToast('No se pudo identificar la especie ahora mismo', true); return; }
+    if(!data || !data.id){
+      showToast((data && data.note) || 'No se ha podido identificar con seguridad. Prueba con otra foto.', true);
+      return;
+    }
+    const sp = SPECIES.find(s=>s.id===data.id);
+    if(!sp){ showToast('Especie no reconocida', true); return; }
+    openIdentifiedSpecies(sp, dataUrl);
+    showToast(`Podría ser: ${sp.name}${data.confidence ? ' (confianza '+data.confidence+')' : ''}`);
+  }catch(err){
+    showToast('Error al identificar la especie', true);
+  }finally{
+    btn.classList.remove('loading');
+  }
+});
 
 document.getElementById('overlay').addEventListener('click', (e)=>{
   if(e.target.id === 'overlay') closeModal();

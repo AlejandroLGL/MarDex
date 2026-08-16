@@ -1,0 +1,7 @@
+# Referencia del proyecto de Supabase de MarDex, para que
+# `supabase functions deploy` sepa a dónde desplegar sin tener que
+# pasar --project-ref cada vez.
+project_id = "bcstkmnqowwcsywfdjjm"
+
+[functions.identify-species]
+verify_jwt = true
