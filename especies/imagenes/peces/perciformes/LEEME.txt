@@ -8,4 +8,4 @@ Especies de este orden:
 - corvina.jpg     (Sciaena umbra — Corvina)
 - cabrilla.jpg    (Serranus cabrilla — Cabrilla)
 - salmonete.jpg   ✓ presente (Mullus surmuletus — Salmonete de roca)
-- espeton.jpg     (Sphyraena viridensis — Espetón)
+- espeton.jpg     ✓ presente (Sphyraena viridensis — Espetón)

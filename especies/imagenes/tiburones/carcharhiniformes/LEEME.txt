@@ -11,4 +11,4 @@ Especies de este orden:
 - toro.jpg         ✓ presente
 - sedoso.jpg       ✓ presente
 - azul.jpg         ✓ presente
-- puntanegraarrecife.jpg               (Carcharhinus melanopterus — Tiburón de puntas negras de arrecife)
+- puntanegraarrecife.jpg  ✓ presente (Carcharhinus melanopterus — Tiburón de puntas negras de arrecife)
