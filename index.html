@@ -1557,6 +1557,19 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   </div>
 </div>
 
+<div class="confirm-overlay" id="pwOverlay">
+  <div class="confirm-box">
+    <p style="font-weight:700;margin-bottom:14px;">Cambiar contraseña</p>
+    <div class="auth-error" id="pwError" style="display:none;"></div>
+    <div class="field"><label>Nueva contraseña</label><input type="password" id="pwNew1" placeholder="••••••••" autocomplete="new-password"></div>
+    <div class="field"><label>Confirmar contraseña</label><input type="password" id="pwNew2" placeholder="••••••••" autocomplete="new-password"></div>
+    <div class="row2">
+      <button type="button" class="btn secondary" id="pwCancel">Cancelar</button>
+      <button type="button" class="btn" id="pwSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="profile-overlay" id="profileOverlay">
   <div class="profile-card" id="authCard"></div>
 </div>
@@ -3215,10 +3228,12 @@ async function renderProfilePage(){
   initActivityCalendar();
   document.getElementById('ppCloseBtn').onclick = closeProfilePage;
 
-  document.getElementById('ppChangePwBtn').onclick = ()=>{
-    closeProfilePage();
-    openProfilePicker();
-    renderAuthScreen('forgot');
+  document.getElementById('ppChangePwBtn').onclick = async ()=>{
+    const newPw = await askNewPassword();
+    if(!newPw) return;
+    const { error } = await _sb.auth.updateUser({ password: newPw });
+    if(error){ showToast('No se pudo cambiar la contraseña: ' + error.message, true); return; }
+    showToast('Contraseña actualizada');
   };
 
   document.getElementById('ppEditIdentityBtn').onclick = ()=>{
@@ -3309,6 +3324,30 @@ function askConfirm(message){
     function cleanup(v){ ov.classList.remove('open'); yes.onclick=null; no.onclick=null; resolve(v); }
     yes.onclick = ()=>cleanup(true);
     no.onclick = ()=>cleanup(false);
+  });
+}
+
+// Pide una contraseña nueva sin salir de la página de perfil (el usuario ya
+// tiene sesión activa, así que no hace falta el correo de "olvidé mi
+// contraseña" — se cambia directamente con auth.updateUser()).
+function askNewPassword(){
+  return new Promise(resolve=>{
+    const ov = document.getElementById('pwOverlay');
+    const p1 = document.getElementById('pwNew1');
+    const p2 = document.getElementById('pwNew2');
+    const err = document.getElementById('pwError');
+    p1.value = ''; p2.value = ''; err.style.display = 'none';
+    ov.classList.add('open');
+    p1.focus();
+    const save = document.getElementById('pwSave');
+    const cancel = document.getElementById('pwCancel');
+    function cleanup(v){ ov.classList.remove('open'); save.onclick=null; cancel.onclick=null; resolve(v); }
+    save.onclick = ()=>{
+      if(p1.value.length < 6){ err.textContent = 'La contraseña debe tener al menos 6 caracteres.'; err.style.display = 'block'; return; }
+      if(p1.value !== p2.value){ err.textContent = 'Las contraseñas no coinciden.'; err.style.display = 'block'; return; }
+      cleanup(p1.value);
+    };
+    cancel.onclick = ()=>cleanup(null);
   });
 }
 
@@ -5117,8 +5156,14 @@ async function init(){
   loadUIPrefs();
   initGlassSurface();
   const isRecovery = location.hash.includes('type=recovery') || new URLSearchParams(location.search).get('type')==='recovery';
-  const {data:{session}}=await _sb.auth.getSession();
-  if(session && isRecovery){
+  // Si la URL trae el flag de recuperación, mostramos el formulario de
+  // nueva contraseña de inmediato, sin esperar a getSession(): el cliente
+  // de Supabase procesa el token de recuperación de la URL de forma
+  // asíncrona y puede no haber terminado todavía en este punto exacto —
+  // esperar a que confirmase la sesión antes de decidir provocaba que a
+  // veces perdiera la carrera y el usuario acabase viendo el login normal
+  // en vez del formulario de restablecer contraseña.
+  if(isRecovery){
     history.replaceState(null,'',location.pathname);
     initBottomNav();
     initMobileFAB();
@@ -5128,6 +5173,7 @@ async function init(){
     _renderAlForm('reset');
     return;
   }
+  const {data:{session}}=await _sb.auth.getSession();
   if(session){
     await _alEnterAccount(session.user);
     initBottomNav();
@@ -5707,7 +5753,7 @@ if('serviceWorker' in navigator){
     </div>
     <div class="al-card">
       <div class="al-tabs" id="alTabs">
-        <button class="al-tab active" data-mode="login">Entrar</button>
+        <button class="al-tab active" data-mode="login">Iniciar sesión</button>
         <button class="al-tab" data-mode="signup">Crear cuenta</button>
       </div>
       <div id="alFormWrap"></div>
