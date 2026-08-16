@@ -1098,12 +1098,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   /* En móvil, el FAB hace de botón de cierre; ocultar la X del modal */
   @media(max-width:600px){ .modal-x-btn{ display:none !important; } }
   .mob-fab-item{
-    position:fixed; width:52px; height:52px; border-radius:50%; z-index:51;
+    position:fixed; width:46px; height:46px; border-radius:50%; z-index:51;
     background:rgba(5,46,74,0.92); border:1.5px solid rgba(76,206,245,0.22);
     backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
     box-shadow:0 4px 16px rgba(5,46,74,0.4);
     cursor:pointer; color:rgba(255,255,255,0.85);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
     opacity:0; pointer-events:none;
     transition:opacity .2s, transform .3s cubic-bezier(.34,1.56,.64,1);
     transform:scale(0.4);
@@ -1111,8 +1111,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .mob-fab-item.open{
     opacity:1; pointer-events:all;
   }
-  .mob-fab-item svg{ width:20px; height:20px; display:block; flex-shrink:0; }
-  .mob-fab-item-label{ font-size:8px; font-weight:700; color:rgba(255,255,255,0.6); letter-spacing:.03em; }
+  .mob-fab-item svg{ width:17px; height:17px; display:block; flex-shrink:0; }
+  .mob-fab-item-label{ font-size:7px; font-weight:700; color:rgba(255,255,255,0.6); letter-spacing:.03em; }
   @keyframes unlockReveal{
     0%  { filter:saturate(0.15) brightness(0.7); transform:scale(0.97); }
     60% { filter:saturate(1.2)  brightness(1.15); transform:scale(1.03); }
@@ -4679,12 +4679,12 @@ function initMobileFAB(){
 
     const items = FAB_ITEMS.filter(it=>!it.adminOnly || document.body.classList.contains('is-admin'));
     const N = items.length;
-    // Dos radios alternados (cerca/lejos) para que los items no se amontonen
-    // al repartir muchos en un semicírculo — "pétalos" en zigzag en vez de un
-    // único arco apretado.
-    const R_NEAR = 98, R_FAR = 168;
-    // Ángulos: semicírculo de 160° a 20°
-    const startDeg = 160, endDeg = 20;
+    // Un único radio: arco limpio (el zigzag cerca/lejos anterior repartía los
+    // iconos a distancias muy distintas del centro y se veía como una estrella
+    // desordenada en vez de un arco).
+    const ITEM_SIZE = 46;
+    // Ángulos: semicírculo de 165° a 15°
+    const startDeg = 165, endDeg = 15;
     const step = N > 1 ? (startDeg - endDeg) / (N - 1) : 0;
 
     // Posición del centro del FAB en viewport
@@ -4692,17 +4692,23 @@ function initMobileFAB(){
     const cx = fabRect.left + fabRect.width / 2;
     const cy = fabRect.top  + fabRect.height / 2;
 
+    // Radio por defecto pensado para caber cómodamente en un iPhone normal;
+    // se recorta si la pantalla es más estrecha que eso, para que los iconos
+    // de los extremos no se salgan del borde.
+    const cosExtreme = Math.abs(Math.cos(startDeg * Math.PI / 180));
+    const maxRForScreen = (cx - ITEM_SIZE / 2 - 8) / cosExtreme;
+    const R = Math.min(150, maxRForScreen);
+
     items.forEach((it, i)=>{
       const deg = startDeg - step * i;
       const rad = deg * Math.PI / 180;
-      const R = (i % 2 === 0) ? R_FAR : R_NEAR;
       const tx1 = Math.round(R * Math.cos(rad));
       const ty1 = Math.round(-R * Math.sin(rad));
 
       const el = document.createElement('button');
       el.className = 'mob-fab-item';
-      el.style.left = (cx - 26) + 'px';
-      el.style.top  = (cy - 26) + 'px';
+      el.style.left = (cx - ITEM_SIZE / 2) + 'px';
+      el.style.top  = (cy - ITEM_SIZE / 2) + 'px';
       el.style.transitionDelay = (i * 35) + 'ms';
       el.style.transform = 'scale(0.4)';
       // Posición final guardada aparte: se aplica como transform explícito
