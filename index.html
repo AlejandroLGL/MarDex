@@ -952,6 +952,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .sighting-env-badge.wild{ background:rgba(45,212,164,0.16); color:#1a8f6d; }
   .sighting-env-badge.aquarium{ background:rgba(245,165,36,0.18); color:#B87507; }
+  .sighting-size-badge{
+    display:inline-flex; padding:3px 9px; border-radius:12px;
+    font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.03em;
+    background:rgba(76,206,245,0.16); color:#087CC1;
+  }
   .chevron{ color:var(--faint); transition:transform .15s ease; flex-shrink:0; margin-top:5px; }
   .sighting.expanded .chevron{ transform:rotate(90deg); }
   .sighting-date{ font-family:var(--mono); font-size:10px; color:var(--faint); white-space:nowrap; }
@@ -1020,6 +1025,22 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .env-toggle button.sel{ background:var(--blue); color:#fff; border-color:var(--blue); }
   .ray-theme .env-toggle button.sel{ background:var(--turq); border-color:var(--turq); }
   .fish-theme .env-toggle button.sel{ background:var(--amber); border-color:var(--amber); }
+
+  .size-slider-wrap{ padding-top:2px; }
+  .size-slider-value{
+    text-align:center; font-size:13px; font-weight:800; color:var(--ink); margin-bottom:8px;
+  }
+  .size-slider-wrap input[type=range]{
+    width:100%; height:4px; accent-color:var(--blue); cursor:pointer; display:block;
+  }
+  .ray-theme .size-slider-wrap input[type=range]{ accent-color:var(--turq); }
+  .fish-theme .size-slider-wrap input[type=range]{ accent-color:var(--amber); }
+  .size-slider-ticks{ display:flex; justify-content:space-between; margin-top:6px; gap:2px; }
+  .size-slider-ticks span{
+    font-size:8.5px; color:var(--faint); text-align:center; flex:1; line-height:1.25; font-weight:600;
+  }
+  .size-slider-ticks span:first-child{ text-align:left; }
+  .size-slider-ticks span:last-child{ text-align:right; }
   .photo-preview{ max-width:100%; border-radius:var(--r-sm); margin-top:9px; display:none; }
   .row2{ display:flex; gap:8px; }
   .row2 > .btn{ flex:1; }
@@ -2009,7 +2030,8 @@ async function loadState(){
       date: new Date(s.date+'T00:00:00').toLocaleDateString('es-ES'),
       dateISO: s.date,
       environment: s.environment||'libre',
-      photo: s.photo||null
+      photo: s.photo||null,
+      sizeIdx: s.size_observed!=null ? s.size_observed : null
     });
   });
   (favs||[]).forEach(f=>{ state.favorites[f.species_id]=true; });
@@ -3515,6 +3537,7 @@ function renderModal(s, sightings, showForm, editingSighting){
           <div class="sighting-location-row">${icon('mapPin','icon-sm')}<span>${escapeHtml(sg.location||'Sin ubicación registrada')}</span></div>
           <div class="sighting-bottom-row">
             <span class="sighting-env-badge ${sg.environment==='acuario'?'aquarium':'wild'}">${sg.environment==='acuario' ? 'Acuario' : 'En libertad'}</span>
+            ${sg.sizeIdx!=null ? `<span class="sighting-size-badge">${SIZE_LABELS[sg.sizeIdx]}</span>` : ''}
             <span class="sighting-date">${sg.date}</span>
           </div>
         </div>
@@ -3645,8 +3668,11 @@ function todayISO(){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
+const SIZE_LABELS = ['Cría','Muy pequeño','Pequeño','Mediano','Grande','Muy grande'];
+
 function formTemplate(existing){
   const title = existing ? escapeHtml(existing.title||'') : '';
+  const sizeIdx = existing && existing.sizeIdx!=null ? existing.sizeIdx : 3;
   const location = existing ? escapeHtml(existing.location||'') : '';
   const comment = existing ? escapeHtml(existing.comment||'') : '';
   const dateVal = existing && existing.dateISO ? existing.dateISO : todayISO();
@@ -3685,6 +3711,16 @@ function formTemplate(existing){
           <button type="button" data-env="acuario" class="${!libreSel?'sel':''}">Acuario</button>
         </div>
       </div>
+      <div class="field">
+        <label>Tamaño observado</label>
+        <div class="size-slider-wrap">
+          <div class="size-slider-value" id="sizeSliderValue">${SIZE_LABELS[sizeIdx]}</div>
+          <input type="range" id="f-size" min="0" max="5" step="1" value="${sizeIdx}">
+          <div class="size-slider-ticks">
+            ${SIZE_LABELS.map(l=>`<span>${l}</span>`).join('')}
+          </div>
+        </div>
+      </div>
       <div class="field"><label>Comentario</label><textarea id="f-comment" placeholder="Notas sobre el avistamiento...">${comment}</textarea></div>
       <div class="field">
         <label>Foto (opcional)</label>
@@ -3713,6 +3749,10 @@ function wireForm(s, sightings, editingSighting){
   pendingCoords = editingSighting ? editingSighting.coords : null;
   leafletMapInstance = null;
   leafletMarker = null;
+
+  const sizeInput = document.getElementById('f-size');
+  const sizeValueEl = document.getElementById('sizeSliderValue');
+  sizeInput.addEventListener('input', ()=>{ sizeValueEl.textContent = SIZE_LABELS[Number(sizeInput.value)]; });
 
   const envBtns = document.querySelectorAll('.env-toggle button');
   envBtns.forEach(b=>{
@@ -3886,13 +3926,14 @@ function wireForm(s, sightings, editingSighting){
     const comment = document.getElementById('f-comment').value.trim();
     const dateISO = document.getElementById('f-date').value || todayISO();
     const displayDate = new Date(dateISO + 'T00:00:00').toLocaleDateString('es-ES');
+    const sizeIdx = Number(document.getElementById('f-size').value);
     let newList;
     if(editingSighting){
       const photo = pendingSightingPhoto !== null ? pendingSightingPhoto : (editingSighting.photo || '');
       const updated = {
         ...editingSighting, title, location, comment,
         environment: envChoice, photo, coords: pendingCoords||editingSighting.coords,
-        dateISO, date: displayDate
+        dateISO, date: displayDate, sizeIdx
       };
       newList = sightings.map(x => x.id===editingSighting.id ? updated : x);
       state.sightings[s.id] = newList;
@@ -3902,20 +3943,20 @@ function wireForm(s, sightings, editingSighting){
         title, location_text:location, comment,
         lat: (pendingCoords||editingSighting.coords)?.lat??null,
         lng: (pendingCoords||editingSighting.coords)?.lng??null,
-        date: dateISO, environment: envChoice, photo
+        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx
       }).eq('id', editingSighting.id);
     } else {
       const photo = pendingSightingPhoto || '';
       const {data:ins,error} = await _sb.from('sightings').insert({
         species_id:s.id, title, location_text:location, comment,
         lat: pendingCoords?.lat??null, lng: pendingCoords?.lng??null,
-        date: dateISO, environment: envChoice, photo
+        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx
       }).select().single();
       if(error){ showToast('Error al guardar',true); return; }
       const sighting = {
         id:ins.id, title, location, comment,
         environment:envChoice, photo: photo||null,
-        coords:pendingCoords, dateISO, date:displayDate
+        coords:pendingCoords, dateISO, date:displayDate, sizeIdx
       };
       const isFirstSighting = sightings.length === 0;
       newList = sightings.concat([sighting]);
@@ -4025,7 +4066,8 @@ async function fetchFriendsMapPins(){
         speciesId: sg.species_id,
         sg: {
           id: sg.id, coords:{lat:sg.lat,lng:sg.lng}, date:sg.date, location:sg.location_text,
-          environment:sg.environment, comment:sg.comment, photo:sg.photo, title:sg.title
+          environment:sg.environment, comment:sg.comment, photo:sg.photo, title:sg.title,
+          sizeIdx: sg.size_observed!=null ? sg.size_observed : null
         },
         ownerName: f.name || f.username
       });
@@ -4118,6 +4160,7 @@ function openFriendSightingDetail(p){
       </div>
       <div class="fs-detail-row">
         <span class="fs-env-badge ${sg.environment==='acuario'?'aquarium':'wild'}">${sg.environment==='acuario' ? 'Acuario' : 'En libertad'}</span>
+        ${sg.sizeIdx!=null ? `<span class="fs-env-badge wild">${SIZE_LABELS[sg.sizeIdx]}</span>` : ''}
       </div>
       <div class="fs-location-row">
         ${icon('mapPin','icon-sm')}
