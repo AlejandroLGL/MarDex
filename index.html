@@ -56,6 +56,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     --coral-soft:#FFE5E3;
     --yellow:#eee235;
     --sand:#F0D9A8;
+    --amber:#E08A2E;
+    --amber-soft:#F7D9A8;
     --serif:'DM Serif Display',Georgia,serif;
     --sans:'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif;
     --mono:ui-monospace,'SF Mono','Cascadia Mono','Courier New',monospace;
@@ -646,6 +648,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .progress-fill{ height:100%; border-radius:3px; background:var(--aqua); transition:width .4s ease; }
   .progress-item.ray .progress-bar{ background:rgba(255,255,255,0.08); }
   .progress-item.ray .progress-fill{ background:var(--lagoon); }
+  .progress-item.fish .progress-bar{ background:rgba(255,255,255,0.08); }
+  .progress-item.fish .progress-fill{ background:var(--amber); }
 
   /* main */
   .main-col{ flex:1; min-width:0; }
@@ -747,12 +751,14 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-hover); border-color:var(--sky); }
   .card.ray:hover{ border-color:var(--seafoam); }
+  .card.fish:hover{ border-color:var(--amber-soft); }
 
   .photo-box{
     position:relative; aspect-ratio:3/2; overflow:hidden;
     background:linear-gradient(135deg, #0080C8 0%, #00BDD6 50%, #2DD4A4 100%);
   }
   .card.ray .photo-box{ background:linear-gradient(135deg, #00BDD6 0%, #2DD4A4 55%, #96EDD2 100%); }
+  .card.fish .photo-box{ background:linear-gradient(135deg, #E08A2E 0%, #F2B84C 55%, #F7D9A8 100%); }
   .photo-box img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:1; transition:transform .5s ease; }
   .card:hover .photo-box img{ transform:scale(1.05); }
 
@@ -866,6 +872,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     background:linear-gradient(135deg, #0080C8 0%, #00BDD6 50%, #2DD4A4 100%);
   }
   .modal.ray-theme .modal-photo{ background:linear-gradient(135deg, #00BDD6 0%, #2DD4A4 55%, #96EDD2 100%); }
+  .modal.fish-theme .modal-photo{ background:linear-gradient(135deg, #E08A2E 0%, #F2B84C 55%, #F7D9A8 100%); }
   .modal-photo img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:2; }
   .modal-photo::after{
     content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
@@ -919,6 +926,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .section-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .section-title{ font-size:10.5px; font-weight:800; color:var(--blue); text-transform:uppercase; letter-spacing:0.8px; }
   .ray-theme .section-title{ color:var(--turq); }
+  .fish-theme .section-title{ color:var(--amber); }
 
   .sighting{
     background:var(--bg); border-radius:var(--r-md); padding:13px; margin-bottom:10px;
@@ -965,6 +973,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     display:flex; align-items:center; justify-content:center; gap:8px;
   }
   .ray-theme .btn{ background:var(--turq); }
+  .fish-theme .btn{ background:var(--amber); }
   .btn.secondary{ background:var(--bg); color:var(--muted); }
   .btn.danger{ background:var(--coral); }
   .new-sighting{ margin-top:12px; border-top:1px solid var(--line); padding-top:16px; }
@@ -1010,6 +1019,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .env-toggle button.sel{ background:var(--blue); color:#fff; border-color:var(--blue); }
   .ray-theme .env-toggle button.sel{ background:var(--turq); border-color:var(--turq); }
+  .fish-theme .env-toggle button.sel{ background:var(--amber); border-color:var(--amber); }
   .photo-preview{ max-width:100%; border-radius:var(--r-sm); margin-top:9px; display:none; }
   .row2{ display:flex; gap:8px; }
   .row2 > .btn{ flex:1; }
@@ -1436,7 +1446,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark"><h1>Mar<span class="brand-accent">Dex</span></h1></div>
-      <small>Guía de buceo · tiburones y rayas</small>
+      <small>Guía de buceo · tiburones, rayas y peces</small>
       <div class="profile-badge">
         <div class="profile-avatar" id="profileAvatar"></div>
         <div class="profile-info">
@@ -1473,7 +1483,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   <div class="main-col">
     <div class="topbar">
       <h2>Explora el océano</h2>
-      <div class="subtitle">Explora tiburones y rayas del mundo</div>
+      <div class="subtitle">Explora tiburones, rayas y peces del mundo</div>
       <div class="search-wrap">
         <span class="icon" id="searchIcon"></span>
         <input type="text" id="search" placeholder="Buscar especie, familia o hábitat...">
@@ -1730,8 +1740,14 @@ function icon(name, cls){ return `<span class="icon ${cls||''}">${ICONS[name]}</
 
 const SHARK_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M2 40 C20 20, 40 12, 58 14 C56 6, 66 2, 78 4 C72 10, 70 16, 72 20 C86 22, 96 30, 98 38 C88 36, 80 37, 74 40 C70 48, 58 54, 44 52 C48 46, 48 42, 44 40 C30 44, 12 44, 2 40 Z"/></svg>`;
 const RAY_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M50 6 C20 6, 2 24, 2 34 C2 40, 10 42, 18 38 C24 46, 34 52, 50 52 C66 52, 76 46, 82 38 C90 42, 98 40, 98 34 C98 24, 80 6, 50 6 Z M50 52 L54 60 M50 52 L46 60"/></svg>`;
+const FISH_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M8 30 C8 16, 30 8, 52 8 C70 8, 82 16, 88 22 L98 8 L92 30 L98 52 L88 38 C82 44, 70 52, 52 52 C30 52, 8 44, 8 30 Z M28 24 C31.3 24, 34 26.7, 34 30 C34 33.3, 31.3 36, 28 36 C24.7 36, 22 33.3, 22 30 C22 26.7, 24.7 24, 28 24 Z"/></svg>`;
 
-function placeholderMarkup(isRay){
+// Carpeta de imágenes y silueta de placeholder según la categoría de la especie.
+function catFolder(cat){ return cat==='raya' ? 'rayas' : cat==='pez' ? 'peces' : 'tiburones'; }
+function catSilhouette(cat){ return cat==='raya' ? RAY_SILHOUETTE : cat==='pez' ? FISH_SILHOUETTE : SHARK_SILHOUETTE; }
+function speciesImgPath(s){ return `especies/imagenes/${catFolder(s.cat)}/${s.order.toLowerCase()}/${s.id}.jpg`; }
+
+function placeholderMarkup(cat){
   const wave = `<svg class="placeholder-wave" viewBox="0 0 200 40" preserveAspectRatio="none" fill="currentColor"><path d="M0 20 Q25 5 50 20 T100 20 T150 20 T200 20 V40 H0 Z"/></svg>`;
   return `
     <div class="bubble" style="width:14px;height:14px;left:14%;top:20%;"></div>
@@ -1739,7 +1755,7 @@ function placeholderMarkup(isRay){
     <div class="bubble" style="width:11px;height:11px;left:82%;top:16%;"></div>
     <div class="bubble" style="width:7px;height:7px;left:75%;top:32%;"></div>
     ${wave}
-    <div class="placeholder-icon">${isRay ? RAY_SILHOUETTE : SHARK_SILHOUETTE}</div>
+    <div class="placeholder-icon">${catSilhouette(cat)}</div>
   `;
 }
 
@@ -1795,6 +1811,30 @@ let SPECIES = [
   {id:'cigarro', cat:'tiburon', order:'Squaliformes', name:'Tiburón cigarro', sci:'Isistius brasiliensis', region:'Global', code:'TBR-30', size:'0.5 m', habitat:'Aguas oceánicas profundas', depth:'85–3500 m', speed:'Lenta', diet:'Parásito de grandes vertebrados marinos y cefalópodos', rarity:5, blurb:'Famoso por sus mordidas circulares perfectas en cetáceos, tiburones y hasta cables submarinos. El único tiburón de hábitos semi-parasíticos: se adhiere a su presa, gira y extrae un tapón de carne limpio. Bioluminiscente.'},
   {id:'guitarrabocuda', cat:'raya', order:'Rhinopristiformes', name:'Guitarra bocuda', sci:'Rhina ancylostoma', region:'Global', code:'RAY-18', size:'2.7 m', habitat:'Fondos arenosos y de coral', depth:'3–90 m', speed:'Lenta', diet:'Crustáceos y moluscos', rarity:4, blurb:'De aspecto imponente con su boca arqueada y crestas de espinas dorsales. Presente en fondos arenosos y coralinos del Indo-Pacífico; habitual en grandes acuarios.'},
   {id:'grabata', cat:'raya', order:'Myliobatiformes', name:'Raya redonda', sci:'Taeniura grabata', region:'Mediterráneo', code:'RAY-19', size:'1 m', habitat:'Fondos arenosos y rocosos', depth:'5–50 m', speed:'Lenta', diet:'Moluscos y crustáceos', rarity:3, blurb:'Raya de disco redondeado con la cola relativamente corta. Habita fondos arenosos y rocosos del Mediterráneo oriental y el Atlántico africano.'},
+  {id:'puntanegraarrecife', cat:'tiburon', order:'Carcharhiniformes', name:'Tiburón de puntas negras de arrecife', sci:'Carcharhinus melanopterus', region:'Indo-Pacífico', code:'TBR-31', size:'1.8 m', habitat:'Arrecifes de coral someros y lagunas', depth:'0–20 m', speed:'Moderada', diet:'Peces pequeños, cefalópodos y crustáceos', rarity:2, blurb:'Reconocible por las puntas negras de todas sus aletas, sobre todo la dorsal. Habitual en aguas muy someras junto a la orilla de arrecifes y lagunas, donde se le ve nadar en corros al atardecer.'},
+
+  {id:'salpa', cat:'pez', order:'Spariformes', name:'Salpa', sci:'Sarpa salpa', region:'Mediterráneo', code:'PEZ-01', size:'0.5 m', habitat:'Praderas de posidonia y fondos rocosos someros', depth:'0–70 m', speed:'Moderada', diet:'Herbívoro: algas y posidonia', rarity:1, blurb:'Uno de los peces más comunes del Mediterráneo, fácil de reconocer por las líneas doradas a lo largo del cuerpo. Forma grandes bancos que pastan sobre las praderas de posidonia.'},
+  {id:'sargo', cat:'pez', order:'Spariformes', name:'Sargo', sci:'Diplodus sargus', region:'Mediterráneo', code:'PEZ-02', size:'0.45 m', habitat:'Fondos rocosos y praderas de posidonia', depth:'0–50 m', speed:'Moderada', diet:'Moluscos, crustáceos y algas', rarity:1, blurb:'Cuerpo plateado con bandas verticales oscuras y una franja negra característica en el pedúnculo caudal. Uno de los sargos más comunes en fondos rocosos costeros.'},
+  {id:'sargoreal', cat:'pez', order:'Spariformes', name:'Sargo real', sci:'Diplodus cervinus', region:'Mediterráneo', code:'PEZ-03', size:'0.6 m', habitat:'Fondos rocosos', depth:'2–80 m', speed:'Moderada', diet:'Invertebrados bentónicos', rarity:3, blurb:'El mayor de los sargos mediterráneos, con bandas verticales más anchas y marcadas que sus parientes. Menos habitual que el sargo común, suele verse en solitario junto a paredes rocosas.'},
+  {id:'dorada', cat:'pez', order:'Spariformes', name:'Dorada', sci:'Sparus aurata', region:'Mediterráneo', code:'PEZ-04', size:'0.7 m', habitat:'Fondos arenosos, praderas y estuarios', depth:'0–150 m', speed:'Moderada', diet:'Moluscos y crustáceos, que tritura con sus fuertes dientes', rarity:3, blurb:'Reconocible por la banda dorada entre los ojos que le da nombre. Muy apreciada en gastronomía, se acerca a veces a puertos y zonas costeras poco profundas.'},
+  {id:'denton', cat:'pez', order:'Spariformes', name:'Denton', sci:'Dentex dentex', region:'Mediterráneo', code:'PEZ-05', size:'1 m', habitat:'Fondos rocosos y aguas abiertas cercanas a la costa', depth:'5–200 m', speed:'Rápida', diet:'Peces y cefalópodos', rarity:4, blurb:'Depredador activo de perfil frontal muy abrupto, capaz de alcanzar tallas grandes. Escaso en la actualidad por la presión de la pesca, es uno de los peces más buscados por los buceadores.'},
+  {id:'boga', cat:'pez', order:'Spariformes', name:'Boga', sci:'Boops boops', region:'Mediterráneo', code:'PEZ-06', size:'0.3 m', habitat:'Aguas costeras abiertas', depth:'0–350 m', speed:'Rápida', diet:'Zooplancton y pequeños invertebrados', rarity:1, blurb:'Pez pequeño y plateado que forma bancos numerosos cerca de la superficie. Uno de los avistamientos más frecuentes al bucear en la costa mediterránea.'},
+  {id:'mojarra', cat:'pez', order:'Spariformes', name:'Mojarra', sci:'Diplodus vulgaris', region:'Mediterráneo', code:'PEZ-07', size:'0.3 m', habitat:'Fondos rocosos y praderas de posidonia', depth:'0–160 m', speed:'Moderada', diet:'Pequeños invertebrados y algas', rarity:1, blurb:'Sargo pequeño y muy común, con una única banda oscura junto a la cola bordeada de amarillo. Suele verse en grupos alrededor de rocas y praderas.'},
+  {id:'castanuela', cat:'pez', order:'Perciformes', name:'Castañuela', sci:'Chromis chromis', region:'Mediterráneo', code:'PEZ-08', size:'0.15 m', habitat:'Paredes rocosas', depth:'3–40 m', speed:'Rápida', diet:'Zooplancton', rarity:1, blurb:'Pequeño pez oscuro que forma densas nubes sobre las paredes rocosas, alimentándose de plancton en la columna de agua. También se le conoce como damisela; es uno de los pomacéntridos más comunes del Mediterráneo.'},
+  {id:'mero', cat:'pez', order:'Perciformes', name:'Mero', sci:'Epinephelus marginatus', region:'Mediterráneo', code:'PEZ-09', size:'1.5 m', habitat:'Cuevas y paredes rocosas', depth:'0–50 m', speed:'Lenta', diet:'Peces y crustáceos, cazador de emboscada', rarity:4, blurb:'Gran depredador de cuevas y grietas, curioso y confiado con los buceadores allí donde está protegido. Sus poblaciones se recuperan lentamente tras décadas de sobrepesca.'},
+  {id:'falsoabadejo', cat:'pez', order:'Perciformes', name:'Falso abadejo', sci:'Epinephelus costae', region:'Mediterráneo', code:'PEZ-10', size:'0.9 m', habitat:'Fondos rocosos y de coralígeno', depth:'20–200 m', speed:'Lenta', diet:'Peces y crustáceos', rarity:4, blurb:'También llamado mero dorado, es primo cercano del mero común aunque de cuerpo algo más esbelto. Frecuenta fondos de coralígeno más profundos que su pariente.'},
+  {id:'trescolas', cat:'pez', order:'Perciformes', name:'Tres colas', sci:'Anthias anthias', region:'Mediterráneo', code:'PEZ-11', size:'0.24 m', habitat:'Cuevas y paredes con corriente', depth:'15–100 m', speed:'Moderada', diet:'Zooplancton', rarity:3, blurb:'Pequeño pez de color rosado y líneas amarillas que debe su nombre a sus grandes aletas pélvicas y caudal. Forma cardúmenes vistosos a la entrada de cuevas y grutas profundas.'},
+  {id:'corvina', cat:'pez', order:'Perciformes', name:'Corvina', sci:'Sciaena umbra', region:'Mediterráneo', code:'PEZ-12', size:'0.5 m', habitat:'Cuevas y paredes en penumbra', depth:'3–50 m', speed:'Lenta', diet:'Peces y crustáceos', rarity:3, blurb:'De color oscuro y reflejos cobrizos, se agrupa de día en cuevas y bajo salientes rocosos, casi inmóvil. Antaño muy castigada por la pesca submarina, hoy se recupera en zonas protegidas.'},
+  {id:'cabrilla', cat:'pez', order:'Perciformes', name:'Cabrilla', sci:'Serranus cabrilla', region:'Mediterráneo', code:'PEZ-13', size:'0.25 m', habitat:'Fondos rocosos y praderas de posidonia', depth:'5–300 m', speed:'Moderada', diet:'Peces pequeños y crustáceos', rarity:1, blurb:'Pequeño depredador hermafrodita simultáneo, con el cuerpo alargado y bandas verticales rojizas. Uno de los peces más fáciles de encontrar posado sobre rocas y arena.'},
+  {id:'salmonete', cat:'pez', order:'Perciformes', name:'Salmonete de roca', sci:'Mullus surmuletus', region:'Mediterráneo', code:'PEZ-14', size:'0.3 m', habitat:'Fondos rocosos y de arena', depth:'5–400 m', speed:'Moderada', diet:'Invertebrados del fondo, localizados con sus barbillones', rarity:2, blurb:'De color rojizo y con dos largos barbillones bajo la mandíbula que usa para rastrear el fondo en busca de alimento. Muy apreciado también en gastronomía.'},
+  {id:'espeton', cat:'pez', order:'Perciformes', name:'Espetón', sci:'Sphyraena viridensis', region:'Mediterráneo', code:'PEZ-15', size:'1 m', habitat:'Aguas costeras abiertas', depth:'0–100 m', speed:'Muy rápida', diet:'Peces pequeños, depredador activo', rarity:3, blurb:'Barracuda mediterránea de cuerpo torpediforme y dientes afilados. Forma impresionantes bancos verticales casi inmóviles en aguas abiertas, un clásico entre los grandes avistamientos del Mediterráneo.'},
+  {id:'cabracho', cat:'pez', order:'Scorpaeniformes', name:'Cabracho', sci:'Scorpaena scrofa', region:'Mediterráneo', code:'PEZ-16', size:'0.5 m', habitat:'Fondos rocosos, camuflado entre algas y piedras', depth:'5–500 m', speed:'Muy lenta', diet:'Peces y crustáceos, caza al acecho', rarity:3, blurb:'Maestro del camuflaje gracias a su piel rugosa y coloración rojiza que imita a las rocas cubiertas de algas. Permanece inmóvil a la espera de que una presa se acerque lo suficiente. Sus espinas son venenosas.'},
+  {id:'tordo', cat:'pez', order:'Labriformes', name:'Tordo', sci:'Symphodus tinca', region:'Mediterráneo', code:'PEZ-17', size:'0.4 m', habitat:'Praderas de posidonia y fondos rocosos', depth:'1–50 m', speed:'Moderada', diet:'Invertebrados bentónicos', rarity:2, blurb:'Lábrido robusto de colores variables, del verde al pardo rojizo. El macho construye y vigila un nido de algas donde corteja a las hembras.'},
+  {id:'julia', cat:'pez', order:'Labriformes', name:'Julia', sci:'Coris julis', region:'Mediterráneo', code:'PEZ-18', size:'0.25 m', habitat:'Fondos rocosos y praderas de posidonia', depth:'0–120 m', speed:'Rápida', diet:'Pequeños invertebrados', rarity:1, blurb:'Con su franja naranja y azul zigzagueante, es probablemente el pez más avistado en cualquier inmersión mediterránea. Nada rápido y errático entre las rocas.'},
+  {id:'fredi', cat:'pez', order:'Labriformes', name:'Fredi', sci:'Thalassoma pavo', region:'Mediterráneo', code:'PEZ-19', size:'0.2 m', habitat:'Fondos rocosos someros', depth:'0–40 m', speed:'Rápida', diet:'Pequeños invertebrados', rarity:2, blurb:'Lábrido de colores vivos —verde, azul y rosa— cada vez más frecuente en el Mediterráneo occidental. También conocido como pez verde, fadrí o senyoreta según la zona.'},
+  {id:'lisa', cat:'pez', order:'Mugiliformes', name:'Lisa', sci:'Chelon labrosus', region:'Mediterráneo', code:'PEZ-20', size:'0.7 m', habitat:'Aguas costeras, estuarios y puertos', depth:'0–20 m', speed:'Moderada', diet:'Detritos, algas y pequeños invertebrados del sedimento', rarity:1, blurb:'De labios gruesos característicos, forma bancos habituales en puertos y calas poco profundas, donde se alimenta filtrando el sedimento del fondo.'},
+  {id:'morena', cat:'pez', order:'Anguilliformes', name:'Morena', sci:'Muraena helena', region:'Mediterráneo', code:'PEZ-21', size:'1.5 m', habitat:'Grietas y cuevas rocosas', depth:'0–80 m', speed:'Lenta', diet:'Peces y cefalópodos', rarity:2, blurb:'Cuerpo serpentiforme con un llamativo patrón marmoleado. Pasa el día asomando la cabeza desde su refugio entre las rocas, abriendo y cerrando la boca para respirar, no como gesto de amenaza.'},
+  {id:'congrio', cat:'pez', order:'Anguilliformes', name:'Congrio', sci:'Conger conger', region:'Mediterráneo', code:'PEZ-22', size:'2 m', habitat:'Cuevas, grietas y restos de naufragios', depth:'0–300 m', speed:'Lenta', diet:'Peces, crustáceos y cefalópodos', rarity:2, blurb:'La mayor de las anguilas mediterráneas, de color gris uniforme y sin escamas. Habitual en pecios y grutas, donde puede alcanzar tamaños considerables.'},
 ];
 
 // ---------- estado ----------
@@ -2199,7 +2239,8 @@ function buildTreeData(){
   const root = mk('root', 'Animales Marinos', 'root');
 
   // ── Elasmobranquios (datos reales) ──
-  const elasmo = mk('elasmobranquios','Elasmobranquios','group',{ count:SPECIES.length });
+  const elasmoSpp = SPECIES.filter(s=>s.cat==='tiburon'||s.cat==='raya');
+  const elasmo = mk('elasmobranquios','Elasmobranquios','group',{ count:elasmoSpp.length });
   root.children.push(elasmo);
 
   [['tiburon','Tiburones'],['raya','Rayas']].forEach(([cat, label])=>{
@@ -2212,6 +2253,17 @@ function buildTreeData(){
       catNode.children.push(n);
     });
   });
+
+  // ── Peces óseos (datos reales) ──
+  const pezSpp = SPECIES.filter(s=>s.cat==='pez');
+  if(pezSpp.length){
+    const pezNode = mk('pez','Peces Óseos','cat',{ cat:'pez', count:pezSpp.length });
+    root.children.push(pezNode);
+    [...new Set(pezSpp.map(s=>s.order))].sort().forEach(ord=>{
+      const n = mk('ord:'+ord, ord, 'order', { cat:'pez', order:ord, count:pezSpp.filter(s=>s.order===ord).length });
+      pezNode.children.push(n);
+    });
+  }
 
   // ── Grupos placeholder ──
   function addGroup(def, parent){
@@ -2235,11 +2287,6 @@ function buildTreeData(){
       { id:'medusas',    label:'Medusas'   },
       { id:'anemonas',   label:'Anémonas'  },
       { id:'corales',    label:'Corales'   },
-    ]},
-    { id:'peces-oseos',  label:'Peces Óseos',  ch:[
-      { id:'perciformes',      label:'Perciformes'      },
-      { id:'tetraodontiformes',label:'Tetraodontiformes'},
-      { id:'clupeiformes',     label:'Clupeiformes'     },
     ]},
   ].forEach(g => addGroup(g, root));
 
@@ -2266,12 +2313,14 @@ function treeNodeColors(node){
 
   if(ph) return { fill:'#F2F6FA', stroke:'#CBD8E4', text:'#9EB5C4', badge:null, sw:1.5, dash:'6,4', shadow:false };
   if(sel){
-    return { fill: node.cat==='raya'?'#0891B2':'#1563CC', stroke:'rgba(255,255,255,0.18)', text:'#fff', badge:'rgba(255,255,255,0.2)', badgeT:'rgba(255,255,255,0.9)', sw:2.5, dash:'none', shadow:true };
+    const selFill = node.cat==='raya' ? '#0891B2' : node.cat==='pez' ? '#C87F0A' : '#1563CC';
+    return { fill: selFill, stroke:'rgba(255,255,255,0.18)', text:'#fff', badge:'rgba(255,255,255,0.2)', badgeT:'rgba(255,255,255,0.9)', sw:2.5, dash:'none', shadow:true };
   }
   if(node.type==='root')   return { fill:'#fff', stroke:'#4CCEF5', text:'#052E4A', badge:'rgba(76,206,245,0.16)', badgeT:'#0080C8', sw:2, dash:'none', shadow:false };
   if(node.id==='elasmobranquios') return { fill:'#fff', stroke:'#087CC1', text:'#052E4A', badge:'rgba(8,124,193,0.12)', badgeT:'#087CC1', sw:1.8, dash:'none', shadow:false };
   if(node.type==='group')  return { fill:'#fff', stroke:'#7EB0C8', text:'#0D2B40', badge:null, sw:1.5, dash:'none', shadow:false };
   if(node.cat==='tiburon') return { fill:'#F5FAFF', stroke:'#89C8ED', text:'#0D2B40', badge:'rgba(0,128,200,0.1)', badgeT:'#0080C8', sw:1.5, dash:'none', shadow:false };
+  if(node.cat==='pez')     return { fill:'#FFF9F0', stroke:'#EAC17E', text:'#0D2B40', badge:'rgba(224,138,46,0.14)', badgeT:'#B96F1E', sw:1.5, dash:'none', shadow:false };
   return                         { fill:'#F0FEFB', stroke:'#7ADAD8', text:'#0D2B40', badge:'rgba(0,189,214,0.12)', badgeT:'#009BB0', sw:1.5, dash:'none', shadow:false };
 }
 
@@ -2346,8 +2395,7 @@ function getNodeRepresentativeImg(node){
   else if(node.id==='tiburon') firstSpecies = SPECIES.find(s=>s.cat==='tiburon');
   else if(node.id==='raya') firstSpecies = SPECIES.find(s=>s.cat==='raya');
   if(!firstSpecies) return null;
-  const cat = firstSpecies.cat==='tiburon' ? 'tiburones' : 'rayas';
-  return `especies/imagenes/${cat}/${firstSpecies.order.toLowerCase()}/${firstSpecies.id}.jpg`;
+  return speciesImgPath(firstSpecies);
 }
 
 function renderKeyCardHtml(node, isPreview){
@@ -3236,7 +3284,7 @@ function renderCatNav(){
   document.getElementById('searchIcon').innerHTML = ICONS.search;
   document.getElementById('catChevIcon').innerHTML = ICONS.chevronDown;
   const nav = document.getElementById('catNav');
-  const defs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas']];
+  const defs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces']];
   nav.innerHTML = defs.map(([key,label])=>
     `<button class="side-btn ${currentCat===key?'active':''}" data-cat="${key}">${label}</button>`
   ).join('');
@@ -3307,10 +3355,13 @@ function renderEnvNav(){
 function renderProgress(){
   const totalSharks = SPECIES.filter(s=>s.cat==='tiburon').length;
   const totalRays = SPECIES.filter(s=>s.cat==='raya').length;
+  const totalFish = SPECIES.filter(s=>s.cat==='pez').length;
   const unlockedSharks = SPECIES.filter(s=>s.cat==='tiburon' && isUnlocked(s.id)).length;
   const unlockedRays = SPECIES.filter(s=>s.cat==='raya' && isUnlocked(s.id)).length;
+  const unlockedFish = SPECIES.filter(s=>s.cat==='pez' && isUnlocked(s.id)).length;
   const pctS = totalSharks ? Math.round(unlockedSharks/totalSharks*100) : 0;
   const pctR = totalRays ? Math.round(unlockedRays/totalRays*100) : 0;
+  const pctF = totalFish ? Math.round(unlockedFish/totalFish*100) : 0;
   document.getElementById('progressBlock').innerHTML = `
     <div class="progress-item">
       <div class="progress-label"><span>Tiburones</span><span>${unlockedSharks} / ${totalSharks}</span></div>
@@ -3320,6 +3371,10 @@ function renderProgress(){
       <div class="progress-label"><span>Rayas</span><span>${unlockedRays} / ${totalRays}</span></div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pctR}%"></div></div>
     </div>
+    ${totalFish ? `<div class="progress-item fish">
+      <div class="progress-label"><span>Peces</span><span>${unlockedFish} / ${totalFish}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pctF}%"></div></div>
+    </div>` : ''}
   `;
 }
 
@@ -3357,14 +3412,14 @@ function renderGrid(){
   }
   grid.innerHTML = list.map(s=>{
     const unlockedFlag = isUnlocked(s.id);
-    const isRay = s.cat==='raya';
+    const catClass = s.cat==='raya' ? 'ray' : s.cat==='pez' ? 'fish' : '';
     const isFav = !!state.favorites[s.id];
     return `
-      <div class="card ${isRay?'ray':''} ${unlockedFlag?'is-unlocked':''}" data-id="${s.id}" data-rarity="${s.rarity}">
+      <div class="card ${catClass} ${unlockedFlag?'is-unlocked':''}" data-id="${s.id}" data-rarity="${s.rarity}">
         <div class="photo-box">
           <span class="code-badge">${s.code}</span>
-          ${placeholderMarkup(isRay)}
-          <img src="especies/imagenes/${s.cat==='tiburon'?'tiburones':'rayas'}/${s.order.toLowerCase()}/${s.id}.jpg" onerror="this.remove()">
+          ${placeholderMarkup(s.cat)}
+          <img src="${speciesImgPath(s)}" onerror="this.remove()">
           ${unlockedFlag ? `<button class="fav-btn ${isFav?'is-fav':''}" data-fav="${s.id}" title="Favorito">${isFav?icon('heartFilled'):icon('heartOutline')}</button>` : ''}
           <div class="status-overlay ${unlockedFlag?'':'locked'}"></div>
           <div class="card-photo-overlay">
@@ -3439,14 +3494,13 @@ function closeModal(){
 }
 
 function renderModal(s, sightings, showForm, editingSighting){
-  const isRay = s.cat==='raya';
-  const themeClass = isRay ? 'ray-theme' : '';
+  const themeClass = s.cat==='raya' ? 'ray-theme' : s.cat==='pez' ? 'fish-theme' : '';
   const unlockedFlag = sightings.length > 0;
   const isFav = !!state.favorites[s.id];
   const rarityDots = Array.from({length:5}, (_,i)=>`<span class="${i < s.rarity ? 'filled':''}"></span>`).join('');
   const rarityLabel = ['Frecuente','Ocasional','Poco común','Raro','Excepcional'][s.rarity-1] || '';
 
-  const sightingSpeciesImg = `especies/imagenes/${s.cat==='tiburon'?'tiburones':'rayas'}/${s.order.toLowerCase()}/${s.id}.jpg`;
+  const sightingSpeciesImg = speciesImgPath(s);
   const sightingsHtml = sightings.length ? sightings.slice().reverse().map(sg => {
     const isExpanded = expandedSightings.has(sg.id);
     const thumbSrc = sg.photo || sightingSpeciesImg;
@@ -3491,8 +3545,8 @@ function renderModal(s, sightings, showForm, editingSighting){
       ${unlockedFlag ? `<button type="button" id="undoBtn">${icon('undo','icon-sm')}Deshacer desbloqueo</button>` : `<button type="button" disabled style="color:var(--faint);cursor:default;">Sin registros aún</button>`}
     </div>
     <div class="modal-photo">
-      ${placeholderMarkup(isRay)}
-      <img src="especies/imagenes/${s.cat==='tiburon'?'tiburones':'rayas'}/${s.order.toLowerCase()}/${s.id}.jpg" onerror="this.remove()">
+      ${placeholderMarkup(s.cat)}
+      <img src="${speciesImgPath(s)}" onerror="this.remove()">
       <div class="modal-photo-footer">
         <span class="modal-code">${s.code}</span>
         <h2 class="modal-photo-name">${s.name}</h2>
@@ -4040,7 +4094,7 @@ function openFriendSightingDetail(p){
   const overlay = document.getElementById('friendSightingOverlay');
   const sheet = document.getElementById('friendSightingSheet');
   const initials = (p.ownerName||'?')[0].toUpperCase();
-  const speciesImg = sp ? `especies/imagenes/${sp.cat==='tiburon'?'tiburones':'rayas'}/${sp.order.toLowerCase()}/${sp.id}.jpg` : '';
+  const speciesImg = sp ? speciesImgPath(sp) : '';
   const bannerImg = sg.photo || speciesImg;
   sheet.innerHTML = `
     <button type="button" class="icon-btn fs-close" id="fsCloseBtn" title="Cerrar">
@@ -4099,7 +4153,7 @@ function openGlobalMap(){
   // Filtros — misma lista de categoría/orden/entorno/favoritos/búsqueda
   // que la barra lateral del explorador, compartiendo el mismo estado.
   function renderMapFilters(){
-    const catDefs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas']];
+    const catDefs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces']];
     const catNav = document.getElementById('mapCatNav');
     catNav.innerHTML = catDefs.map(([k,l])=>`<button type="button" class="map-filter-pill ${currentCat===k?'active':''}" data-cat="${k}">${l}</button>`).join('');
     catNav.querySelectorAll('[data-cat]').forEach(btn=>{
@@ -4239,8 +4293,8 @@ function redrawMapMarkers(){
 
     const rows = group.map((p,i)=>{
       const sp = SPECIES.find(x=>x.id===p.speciesId);
-      const speciesImgPath = sp ? `especies/imagenes/${sp.cat==='tiburon'?'tiburones':'rayas'}/${sp.order.toLowerCase()}/${sp.id}.jpg` : '';
-      const thumbSrc = p.sg.photo || speciesImgPath;
+      const imgPath = sp ? speciesImgPath(sp) : '';
+      const thumbSrc = p.sg.photo || imgPath;
       const thumb = `<div style="width:36px;height:36px;border-radius:8px;background:#eef4f8;flex-shrink:0;overflow:hidden;">
         ${thumbSrc ? `<img src="${thumbSrc}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none';">` : ''}
       </div>`;
@@ -5539,7 +5593,7 @@ if('serviceWorker' in navigator){
   <div class="al-content">
     <div class="al-logo">
       <div class="al-logo-text"><span>Mar</span><span class="al-logo-dex">Dex</span></div>
-      <div class="al-logo-sub">Gu&iacute;a de buceo &middot; Tiburones y Rayas</div>
+      <div class="al-logo-sub">Gu&iacute;a de buceo &middot; Tiburones, Rayas y Peces</div>
     </div>
     <div class="al-card">
       <div class="al-tabs" id="alTabs">

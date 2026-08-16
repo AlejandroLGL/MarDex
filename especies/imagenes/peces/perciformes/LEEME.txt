@@ -1,0 +1,11 @@
+Coloca aquí las fotos de Perciformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- castanuela.jpg  (Chromis chromis — Castañuela)
+- mero.jpg        (Epinephelus marginatus — Mero)
+- falsoabadejo.jpg (Epinephelus costae — Falso abadejo)
+- trescolas.jpg   (Anthias anthias — Tres colas)
+- corvina.jpg     (Sciaena umbra — Corvina)
+- cabrilla.jpg    (Serranus cabrilla — Cabrilla)
+- salmonete.jpg   (Mullus surmuletus — Salmonete de roca)
+- espeton.jpg     (Sphyraena viridensis — Espetón)
