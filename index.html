@@ -985,13 +985,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .field{ margin-bottom:12px; }
   .field label{ display:block; font-size:11px; color:var(--muted); margin-bottom:5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; }
   .field input[type=text], .field input[type=date], .field textarea{
-    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm);
+    width:100%; min-width:0; background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm);
     color:var(--ink); padding:10px 12px; font-size:13px; font-family:var(--sans);
   }
   .field input:focus, .field textarea:focus{ outline:none; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft); }
   .field textarea{ resize:vertical; min-height:64px; }
   .field-row2{ display:flex; gap:8px; }
-  .field-row2 > .field{ flex:1; }
+  .field-row2 > .field{ flex:1; min-width:0; }
   .loc-input-wrap{ position:relative; }
   .loc-input-wrap .icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); }
   .loc-input-wrap input{ padding-left:36px !important; }
@@ -1856,6 +1856,7 @@ let SPECIES = [
   {id:'lisa', cat:'pez', order:'Mugiliformes', name:'Lisa', sci:'Chelon labrosus', region:'Mediterráneo', code:'PEZ-20', size:'0.7 m', habitat:'Aguas costeras, estuarios y puertos', depth:'0–20 m', speed:'Moderada', diet:'Detritos, algas y pequeños invertebrados del sedimento', rarity:1, blurb:'De labios gruesos característicos, forma bancos habituales en puertos y calas poco profundas, donde se alimenta filtrando el sedimento del fondo.'},
   {id:'morena', cat:'pez', order:'Anguilliformes', name:'Morena', sci:'Muraena helena', region:'Mediterráneo', code:'PEZ-21', size:'1.5 m', habitat:'Grietas y cuevas rocosas', depth:'0–80 m', speed:'Lenta', diet:'Peces y cefalópodos', rarity:2, blurb:'Cuerpo serpentiforme con un llamativo patrón marmoleado. Pasa el día asomando la cabeza desde su refugio entre las rocas, abriendo y cerrando la boca para respirar, no como gesto de amenaza.'},
   {id:'congrio', cat:'pez', order:'Anguilliformes', name:'Congrio', sci:'Conger conger', region:'Mediterráneo', code:'PEZ-22', size:'2 m', habitat:'Cuevas, grietas y restos de naufragios', depth:'0–300 m', speed:'Lenta', diet:'Peces, crustáceos y cefalópodos', rarity:2, blurb:'La mayor de las anguilas mediterráneas, de color gris uniforme y sin escamas. Habitual en pecios y grutas, donde puede alcanzar tamaños considerables.'},
+  {id:'oblada', cat:'pez', order:'Spariformes', name:'Oblada', sci:'Oblada melanura', region:'Mediterráneo', code:'PEZ-23', size:'0.3 m', habitat:'Fondos rocosos y praderas de posidonia', depth:'0–100 m', speed:'Moderada', diet:'Pequeños invertebrados y algas', rarity:1, blurb:'Fácil de identificar por la mancha negra bordeada de blanco junto a la cola, que imita un ojo para despistar a los depredadores. Forma bancos numerosos y es una de las presencias más habituales en cualquier inmersión mediterránea.'},
 ];
 
 // ---------- estado ----------
