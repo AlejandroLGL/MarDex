@@ -4043,7 +4043,7 @@ function wireForm(s, sightings, editingSighting){
         lat: pendingCoords?.lat??null, lng: pendingCoords?.lng??null,
         date: dateISO, environment: envChoice, photo, size_observed: sizeIdx
       }).select().single();
-      if(error){ showToast('Error al guardar',true); return; }
+      if(error){ console.error('Error al guardar avistamiento:', error); showToast('Error al guardar: ' + error.message, true); return; }
       const sighting = {
         id:ins.id, title, location, comment,
         environment:envChoice, photo: photo||null,
