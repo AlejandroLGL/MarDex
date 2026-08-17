@@ -1,5 +1,5 @@
 Coloca aquí las fotos de Anguilliformes (peces), nombradas como {id}.jpg
 
 Especies de este orden:
-- morena.jpg   (Muraena helena — Morena)
+- morena.jpg   ✓ presente (Muraena helena — Morena)
 - congrio.jpg  ✓ presente (Conger conger — Congrio)

@@ -1,7 +1,7 @@
 Coloca aquí las fotos de Spariformes (peces), nombradas como {id}.jpg
 
 Especies de este orden:
-- salpa.jpg      (Sarpa salpa — Salpa)
+- salpa.jpg      ✓ presente (Sarpa salpa — Salpa)
 - sargo.jpg      ✓ presente (Diplodus sargus — Sargo)
 - sargoreal.jpg  ✓ presente (Diplodus cervinus — Sargo Imperial)
 - dorada.jpg     ✓ presente (Sparus aurata — Dorada)

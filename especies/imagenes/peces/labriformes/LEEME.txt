@@ -2,5 +2,5 @@ Coloca aquí las fotos de Labriformes (peces), nombradas como {id}.jpg
 
 Especies de este orden:
 - tordo.jpg  ✓ presente (Symphodus tinca — Tordo)
-- julia.jpg  (Coris julis — Julia)
+- julia.jpg  ✓ presente (Coris julis — Julia)
 - fredi.jpg  ✓ presente (Thalassoma pavo — Fredi)

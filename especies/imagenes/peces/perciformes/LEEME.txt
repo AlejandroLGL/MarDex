@@ -6,6 +6,6 @@ Especies de este orden:
 - falsoabadejo.jpg ✓ presente (Epinephelus costae — Falso abadejo)
 - trescolas.jpg   ✓ presente (Anthias anthias — Tres colas)
 - corvina.jpg     ✓ presente (Sciaena umbra — Corvina)
-- cabrilla.jpg    (Serranus cabrilla — Cabrilla)
+- cabrilla.jpg    ✓ presente (Serranus cabrilla — Cabrilla)
 - salmonete.jpg   ✓ presente (Mullus surmuletus — Salmonete de roca)
 - espeton.jpg     ✓ presente (Sphyraena viridensis — Espetón)
