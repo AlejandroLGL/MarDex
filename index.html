@@ -5778,7 +5778,11 @@ if('serviceWorker' in navigator){
   // actualizado en cuanto eso ocurre.
   let swRefreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-    if(swRefreshing) return;
+    // No recargar en mitad del flujo de recuperación de contraseña: la
+    // sesión de recuperación ya está activa en ese punto, así que un
+    // reload aquí no repite el formulario de nueva contraseña, sino que
+    // mete al usuario directo en la app como si fuera un login normal.
+    if(swRefreshing || _handledPasswordRecovery) return;
     swRefreshing = true;
     window.location.reload();
   });
