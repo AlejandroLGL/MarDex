@@ -1,7 +1,7 @@
 // MarDex Service Worker
 // Estrategia: cache-first para el shell de la app, network-first para imágenes
 
-const CACHE_NAME = 'mardex-v3';
+const CACHE_NAME = 'mardex-v4';
 const CACHE_DURATION_IMAGES = 30 * 24 * 60 * 60 * 1000; // 30 días
 
 // Recursos del shell de la app que se cachean en la instalación
@@ -60,7 +60,17 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Shell (index.html, manifest, iconos) → stale-while-revalidate
+  // Shell HTML/manifest → network-first: la app cambia con cada despliegue,
+  // así que si hay conexión queremos siempre la versión nueva y solo caemos
+  // al caché cuando no hay red (antes esto iba por stale-while-revalidate,
+  // que enseña primero lo que hubiera cacheado en el install y podía dejar
+  // a un dispositivo viendo una versión muy vieja de la app indefinidamente).
+  if (url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname.endsWith('/manifest.json')) {
+    event.respondWith(networkFirstStrategy(event.request));
+    return;
+  }
+
+  // Resto del shell (iconos) → stale-while-revalidate
   event.respondWith(staleWhileRevalidate(event.request));
 });
 
