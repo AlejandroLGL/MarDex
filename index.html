@@ -1924,7 +1924,7 @@ let SPECIES = [
 
 // ---------- estado ----------
 let state = { sightings:{}, favorites:{} };
-let currentCat = 'todos';
+let selectedCats = new Set();
 let selectedOrders = new Set();
 let currentEnv = 'todos';
 let currentLock = 'todos';
@@ -1948,7 +1948,7 @@ let modalFromHistory = false;
 function saveUIPrefs(){
   try{
     sessionStorage.setItem('mardex:ui-prefs', JSON.stringify({
-      viewMode, currentCat,
+      viewMode, selectedCats: Array.from(selectedCats),
       selectedOrders: Array.from(selectedOrders),
       currentEnv, currentLock, showFavOnly,
       currentSort, currentSortDir
@@ -1962,7 +1962,7 @@ function loadUIPrefs(){
     if(!raw) return;
     const p = JSON.parse(raw);
     if(p.viewMode) viewMode = p.viewMode;
-    if(p.currentCat) currentCat = p.currentCat;
+    if(Array.isArray(p.selectedCats)) selectedCats = new Set(p.selectedCats);
     if(Array.isArray(p.selectedOrders)) selectedOrders = new Set(p.selectedOrders);
     if(p.currentEnv) currentEnv = p.currentEnv;
     if(p.currentLock) currentLock = p.currentLock;
@@ -2623,7 +2623,7 @@ document.getElementById('keyBackBtn').onclick = ()=>{
 // ---------- aplicar filtro ----------
 function applyTreeFilter(){
   if(keyMultiSelect.size===0){
-    currentCat='todos'; selectedOrders=new Set();
+    selectedCats=new Set(); selectedOrders=new Set();
   } else {
     const catSet=new Set(), ordSet=new Set();
     let hasAll=false;
@@ -2634,13 +2634,13 @@ function applyTreeFilter(){
       else if(node.type==='cat') catSet.add(node.cat);
       else if(node.type==='order') ordSet.add(node.order);
     });
-    if(hasAll){ currentCat='todos'; selectedOrders=new Set(); }
-    else if(catSet.size===1&&ordSet.size===0){ currentCat=Array.from(catSet)[0]; selectedOrders=new Set(); }
+    if(hasAll){ selectedCats=new Set(); selectedOrders=new Set(); }
+    else if(catSet.size>0&&ordSet.size===0){ selectedCats=catSet; selectedOrders=new Set(); }
     else if(ordSet.size>0){
       const ordCats=new Set(Array.from(ordSet).map(o=>treeNodeMap['ord:'+o]?.cat).filter(Boolean));
-      currentCat=ordCats.size===1&&catSet.size===0 ? Array.from(ordCats)[0] : 'todos';
+      selectedCats=catSet.size===0 ? ordCats : catSet;
       selectedOrders=ordSet;
-    } else { currentCat='todos'; selectedOrders=new Set(); }
+    } else { selectedCats=new Set(); selectedOrders=new Set(); }
   }
   closeTreeOverlay();
   renderCatNav(); renderOrderNav(); renderGrid();
@@ -3384,9 +3384,9 @@ function askNewPassword(){
 }
 
 // ---------- filtros ----------
-function ordersFor(cat){
+function ordersFor(cats){
   const set = new Set();
-  SPECIES.filter(s => cat==='todos' ? true : s.cat===cat)
+  SPECIES.filter(s => cats.size===0 ? true : cats.has(s.cat))
     .filter(s => !showFavOnly || state.favorites[s.id])
     .forEach(s=>set.add(s.order));
   return Array.from(set).sort();
@@ -3397,13 +3397,18 @@ function renderCatNav(){
   document.getElementById('identifyIcon').innerHTML = ICONS.camera;
   document.getElementById('catChevIcon').innerHTML = ICONS.chevronDown;
   const nav = document.getElementById('catNav');
-  const defs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
-  nav.innerHTML = defs.map(([key,label])=>
-    `<button class="side-btn ${currentCat===key?'active':''}" data-cat="${key}">${label}</button>`
-  ).join('');
+  const defs = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
+  nav.innerHTML = `<button class="side-btn ${selectedCats.size===0?'active':''}" data-cat="todos">Todos</button>` +
+    defs.map(([key,label])=>
+      `<button class="side-btn ${selectedCats.has(key)?'active':''}" data-cat="${key}">${label}</button>`
+    ).join('');
   nav.querySelectorAll('[data-cat]').forEach(btn=>{
     btn.onclick = ()=>{
-      currentCat = btn.dataset.cat; selectedOrders = new Set();
+      const key = btn.dataset.cat;
+      if(key==='todos') selectedCats = new Set();
+      else if(selectedCats.has(key)) selectedCats.delete(key);
+      else selectedCats.add(key);
+      selectedOrders = new Set();
       renderCatNav(); renderOrderNav(); renderGrid();
     };
   });
@@ -3419,7 +3424,7 @@ function renderCatNav(){
 function renderOrderNav(){
   document.getElementById('orderChevIcon').innerHTML = ICONS.chevronDown;
   const nav = document.getElementById('orderNav');
-  const orders = ordersFor(currentCat);
+  const orders = ordersFor(selectedCats);
   nav.innerHTML = orders.map(o=>
     `<button class="side-btn ${selectedOrders.has(o)?'active':''}" data-order="${o}">${o}</button>`
   ).join('');
@@ -3513,7 +3518,7 @@ function renderGrid(){
   const grid = document.getElementById('grid');
   grid.className = 'grid' + (viewMode === 'list' ? ' view-list' : viewMode === 'small' ? ' view-small' : '');
   const filtered = SPECIES.filter(s =>
-    (currentCat==='todos' || s.cat===currentCat) &&
+    (selectedCats.size===0 || selectedCats.has(s.cat)) &&
     (selectedOrders.size===0 || selectedOrders.has(s.order)) &&
     (!showFavOnly || state.favorites[s.id]) &&
     matchesSearch(s) && matchesEnv(s) && matchesLock(s)
@@ -4343,19 +4348,24 @@ function openGlobalMap(){
   // Filtros — misma lista de categoría/orden/entorno/favoritos/búsqueda
   // que la barra lateral del explorador, compartiendo el mismo estado.
   function renderMapFilters(){
-    const catDefs = [['todos','Todos'],['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
+    const catDefs = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
     const catNav = document.getElementById('mapCatNav');
-    catNav.innerHTML = catDefs.map(([k,l])=>`<button type="button" class="map-filter-pill ${currentCat===k?'active':''}" data-cat="${k}">${l}</button>`).join('');
+    catNav.innerHTML = `<button type="button" class="map-filter-pill ${selectedCats.size===0?'active':''}" data-cat="todos">Todos</button>` +
+      catDefs.map(([k,l])=>`<button type="button" class="map-filter-pill ${selectedCats.has(k)?'active':''}" data-cat="${k}">${l}</button>`).join('');
     catNav.querySelectorAll('[data-cat]').forEach(btn=>{
       btn.onclick = ()=>{
-        currentCat = btn.dataset.cat; selectedOrders = new Set();
+        const key = btn.dataset.cat;
+        if(key==='todos') selectedCats = new Set();
+        else if(selectedCats.has(key)) selectedCats.delete(key);
+        else selectedCats.add(key);
+        selectedOrders = new Set();
         renderCatNav(); renderOrderNav(); renderGrid();
         renderMapFilters(); refresh();
       };
     });
 
     const orderNav = document.getElementById('mapOrderNav');
-    const orders = ordersFor(currentCat);
+    const orders = ordersFor(selectedCats);
     document.getElementById('mapOrderGroup').style.display = orders.length ? '' : 'none';
     orderNav.innerHTML = orders.map(o=>`<button type="button" class="map-filter-pill ${selectedOrders.has(o)?'active':''}" data-order="${o}">${o}</button>`).join('');
     orderNav.querySelectorAll('[data-order]').forEach(btn=>{
@@ -4519,7 +4529,7 @@ function renderMapPins(allPins){
     const sp = SPECIES.find(x=>x.id===p.speciesId);
     if(!sp) return false;
     // Mismos filtros que el explorador principal (categoría/orden/favoritos/búsqueda/entorno)
-    if(currentCat !== 'todos' && sp.cat !== currentCat) return false;
+    if(selectedCats.size > 0 && !selectedCats.has(sp.cat)) return false;
     if(selectedOrders.size > 0 && !selectedOrders.has(sp.order)) return false;
     if(showFavOnly && !state.favorites[sp.id]) return false;
     if(currentEnv !== 'todos' && p.sg.environment !== currentEnv) return false;
