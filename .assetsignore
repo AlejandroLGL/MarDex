@@ -1,0 +1,10 @@
+.git
+.claude
+.wrangler
+.gitignore
+.gitattributes
+wrangler.jsonc
+README.md
+supabase
+pendientes.csv
+datos_mardex.csv
