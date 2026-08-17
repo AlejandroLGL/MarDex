@@ -1,11 +1,11 @@
 Coloca aquí las fotos de Spariformes (peces), nombradas como {id}.jpg
 
 Especies de este orden:
-- salpa.jpg      (Sarpa salpa — Salpa)
-- sargo.jpg      (Diplodus sargus — Sargo)
-- sargoreal.jpg  (Diplodus cervinus — Sargo real)
-- dorada.jpg     (Sparus aurata — Dorada)
-- denton.jpg     (Dentex dentex — Denton)
-- boga.jpg       (Boops boops — Boga)
-- mojarra.jpg    (Diplodus vulgaris — Mojarra)
+- salpa.jpg      ✓ presente (Sarpa salpa — Salpa)
+- sargo.jpg      ✓ presente (Diplodus sargus — Sargo)
+- sargoreal.jpg  ✓ presente (Diplodus cervinus — Sargo Imperial)
+- dorada.jpg     ✓ presente (Sparus aurata — Dorada)
+- denton.jpg     ✓ presente (Dentex dentex — Denton)
+- boga.jpg       ✓ presente (Boops boops — Boga)
+- mojarra.jpg    ✓ presente (Diplodus vulgaris — Mojarra)
 - oblada.jpg     (Oblada melanura — Oblada)

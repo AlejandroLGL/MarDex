@@ -1,4 +1,4 @@
 Coloca aquí las fotos de Mugiliformes (peces), nombradas como {id}.jpg
 
 Especies de este orden:
-- lisa.jpg  (Chelon labrosus — Lisa)
+- lisa.jpg  ✓ presente (Chelon labrosus — Lisa)
