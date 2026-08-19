@@ -716,11 +716,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .identify-eyes-loader{
     position:absolute; z-index:3; left:50%; top:50%; transform:translate(-50%,-50%);
-    display:inline-flex; gap:10px; pointer-events:none;
+    pointer-events:none;
   }
-  .identify-eyes-loader::before,
-  .identify-eyes-loader::after{
-    content:''; height:20px; aspect-ratio:1; border-radius:50%;
+  .identify-eyes-loader::before{
+    content:''; display:block; height:20px; aspect-ratio:1; border-radius:50%;
     background:
       radial-gradient(farthest-side,#000 95%,#0000) 35% 35%/6px 6px no-repeat
       #fff;
