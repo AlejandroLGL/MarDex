@@ -5,7 +5,7 @@
 // Body esperado (JSON):
 //   { imageBase64: string, mimeType?: string, species: {id, name, sci}[] }
 // Respuesta (JSON):
-//   { id: string|null, confidence: "alta"|"media"|"baja", note: string }
+//   { id: string|null, confidence: number (0-100), note: string }
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -48,7 +48,7 @@ Catálogo de especies disponibles en la app (solo puedes elegir un id de esta li
 ${catalog}
 
 Analiza la foto adjunta y responde ÚNICAMENTE con un JSON con este formato exacto, sin texto adicional ni bloques de código:
-{"id": "id_de_la_especie_o_null", "confidence": "alta|media|baja", "note": "breve razón en español, máximo 20 palabras"}
+{"id": "id_de_la_especie_o_null", "confidence": <entero 0-100, tu probabilidad estimada de haber acertado la especie>, "note": "breve razón en español, máximo 20 palabras"}
 
 Si la foto no muestra con claridad ninguna especie del catálogo, o no es un animal marino, devuelve "id": null.`;
 
@@ -81,15 +81,20 @@ Si la foto no muestra con claridad ninguna especie del catálogo, o no es un ani
   const data = await geminiRes.json();
   const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
 
-  let parsed: { id: string | null; confidence?: string; note?: string };
+  let parsed: { id: string | null; confidence?: number; note?: string };
   try {
     parsed = JSON.parse(text);
   } catch {
-    parsed = { id: null, confidence: "baja", note: "Respuesta no interpretable" };
+    parsed = { id: null, confidence: 0, note: "Respuesta no interpretable" };
   }
 
   const validIds = new Set(species.map((s) => s.id));
   if (parsed.id && !validIds.has(parsed.id)) parsed.id = null;
+  if (typeof parsed.confidence !== "number" || Number.isNaN(parsed.confidence)) {
+    parsed.confidence = undefined;
+  } else {
+    parsed.confidence = Math.max(0, Math.min(100, Math.round(parsed.confidence)));
+  }
 
   return json(parsed);
 });

@@ -4255,7 +4255,7 @@ document.getElementById('identifyFileInput').addEventListener('change', async (e
     const sp = SPECIES.find(s=>s.id===data.id);
     if(!sp){ showToast('Especie no reconocida', true); return; }
     openIdentifiedSpecies(sp, dataUrl);
-    showToast(`Podría ser: ${sp.name}${data.confidence ? ' (confianza '+data.confidence+')' : ''}`);
+    showToast(`Podría ser: ${sp.name}${typeof data.confidence === 'number' ? ' al '+data.confidence+'%' : ''}`);
   }catch(err){
     showToast('Error al identificar la especie', true);
   }finally{
