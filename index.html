@@ -714,6 +714,25 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     0%{ width:24px; height:24px; opacity:0.9; }
     100%{ width:220px; height:220px; opacity:0; }
   }
+  .identify-eyes-loader{
+    position:absolute; z-index:3; left:50%; top:50%; transform:translate(-50%,-50%);
+    display:inline-flex; gap:10px; pointer-events:none;
+  }
+  .identify-eyes-loader::before,
+  .identify-eyes-loader::after{
+    content:''; height:20px; aspect-ratio:1; border-radius:50%;
+    background:
+      radial-gradient(farthest-side,#000 95%,#0000) 35% 35%/6px 6px no-repeat
+      #fff;
+    animation: identifyEyesLook 3s infinite;
+  }
+  @keyframes identifyEyesLook{
+    0%,11%   { background-position:35% 35%; }
+    14%,36%  { background-position:65% 35%; }
+    38%,61%  { background-position:65% 65%; }
+    64%,86%  { background-position:35% 65%; }
+    88%,100% { background-position:35% 35%; }
+  }
   .identify-body{ padding:22px 24px 26px; text-align:center; }
   .identify-title{ font-family:var(--serif); font-size:19px; font-weight:400; color:var(--ink); margin:0 0 6px; }
   .identify-sub{
@@ -4204,6 +4223,7 @@ function openIdentifyLoadingCard(dataUrl){
       <div class="identify-ring r2"></div>
       <div class="identify-ring r3"></div>
       <div class="identify-scanline"></div>
+      <div class="identify-eyes-loader"></div>
     </div>
     <div class="identify-body">
       <h3 class="identify-title">Identificando especie&hellip;</h3>
