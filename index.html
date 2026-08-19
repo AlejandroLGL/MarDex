@@ -307,6 +307,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     padding:5px 8px; cursor:pointer; max-width:56%;
   }
   .pp-row-hint{ font-size:11px; color:var(--faint); margin-top:-4px; padding-bottom:6px; }
+  .pp-row-link{
+    width:100%; background:none; border:none; cursor:pointer; font-family:var(--sans); text-align:left;
+  }
+  .pp-row-link:hover .pp-row-chevron{ color:var(--turq); }
+  .pp-row-chevron{ color:var(--blue); font-weight:700; }
   .pp-section-header{ display:flex; justify-content:space-between; align-items:center; }
   .pp-edit-btn{ font-size:12px; color:var(--blue); font-weight:700; background:none; border:none; cursor:pointer; padding:0; }
   .pp-edit-btn:hover{ color:var(--turq); }
@@ -1670,6 +1675,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 <div class="profile-page-overlay" id="profilePageOverlay">
   <div class="profile-page-sheet" id="profilePageSheet">
     <!-- populated by renderProfilePage() -->
+  </div>
+</div>
+
+<div class="profile-page-overlay" id="settingsPageOverlay">
+  <div class="profile-page-sheet" id="settingsPageSheet">
+    <!-- populated by renderSettingsPage() -->
   </div>
 </div>
 
@@ -3063,6 +3074,83 @@ document.getElementById('profilePageOverlay').addEventListener('click', e => {
   if(e.target === document.getElementById('profilePageOverlay')) closeProfilePage();
 });
 
+// ── Página de Configuración (propio canvas, abierta desde Perfil) ──────────
+function openSettingsPage(){
+  document.getElementById('settingsPageOverlay').classList.add('open');
+  renderSettingsPage();
+}
+function closeSettingsPage(){
+  document.getElementById('settingsPageOverlay').classList.remove('open');
+}
+document.getElementById('settingsPageOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('settingsPageOverlay')) closeSettingsPage();
+});
+
+function renderSettingsPage(){
+  const sheet = document.getElementById('settingsPageSheet');
+  const acc = currentAccountData;
+  const settings = {
+    privacy: acc?.privacy || 'amigos',
+    units: acc?.units || 'metric',
+    language: acc?.language || 'es',
+  };
+  sheet.innerHTML = `
+    <button class="pp-close" id="settingsCloseBtn" title="Cerrar">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+    </button>
+    <div class="pp-display-name" style="margin-bottom:18px;">Configuración</div>
+
+    <div class="pp-section" style="border-top:none; padding-top:0;">
+      <div class="pp-row">
+        <span class="pp-row-label">Privacidad</span>
+        <select class="pp-select" id="ppPrivacySelect">
+          ${PRIVACY_OPTIONS.map(o=>`<option value="${o.value}" ${settings.privacy===o.value?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="pp-row-hint">Quién puede ver tus avistamientos y tu posición en el mapa.</div>
+      <div class="pp-row">
+        <span class="pp-row-label">Unidades</span>
+        <select class="pp-select" id="ppUnitsSelect">
+          ${UNITS_OPTIONS.map(o=>`<option value="${o.value}" ${settings.units===o.value?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="pp-row">
+        <span class="pp-row-label">Idioma</span>
+        <select class="pp-select" id="ppLangSelect">
+          ${LANG_OPTIONS.map(o=>`<option value="${o.value}" ${settings.language===o.value?'selected':''}>${o.flag} ${o.label}${o.value!=='es'?' (próximamente)':''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="pp-row-hint">De momento MarDex solo está disponible en español; guardamos tu idioma preferido para activarlo en cuanto esté listo.</div>
+    </div>
+  `;
+
+  document.getElementById('settingsCloseBtn').onclick = closeSettingsPage;
+
+  document.getElementById('ppPrivacySelect').onchange = async (e)=>{
+    const value = e.target.value;
+    const {error} = await _sb.from('profiles').update({privacy:value}).eq('id', currentAccountData.id);
+    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.privacy; return; }
+    currentAccountData.privacy = value;
+    showToast('Privacidad actualizada');
+  };
+
+  document.getElementById('ppUnitsSelect').onchange = async (e)=>{
+    const value = e.target.value;
+    const {error} = await _sb.from('profiles').update({units:value}).eq('id', currentAccountData.id);
+    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.units; return; }
+    currentAccountData.units = value;
+    showToast('Unidades actualizadas');
+  };
+
+  document.getElementById('ppLangSelect').onchange = async (e)=>{
+    const value = e.target.value;
+    const {error} = await _sb.from('profiles').update({language:value}).eq('id', currentAccountData.id);
+    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.language; return; }
+    currentAccountData.language = value;
+    showToast(value==='es' ? 'Idioma actualizado' : 'Preferencia guardada — lo activaremos cuando esté traducido');
+  };
+}
+
 // ── Recortador circular de avatar ──────────────────────────────────────────
 const _cropStageSize = 240;
 let _cropImgNatW = 0, _cropImgNatH = 0, _cropScale = 1, _cropMinScale = 1, _cropMaxScale = 1;
@@ -3200,11 +3288,6 @@ async function renderProfilePage(){
   const sheet = document.getElementById('profilePageSheet');
   // Buscar datos de la cuenta actual
   const acc = currentAccountData;
-  const settings = {
-    privacy: acc?.privacy || 'amigos',
-    units: acc?.units || 'metric',
-    language: acc?.language || 'es',
-  };
 
   const initials = currentProfile ? currentProfile[0].toUpperCase() : '?';
   const displayName = acc ? acc.name : (currentProfile || 'Usuario');
@@ -3290,27 +3373,10 @@ async function renderProfilePage(){
 
     <!-- Configuración -->
     <div class="pp-section">
-      <div class="pp-section-title">Configuración</div>
-      <div class="pp-row">
-        <span class="pp-row-label">Privacidad</span>
-        <select class="pp-select" id="ppPrivacySelect">
-          ${PRIVACY_OPTIONS.map(o=>`<option value="${o.value}" ${settings.privacy===o.value?'selected':''}>${o.label}</option>`).join('')}
-        </select>
-      </div>
-      <div class="pp-row-hint">Quién puede ver tus avistamientos y tu posición en el mapa.</div>
-      <div class="pp-row">
-        <span class="pp-row-label">Unidades</span>
-        <select class="pp-select" id="ppUnitsSelect">
-          ${UNITS_OPTIONS.map(o=>`<option value="${o.value}" ${settings.units===o.value?'selected':''}>${o.label}</option>`).join('')}
-        </select>
-      </div>
-      <div class="pp-row">
-        <span class="pp-row-label">Idioma</span>
-        <select class="pp-select" id="ppLangSelect">
-          ${LANG_OPTIONS.map(o=>`<option value="${o.value}" ${settings.language===o.value?'selected':''}>${o.flag} ${o.label}${o.value!=='es'?' (próximamente)':''}</option>`).join('')}
-        </select>
-      </div>
-      <div class="pp-row-hint">De momento MarDex solo está disponible en español; guardamos tu idioma preferido para activarlo en cuanto esté listo.</div>
+      <button type="button" class="pp-row pp-row-link" id="ppOpenSettingsBtn">
+        <span class="pp-row-label">Configuración</span>
+        <span class="pp-row-value pp-row-chevron">Privacidad, unidades, idioma ›</span>
+      </button>
     </div>
 
     <!-- Logros -->
@@ -3448,29 +3514,7 @@ async function renderProfilePage(){
     openProfilePicker();
   };
 
-  document.getElementById('ppPrivacySelect').onchange = async (e)=>{
-    const value = e.target.value;
-    const {error} = await _sb.from('profiles').update({privacy:value}).eq('id', currentAccountData.id);
-    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.privacy; return; }
-    currentAccountData.privacy = value;
-    showToast('Privacidad actualizada');
-  };
-
-  document.getElementById('ppUnitsSelect').onchange = async (e)=>{
-    const value = e.target.value;
-    const {error} = await _sb.from('profiles').update({units:value}).eq('id', currentAccountData.id);
-    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.units; return; }
-    currentAccountData.units = value;
-    showToast('Unidades actualizadas');
-  };
-
-  document.getElementById('ppLangSelect').onchange = async (e)=>{
-    const value = e.target.value;
-    const {error} = await _sb.from('profiles').update({language:value}).eq('id', currentAccountData.id);
-    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.language; return; }
-    currentAccountData.language = value;
-    showToast(value==='es' ? 'Idioma actualizado' : 'Preferencia guardada — lo activaremos cuando esté traducido');
-  };
+  document.getElementById('ppOpenSettingsBtn').onclick = openSettingsPage;
 
   document.getElementById('ppDeleteAccountBtn').onclick = async ()=>{
     const ok = await askConfirm('¿Eliminar tu cuenta de MarDex? Se borrarán tu perfil, tus avistamientos y tu colección de forma permanente. Esta acción no se puede deshacer.');
