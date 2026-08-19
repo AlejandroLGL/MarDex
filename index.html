@@ -674,6 +674,72 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .identify-btn.loading{ opacity:0.55; pointer-events:none; }
   .identify-btn.loading .icon{ animation:identifySpin 1s linear infinite; }
   @keyframes identifySpin{ to{ transform:rotate(360deg); } }
+
+  /* ── Pop-up "identificando especie" (carta de carga con look de sonar) ── */
+  .identify-modal{ max-width:360px; }
+  .identify-photo{
+    position:relative; aspect-ratio:3/2; overflow:hidden;
+    background:linear-gradient(135deg, #0080C8 0%, #00BDD6 50%, #2DD4A4 100%);
+  }
+  .identify-photo img{
+    width:100%; height:100%; object-fit:cover;
+    filter:saturate(0.55) brightness(0.6); transform:scale(1.04);
+  }
+  .identify-photo::after{
+    content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:linear-gradient(to bottom, rgba(8,18,34,0.1) 0%, rgba(8,18,34,0.8) 100%);
+  }
+  .identify-scanline{
+    position:absolute; left:0; right:0; height:2px; z-index:2; pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent);
+    box-shadow:0 0 14px 3px rgba(255,255,255,0.55);
+    animation: identifyScan 2.4s ease-in-out infinite;
+  }
+  @keyframes identifyScan{
+    0%{ top:4%; opacity:0; }
+    12%{ opacity:1; }
+    50%{ top:96%; opacity:1; }
+    62%{ opacity:0; }
+    100%{ top:96%; opacity:0; }
+  }
+  .identify-ring{
+    position:absolute; z-index:2; left:50%; top:50%; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,0.55);
+    transform:translate(-50%,-50%); width:40px; height:40px;
+    animation: identifyPing 2.4s cubic-bezier(.2,.6,.35,1) infinite;
+  }
+  .identify-ring.r2{ animation-delay:.6s; }
+  .identify-ring.r3{ animation-delay:1.2s; }
+  @keyframes identifyPing{
+    0%{ width:24px; height:24px; opacity:0.9; }
+    100%{ width:220px; height:220px; opacity:0; }
+  }
+  .identify-body{ padding:22px 24px 26px; text-align:center; }
+  .identify-title{ font-family:var(--serif); font-size:19px; font-weight:400; color:var(--ink); margin:0 0 6px; }
+  .identify-sub{
+    font-size:12.5px; font-weight:600; letter-spacing:0.2px;
+    display:inline-flex; align-items:center; gap:5px; justify-content:center;
+  }
+  .identify-shimmer-text{
+    background:linear-gradient(90deg, var(--faint) 0%, var(--blue) 45%, var(--faint) 90%);
+    background-size:220% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation: identifyShimmer 1.7s linear infinite;
+  }
+  @keyframes identifyShimmer{
+    0%{ background-position:200% 0; }
+    100%{ background-position:-200% 0; }
+  }
+  .identify-dots{ display:inline-flex; align-items:flex-end; gap:3px; }
+  .identify-dots span{
+    display:block; width:4px; height:4px; border-radius:50%; background:var(--blue);
+    animation: identifyDotPulse 1.3s ease-in-out infinite;
+  }
+  .identify-dots span:nth-child(2){ animation-delay:.18s; }
+  .identify-dots span:nth-child(3){ animation-delay:.36s; }
+  @keyframes identifyDotPulse{
+    0%, 60%, 100%{ opacity:0.25; transform:translateY(0); }
+    30%{ opacity:1; transform:translateY(-2.5px); }
+  }
   .search-wrap input{
     width:100%; padding:13px 18px 13px 42px; border-radius:999px;
     border:1.5px solid rgba(0,128,200,0.35);
@@ -1545,6 +1611,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 
 <div class="overlay" id="overlay">
   <div class="modal" id="modalBody"></div>
+</div>
+
+<div class="overlay" id="identifyOverlay">
+  <div class="modal identify-modal" id="identifyModalCard"></div>
 </div>
 
 <div class="confirm-overlay" id="confirmOverlay">
@@ -4121,6 +4191,35 @@ function openIdentifiedSpecies(sp, dataUrl){
   if(preview){ preview.src = dataUrl; preview.style.display = 'block'; }
 }
 
+// Carta de carga mientras Gemini identifica la especie de la foto: mismo
+// lenguaje visual que la ficha de especie (carta con foto de cabecera),
+// con un "sonar" escaneando la imagen y un texto con shimmer al estilo del
+// indicador de "pensando" de Claude, en vez del simple spin del botón.
+function openIdentifyLoadingCard(dataUrl){
+  const card = document.getElementById('identifyModalCard');
+  card.innerHTML = `
+    <div class="identify-photo">
+      <img src="${dataUrl}" alt="">
+      <div class="identify-ring r1"></div>
+      <div class="identify-ring r2"></div>
+      <div class="identify-ring r3"></div>
+      <div class="identify-scanline"></div>
+    </div>
+    <div class="identify-body">
+      <h3 class="identify-title">Identificando especie&hellip;</h3>
+      <div class="identify-sub">
+        <span class="identify-shimmer-text">Consultando el catálogo</span>
+        <span class="identify-dots"><span></span><span></span><span></span></span>
+      </div>
+    </div>`;
+  document.getElementById('identifyOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeIdentifyLoadingCard(){
+  document.getElementById('identifyOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 document.getElementById('identifyBtn').addEventListener('click', ()=>{
   document.getElementById('identifyFileInput').click();
 });
@@ -4132,6 +4231,7 @@ document.getElementById('identifyFileInput').addEventListener('change', async (e
   btn.classList.add('loading');
   try{
     const dataUrl = await resizeImageFile(file, 900);
+    openIdentifyLoadingCard(dataUrl);
     const base64 = dataUrl.split(',')[1];
     const catalog = SPECIES.map(s=>({id:s.id, name:s.name, sci:s.sci}));
     const { data, error } = await _sb.functions.invoke('identify-species', {
@@ -4150,6 +4250,7 @@ document.getElementById('identifyFileInput').addEventListener('change', async (e
     showToast('Error al identificar la especie', true);
   }finally{
     btn.classList.remove('loading');
+    closeIdentifyLoadingCard();
   }
 });
 
