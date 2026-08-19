@@ -301,6 +301,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .pp-row-value{ font-size:13px; color:var(--ink); font-weight:700; max-width:60%; text-align:right; word-break:break-all; }
   .pp-row-action{ font-size:12px; color:var(--blue); font-weight:700; background:none; border:none; cursor:pointer; padding:0; }
   .pp-row-action:hover{ color:var(--turq); }
+  .pp-select{
+    font-size:12.5px; font-weight:700; color:var(--ink); font-family:var(--sans);
+    background:var(--bg); border:1px solid var(--line); border-radius:7px;
+    padding:5px 8px; cursor:pointer; max-width:56%;
+  }
+  .pp-row-hint{ font-size:11px; color:var(--faint); margin-top:-4px; padding-bottom:6px; }
   .pp-section-header{ display:flex; justify-content:space-between; align-items:center; }
   .pp-edit-btn{ font-size:12px; color:var(--blue); font-weight:700; background:none; border:none; cursor:pointer; padding:0; }
   .pp-edit-btn:hover{ color:var(--turq); }
@@ -611,6 +617,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     font-family:var(--sans); transition:background .15s, border-color .15s;
   }
   .pp-logout:hover{ background:rgba(255,95,83,0.12); border-color:rgba(255,95,83,0.5); }
+  .pp-delete-account{
+    margin-top:10px; width:100%; padding:12px; border-radius:var(--r-sm);
+    border:1.5px solid transparent; background:var(--coral);
+    color:#fff; font-size:13px; font-weight:700; cursor:pointer;
+    font-family:var(--sans); transition:opacity .15s;
+  }
+  .pp-delete-account:hover{ opacity:0.88; }
 
   .side-section{ margin-bottom:4px; border:none; }
   .side-section summary{
@@ -3187,6 +3200,11 @@ async function renderProfilePage(){
   const sheet = document.getElementById('profilePageSheet');
   // Buscar datos de la cuenta actual
   const acc = currentAccountData;
+  const settings = {
+    privacy: acc?.privacy || 'amigos',
+    units: acc?.units || 'metric',
+    language: acc?.language || 'es',
+  };
 
   const initials = currentProfile ? currentProfile[0].toUpperCase() : '?';
   const displayName = acc ? acc.name : (currentProfile || 'Usuario');
@@ -3273,10 +3291,26 @@ async function renderProfilePage(){
     <!-- Configuración -->
     <div class="pp-section">
       <div class="pp-section-title">Configuración</div>
-      <div class="pp-placeholder">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Próximamente — notificaciones, idioma, tema
+      <div class="pp-row">
+        <span class="pp-row-label">Privacidad</span>
+        <select class="pp-select" id="ppPrivacySelect">
+          ${PRIVACY_OPTIONS.map(o=>`<option value="${o.value}" ${settings.privacy===o.value?'selected':''}>${o.label}</option>`).join('')}
+        </select>
       </div>
+      <div class="pp-row-hint">Quién puede ver tus avistamientos y tu posición en el mapa.</div>
+      <div class="pp-row">
+        <span class="pp-row-label">Unidades</span>
+        <select class="pp-select" id="ppUnitsSelect">
+          ${UNITS_OPTIONS.map(o=>`<option value="${o.value}" ${settings.units===o.value?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="pp-row">
+        <span class="pp-row-label">Idioma</span>
+        <select class="pp-select" id="ppLangSelect">
+          ${LANG_OPTIONS.map(o=>`<option value="${o.value}" ${settings.language===o.value?'selected':''}>${o.flag} ${o.label}${o.value!=='es'?' (próximamente)':''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="pp-row-hint">De momento MarDex solo está disponible en español; guardamos tu idioma preferido para activarlo en cuanto esté listo.</div>
     </div>
 
     <!-- Logros -->
@@ -3289,6 +3323,7 @@ async function renderProfilePage(){
     </div>
 
     <button class="pp-logout" id="ppLogoutBtn">Cerrar sesión</button>
+    <button class="pp-delete-account" id="ppDeleteAccountBtn">Eliminar cuenta</button>
   `;
 
   // Lógica de avatar con foto
@@ -3411,6 +3446,61 @@ async function renderProfilePage(){
     renderGrid();
     closeProfilePage();
     openProfilePicker();
+  };
+
+  document.getElementById('ppPrivacySelect').onchange = async (e)=>{
+    const value = e.target.value;
+    const {error} = await _sb.from('profiles').update({privacy:value}).eq('id', currentAccountData.id);
+    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.privacy; return; }
+    currentAccountData.privacy = value;
+    showToast('Privacidad actualizada');
+  };
+
+  document.getElementById('ppUnitsSelect').onchange = async (e)=>{
+    const value = e.target.value;
+    const {error} = await _sb.from('profiles').update({units:value}).eq('id', currentAccountData.id);
+    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.units; return; }
+    currentAccountData.units = value;
+    showToast('Unidades actualizadas');
+  };
+
+  document.getElementById('ppLangSelect').onchange = async (e)=>{
+    const value = e.target.value;
+    const {error} = await _sb.from('profiles').update({language:value}).eq('id', currentAccountData.id);
+    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.language; return; }
+    currentAccountData.language = value;
+    showToast(value==='es' ? 'Idioma actualizado' : 'Preferencia guardada — lo activaremos cuando esté traducido');
+  };
+
+  document.getElementById('ppDeleteAccountBtn').onclick = async ()=>{
+    const ok = await askConfirm('¿Eliminar tu cuenta de MarDex? Se borrarán tu perfil, tus avistamientos y tu colección de forma permanente. Esta acción no se puede deshacer.');
+    if(!ok) return;
+    const ok2 = await askConfirm('Confirmación final: tu cuenta se eliminará ahora mismo y no hay vuelta atrás. ¿Continuar?');
+    if(!ok2) return;
+    const btn = document.getElementById('ppDeleteAccountBtn');
+    btn.disabled = true;
+    try{
+      const {data, error} = await _sb.functions.invoke('delete-account');
+      if(error || !data?.ok){
+        showToast('No se pudo eliminar la cuenta: ' + (error?.message || data?.error || 'error desconocido'), true);
+        btn.disabled = false;
+        return;
+      }
+      await _sb.auth.signOut();
+      currentProfile = null;
+      currentAccountData = null;
+      state = { sightings:{}, favorites:{} };
+      friendsMapPins = null;
+      mapViewMode = 'mine';
+      renderProfileBadge();
+      renderGrid();
+      closeProfilePage();
+      openProfilePicker();
+      showToast('Tu cuenta se ha eliminado');
+    }catch(err){
+      showToast('No se pudo eliminar la cuenta: ' + (err.message||'error desconocido'), true);
+      btn.disabled = false;
+    }
   };
 }
 
@@ -3760,8 +3850,8 @@ function renderModal(s, sightings, showForm, editingSighting){
         <button type="button" class="modal-fav-btn ${isFav?'is-fav':''}" id="modalFavBtn">${isFav?icon('heartFilled'):icon('heartOutline')}</button>
       </div>
       <div class="stat-grid">
-        <div class="stat-chip"><div class="stat-label">Tamaño</div><div class="stat-value">${s.size}</div></div>
-        <div class="stat-chip"><div class="stat-label">Profundidad</div><div class="stat-value">${s.depth}</div></div>
+        <div class="stat-chip"><div class="stat-label">Tamaño</div><div class="stat-value">${formatMeasure(s.size)}</div></div>
+        <div class="stat-chip"><div class="stat-label">Profundidad</div><div class="stat-value">${formatMeasure(s.depth)}</div></div>
         <div class="stat-chip"><div class="stat-label">Velocidad</div><div class="stat-value">${s.speed}</div></div>
         <div class="stat-chip"><div class="stat-label">Dieta</div><div class="stat-value">${s.diet}</div></div>
         <div class="stat-chip"><div class="stat-label">Hábitat</div><div class="stat-value">${s.habitat}</div></div>
@@ -3845,6 +3935,38 @@ function todayISO(){
 }
 
 const SIZE_LABELS = ['Cría','Muy pequeño','Pequeño','Mediano','Grande','Muy grande'];
+
+// ── Ajustes del perfil (Configuración) ─────────────────────────────
+const PRIVACY_OPTIONS = [
+  { value:'publico', label:'Público' },
+  { value:'amigos',  label:'Solo amigos' },
+  { value:'privado', label:'Privado' },
+];
+const UNITS_OPTIONS = [
+  { value:'metric',   label:'Métrico (m)' },
+  { value:'imperial', label:'Imperial (ft)' },
+];
+const LANG_OPTIONS = [
+  { value:'es', label:'Español', flag:'🇪🇸' },
+  { value:'en', label:'English', flag:'🇬🇧' },
+  { value:'fr', label:'Français', flag:'🇫🇷' },
+  { value:'de', label:'Deutsch', flag:'🇩🇪' },
+];
+
+// Convierte una medida en metros ("1.5 m" / "0–70 m") a pies, preservando
+// el resto del texto (rangos con guion incluidos). Solo actúa sobre
+// cadenas con el formato "<números> m" — cualquier otra cosa se deja tal cual.
+function formatMeasure(str){
+  if((currentAccountData?.units || 'metric') !== 'imperial') return str;
+  if(typeof str !== 'string' || !/ m$/.test(str)) return str;
+  const body = str.slice(0, -2).replace(/\d+(?:[.,]\d+)?/g, num=>{
+    const meters = parseFloat(num.replace(',', '.'));
+    const feet = meters * 3.28084;
+    const rounded = feet < 10 ? Math.round(feet*10)/10 : Math.round(feet);
+    return String(rounded).replace('.', ',');
+  });
+  return body + ' ft';
+}
 
 function formTemplate(existing){
   const title = existing ? escapeHtml(existing.title||'') : '';
@@ -5857,7 +5979,11 @@ async function _alDoSignup(){
 async function _alEnterAccount(user){
   const {data:profile}=await _sb.from('profiles').select('*').eq('id',user.id).single();
   currentProfile=profile?.name||user.email;
-  currentAccountData={id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email,is_admin:!!profile?.is_admin,avatar_url:profile?.avatar_url||''};
+  currentAccountData={
+    id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email,
+    is_admin:!!profile?.is_admin,avatar_url:profile?.avatar_url||'',
+    privacy:profile?.privacy||'amigos', units:profile?.units||'metric', language:profile?.language||'es',
+  };
   if(profile?.is_admin) document.body.classList.add('is-admin');
   else document.body.classList.remove('is-admin');
   renderProfileBadge();
