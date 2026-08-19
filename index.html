@@ -676,6 +676,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   @keyframes identifySpin{ to{ transform:rotate(360deg); } }
 
   /* ── Pop-up "identificando especie" (carta de carga con look de sonar) ── */
+  #identifyOverlay{ align-items:center; }
   .identify-modal{ max-width:360px; }
   .identify-photo{
     position:relative; aspect-ratio:3/2; overflow:hidden;
@@ -719,9 +720,9 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     pointer-events:none;
   }
   .identify-eyes-loader::before{
-    content:''; display:block; height:20px; aspect-ratio:1; border-radius:50%;
+    content:''; display:block; height:46px; aspect-ratio:1; border-radius:50%;
     background:
-      radial-gradient(farthest-side,#000 95%,#0000) 35% 35%/6px 6px no-repeat
+      radial-gradient(farthest-side,#000 95%,#0000) 35% 35%/14px 14px no-repeat
       #fff;
     animation: identifyEyesLook 3s infinite;
   }
@@ -737,15 +738,6 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .identify-sub{
     font-size:12.5px; font-weight:600; letter-spacing:0.2px;
     display:inline-flex; align-items:center; gap:5px; justify-content:center;
-  }
-  .identify-shimmer-text{
-    background:linear-gradient(90deg, var(--faint) 0%, var(--blue) 45%, var(--faint) 90%);
-    background-size:220% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
-    animation: identifyShimmer 1.7s linear infinite;
-  }
-  @keyframes identifyShimmer{
-    0%{ background-position:200% 0; }
-    100%{ background-position:-200% 0; }
   }
   .identify-dots{ display:inline-flex; align-items:flex-end; gap:3px; }
   .identify-dots span{
@@ -4227,7 +4219,6 @@ function openIdentifyLoadingCard(dataUrl){
     <div class="identify-body">
       <h3 class="identify-title">Identificando especie&hellip;</h3>
       <div class="identify-sub">
-        <span class="identify-shimmer-text">Consultando el catálogo</span>
         <span class="identify-dots"><span></span><span></span><span></span></span>
       </div>
     </div>`;
