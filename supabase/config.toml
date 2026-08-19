@@ -5,3 +5,6 @@ project_id = "bcstkmnqowwcsywfdjjm"
 
 [functions.identify-species]
 verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
