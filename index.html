@@ -1712,6 +1712,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   </div>
 </div>
 
+<div class="admin-overlay" id="logbookOverlay">
+  <div class="admin-sheet" id="logbookSheet">
+    <!-- populated by renderLogbookPanel() -->
+  </div>
+</div>
+
 <div class="tree-overlay" id="treeOverlay">
   <div class="tree-sheet">
     <div class="tree-header">
@@ -1809,6 +1815,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   <button class="bnav-btn" data-bnav="sightings">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3"/><rect x="8" y="2" width="8" height="5" rx="1.5"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg></span>
     <span class="bnav-label">Registros</span>
+  </button>
+  <button class="bnav-btn" data-bnav="logbook">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+    <span class="bnav-label">Logbook</span>
   </button>
   <button class="bnav-btn" data-bnav="friends">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
@@ -2199,7 +2209,8 @@ async function loadState(){
       dateISO: s.date,
       environment: s.environment||'libre',
       photo: s.photo||null,
-      sizeIdx: s.size_observed!=null ? s.size_observed : null
+      sizeIdx: s.size_observed!=null ? s.size_observed : null,
+      depthObserved: s.depth_observed!=null ? s.depth_observed : null
     });
   });
   (favs||[]).forEach(f=>{ state.favorites[f.species_id]=true; });
@@ -3848,6 +3859,7 @@ function renderModal(s, sightings, showForm, editingSighting){
           <div class="sighting-bottom-row">
             <span class="sighting-env-badge ${sg.environment==='acuario'?'aquarium':'wild'}">${sg.environment==='acuario' ? 'Acuario' : 'En libertad'}</span>
             ${sg.sizeIdx!=null ? `<span class="sighting-size-badge">${SIZE_LABELS[sg.sizeIdx]}</span>` : ''}
+            ${sg.depthObserved!=null ? `<span class="sighting-size-badge">${formatMeasure(sg.depthObserved+' m')}</span>` : ''}
             <span class="sighting-date">${sg.date}</span>
           </div>
         </div>
@@ -4015,6 +4027,7 @@ function formatMeasure(str){
 function formTemplate(existing){
   const title = existing ? escapeHtml(existing.title||'') : '';
   const sizeIdx = existing && existing.sizeIdx!=null ? existing.sizeIdx : 3;
+  const depthVal = existing && existing.depthObserved!=null ? existing.depthObserved : '';
   const location = existing ? escapeHtml(existing.location||'') : '';
   const comment = existing ? escapeHtml(existing.comment||'') : '';
   const dateVal = existing && existing.dateISO ? existing.dateISO : todayISO();
@@ -4062,6 +4075,10 @@ function formTemplate(existing){
             ${SIZE_LABELS.map(l=>`<span>${l}</span>`).join('')}
           </div>
         </div>
+      </div>
+      <div class="field">
+        <label>Profundidad del avistamiento</label>
+        <input type="number" id="f-depth" min="0" max="1000" step="0.1" value="${depthVal}" placeholder="Metros (ej: 12)">
       </div>
       <div class="field"><label>Comentario</label><textarea id="f-comment" placeholder="Notas sobre el avistamiento...">${comment}</textarea></div>
       <div class="field">
@@ -4269,13 +4286,15 @@ function wireForm(s, sightings, editingSighting){
     const dateISO = document.getElementById('f-date').value || todayISO();
     const displayDate = new Date(dateISO + 'T00:00:00').toLocaleDateString('es-ES');
     const sizeIdx = Number(document.getElementById('f-size').value);
+    const depthRaw = document.getElementById('f-depth').value;
+    const depthObserved = depthRaw==='' ? null : Number(depthRaw);
     let newList;
     if(editingSighting){
       const photo = pendingSightingPhoto !== null ? pendingSightingPhoto : (editingSighting.photo || '');
       const updated = {
         ...editingSighting, title, location, comment,
         environment: envChoice, photo, coords: pendingCoords||editingSighting.coords,
-        dateISO, date: displayDate, sizeIdx
+        dateISO, date: displayDate, sizeIdx, depthObserved
       };
       newList = sightings.map(x => x.id===editingSighting.id ? updated : x);
       state.sightings[s.id] = newList;
@@ -4285,20 +4304,20 @@ function wireForm(s, sightings, editingSighting){
         title, location_text:location, comment,
         lat: (pendingCoords||editingSighting.coords)?.lat??null,
         lng: (pendingCoords||editingSighting.coords)?.lng??null,
-        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx
+        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx, depth_observed: depthObserved
       }).eq('id', editingSighting.id);
     } else {
       const photo = pendingSightingPhoto || '';
       const {data:ins,error} = await _sb.from('sightings').insert({
         species_id:s.id, title, location_text:location, comment,
         lat: pendingCoords?.lat??null, lng: pendingCoords?.lng??null,
-        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx
+        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx, depth_observed: depthObserved
       }).select().single();
       if(error){ console.error('Error al guardar avistamiento:', error); showToast('Error al guardar: ' + error.message, true); return; }
       const sighting = {
         id:ins.id, title, location, comment,
         environment:envChoice, photo: photo||null,
-        coords:pendingCoords, dateISO, date:displayDate, sizeIdx
+        coords:pendingCoords, dateISO, date:displayDate, sizeIdx, depthObserved
       };
       const isFirstSighting = sightings.length === 0;
       newList = sightings.concat([sighting]);
@@ -4487,7 +4506,8 @@ async function fetchFriendsMapPins(){
         sg: {
           id: sg.id, coords:{lat:sg.lat,lng:sg.lng}, date:sg.date, location:sg.location_text,
           environment:sg.environment, comment:sg.comment, photo:sg.photo, title:sg.title,
-          sizeIdx: sg.size_observed!=null ? sg.size_observed : null
+          sizeIdx: sg.size_observed!=null ? sg.size_observed : null,
+          depthObserved: sg.depth_observed!=null ? sg.depth_observed : null
         },
         ownerName: f.name || f.username
       });
@@ -4590,6 +4610,7 @@ function openFriendSightingDetail(p){
       <div class="fs-detail-row">
         <span class="fs-env-badge ${sg.environment==='acuario'?'aquarium':'wild'}">${sg.environment==='acuario' ? 'Acuario' : 'En libertad'}</span>
         ${sg.sizeIdx!=null ? `<span class="fs-env-badge wild">${SIZE_LABELS[sg.sizeIdx]}</span>` : ''}
+        ${sg.depthObserved!=null ? `<span class="fs-env-badge wild">${formatMeasure(sg.depthObserved+' m')}</span>` : ''}
       </div>
       <div class="fs-location-row">
         ${icon('mapPin','icon-sm')}
@@ -4947,6 +4968,11 @@ function initBottomNav(){
       if(tab==='friends'){
         btns[0].classList.add('active');
         openFriendsPanel();
+        return;
+      }
+      if(tab==='logbook'){
+        btns[0].classList.add('active');
+        openLogbookPanel();
         return;
       }
       if(tab==='admin'){
@@ -5315,6 +5341,38 @@ function closeAdminPanel(){
 document.getElementById('adminOverlay').addEventListener('click', e=>{
   if(e.target===document.getElementById('adminOverlay')) closeAdminPanel();
 });
+
+// ── Logbook (importar datos de ordenador de buceo) ───────────────────────
+// De momento es solo la entrada de navegación y una pantalla vacía: leer
+// datos reales de un ordenador de buceo (perfil de inmersión, temperatura,
+// tiempo, nitrógeno en sangre, etc.), la gráfica de profundidad/tiempo y
+// poder marcar en ella las especies avistadas se implementan más adelante.
+function openLogbookPanel(){
+  document.getElementById('logbookOverlay').classList.add('open');
+  renderLogbookPanel();
+}
+function closeLogbookPanel(){
+  document.getElementById('logbookOverlay').classList.remove('open');
+}
+document.getElementById('logbookOverlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('logbookOverlay')) closeLogbookPanel();
+});
+
+function renderLogbookPanel(){
+  const sheet = document.getElementById('logbookSheet');
+  sheet.innerHTML = `<div class="admin-header">
+    <div>
+      <div class="admin-title">Logbook</div>
+      <div class="admin-subtitle">Importa el perfil de tu inmersión desde tu ordenador de buceo</div>
+    </div>
+    <button class="admin-close" id="logbookCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="pp-placeholder" style="margin-top:8px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Próximamente — conecta tu ordenador de buceo para importar profundidad, temperatura, tiempo y nitrógeno en sangre, verlo en una gráfica de profundidad frente a tiempo, y marcar en ella las especies que has registrado durante la inmersión.
+  </div>`;
+  document.getElementById('logbookCloseBtn').onclick = closeLogbookPanel;
+}
 
 async function renderAdminPanel(){
   const sheet = document.getElementById('adminSheet');
