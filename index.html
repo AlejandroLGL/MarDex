@@ -1668,6 +1668,18 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   </div>
 </div>
 
+<div class="confirm-overlay" id="deletePwOverlay">
+  <div class="confirm-box">
+    <p style="font-weight:700;margin-bottom:14px;">Confirma tu contraseña para eliminar la cuenta</p>
+    <div class="auth-error" id="deletePwError" style="display:none;"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="deletePwInput" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="row2">
+      <button type="button" class="btn secondary" id="deletePwCancel">Cancelar</button>
+      <button type="button" class="btn danger" id="deletePwConfirm">Eliminar cuenta</button>
+    </div>
+  </div>
+</div>
+
 <div class="profile-overlay" id="profileOverlay">
   <div class="profile-card" id="authCard"></div>
 </div>
@@ -1681,6 +1693,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 <div class="profile-page-overlay" id="settingsPageOverlay">
   <div class="profile-page-sheet" id="settingsPageSheet">
     <!-- populated by renderSettingsPage() -->
+  </div>
+</div>
+
+<div class="profile-page-overlay" id="advancedPageOverlay">
+  <div class="profile-page-sheet" id="advancedPageSheet">
+    <!-- populated by renderAdvancedPage() -->
   </div>
 </div>
 
@@ -3133,9 +3151,17 @@ function renderSettingsPage(){
       </div>
       <div class="pp-row-hint">De momento MarDex solo está disponible en español; guardamos tu idioma preferido para activarlo en cuanto esté listo.</div>
     </div>
+
+    <div class="pp-section">
+      <button type="button" class="pp-row pp-row-link" id="ppOpenAdvancedBtn">
+        <span class="pp-row-label">Avanzado</span>
+        <span class="pp-row-value pp-row-chevron">Eliminar cuenta ›</span>
+      </button>
+    </div>
   `;
 
   document.getElementById('settingsCloseBtn').onclick = closeSettingsPage;
+  document.getElementById('ppOpenAdvancedBtn').onclick = openAdvancedPage;
 
   document.getElementById('ppPrivacySelect').onchange = async (e)=>{
     const value = e.target.value;
@@ -3159,6 +3185,66 @@ function renderSettingsPage(){
     if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = currentAccountData.language; return; }
     currentAccountData.language = value;
     showToast(value==='es' ? 'Idioma actualizado' : 'Preferencia guardada — lo activaremos cuando esté traducido');
+  };
+}
+
+// ── Página de Avanzado (propio canvas, abierta desde Configuración) ────────
+function openAdvancedPage(){
+  document.getElementById('advancedPageOverlay').classList.add('open');
+  renderAdvancedPage();
+}
+function closeAdvancedPage(){
+  document.getElementById('advancedPageOverlay').classList.remove('open');
+}
+document.getElementById('advancedPageOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('advancedPageOverlay')) closeAdvancedPage();
+});
+
+function renderAdvancedPage(){
+  const sheet = document.getElementById('advancedPageSheet');
+  sheet.innerHTML = `
+    <button class="pp-close" id="advancedCloseBtn" title="Cerrar">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+    </button>
+    <div class="pp-display-name" style="margin-bottom:18px;">Avanzado</div>
+
+    <button class="pp-delete-account" id="ppDeleteAccountBtn">Eliminar cuenta</button>
+  `;
+
+  document.getElementById('advancedCloseBtn').onclick = closeAdvancedPage;
+
+  document.getElementById('ppDeleteAccountBtn').onclick = async ()=>{
+    const ok = await askConfirm('¿Estás seguro de que quieres eliminar tu cuenta? Este proceso será irreversible.');
+    if(!ok) return;
+    const pw = await askPasswordToDeleteAccount();
+    if(!pw) return;
+
+    const btn = document.getElementById('ppDeleteAccountBtn');
+    btn.disabled = true;
+    try{
+      const {data, error} = await _sb.functions.invoke('delete-account');
+      if(error || !data?.ok){
+        showToast('No se pudo eliminar la cuenta: ' + (error?.message || data?.error || 'error desconocido'), true);
+        btn.disabled = false;
+        return;
+      }
+      await _sb.auth.signOut();
+      currentProfile = null;
+      currentAccountData = null;
+      state = { sightings:{}, favorites:{} };
+      friendsMapPins = null;
+      mapViewMode = 'mine';
+      renderProfileBadge();
+      renderGrid();
+      closeAdvancedPage();
+      closeSettingsPage();
+      closeProfilePage();
+      openProfilePicker();
+      showToast('Tu cuenta se ha eliminado');
+    }catch(err){
+      showToast('No se pudo eliminar la cuenta: ' + (err.message||'error desconocido'), true);
+      btn.disabled = false;
+    }
   };
 }
 
@@ -3400,7 +3486,6 @@ async function renderProfilePage(){
     </div>
 
     <button class="pp-logout" id="ppLogoutBtn">Cerrar sesión</button>
-    <button class="pp-delete-account" id="ppDeleteAccountBtn">Eliminar cuenta</button>
   `;
 
   // Lógica de avatar con foto
@@ -3526,37 +3611,6 @@ async function renderProfilePage(){
   };
 
   document.getElementById('ppOpenSettingsBtn').onclick = openSettingsPage;
-
-  document.getElementById('ppDeleteAccountBtn').onclick = async ()=>{
-    const ok = await askConfirm('¿Eliminar tu cuenta de MarDex? Se borrarán tu perfil, tus avistamientos y tu colección de forma permanente. Esta acción no se puede deshacer.');
-    if(!ok) return;
-    const ok2 = await askConfirm('Confirmación final: tu cuenta se eliminará ahora mismo y no hay vuelta atrás. ¿Continuar?');
-    if(!ok2) return;
-    const btn = document.getElementById('ppDeleteAccountBtn');
-    btn.disabled = true;
-    try{
-      const {data, error} = await _sb.functions.invoke('delete-account');
-      if(error || !data?.ok){
-        showToast('No se pudo eliminar la cuenta: ' + (error?.message || data?.error || 'error desconocido'), true);
-        btn.disabled = false;
-        return;
-      }
-      await _sb.auth.signOut();
-      currentProfile = null;
-      currentAccountData = null;
-      state = { sightings:{}, favorites:{} };
-      friendsMapPins = null;
-      mapViewMode = 'mine';
-      renderProfileBadge();
-      renderGrid();
-      closeProfilePage();
-      openProfilePicker();
-      showToast('Tu cuenta se ha eliminado');
-    }catch(err){
-      showToast('No se pudo eliminar la cuenta: ' + (err.message||'error desconocido'), true);
-      btn.disabled = false;
-    }
-  };
 }
 
 function sightingsFor(id){ return state.sightings[id] || []; }
@@ -3605,6 +3659,35 @@ function askNewPassword(){
       cleanup(p1.value);
     };
     cancel.onclick = ()=>cleanup(null);
+  });
+}
+
+// Pide la contraseña actual antes de eliminar la cuenta, y la verifica
+// contra Supabase Auth (signInWithPassword) — así confirmamos que quien
+// pulsó "Eliminar cuenta" es realmente el dueño de la sesión, no solo un
+// clic accidental. Devuelve la contraseña si es correcta, o null si se
+// cancela.
+function askPasswordToDeleteAccount(){
+  return new Promise(resolve=>{
+    const ov = document.getElementById('deletePwOverlay');
+    const input = document.getElementById('deletePwInput');
+    const err = document.getElementById('deletePwError');
+    input.value = ''; err.style.display = 'none';
+    ov.classList.add('open');
+    input.focus();
+    const confirmBtn = document.getElementById('deletePwConfirm');
+    const cancelBtn = document.getElementById('deletePwCancel');
+    function cleanup(v){ ov.classList.remove('open'); confirmBtn.onclick=null; cancelBtn.onclick=null; input.onkeydown=null; resolve(v); }
+    confirmBtn.onclick = async ()=>{
+      if(!input.value){ err.textContent = 'Escribe tu contraseña.'; err.style.display = 'block'; return; }
+      confirmBtn.disabled = true;
+      const { error } = await _sb.auth.signInWithPassword({ email: currentAccountData.email, password: input.value });
+      confirmBtn.disabled = false;
+      if(error){ err.textContent = 'Contraseña incorrecta.'; err.style.display = 'block'; return; }
+      cleanup(input.value);
+    };
+    cancelBtn.onclick = ()=>cleanup(null);
+    input.onkeydown = e=>{ if(e.key==='Enter') confirmBtn.click(); };
   });
 }
 
