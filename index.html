@@ -606,8 +606,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 
   /* ── Zonas de buceo (mapa + ruleta) ──────────────────────────────── */
   .zones-layout{ display:flex; flex-direction:column; align-items:center; gap:22px; margin-bottom:28px; }
-  .zones-map-wrap{ width:100%; max-width:680px; margin:0 auto; }
-  #zonesMapEl{ width:100%; height:300px; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow); }
+  .zones-map-wrap{ width:100%; }
+  #zonesMapEl{ width:100%; aspect-ratio:680/300; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow); }
   .zone-wheel-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; }
   .zone-wheel{
     position:relative; width:260px; height:260px; border-radius:50%;
