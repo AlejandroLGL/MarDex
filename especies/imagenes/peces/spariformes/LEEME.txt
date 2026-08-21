@@ -9,3 +9,6 @@ Especies de este orden:
 - boga.jpg       ✓ presente (Boops boops — Boga)
 - mojarra.jpg    ✓ presente (Diplodus vulgaris — Mojarra)
 - oblada.jpg     ✓ presente (Oblada melanura — Oblada)
+- raspallon.jpg  (Diplodus annularis — Raspallón)
+- sargopicudo.jpg  (Diplodus puntazzo — Sargo picudo)
+- herrera.jpg  (Lithognathus mormyrus — Herrera)

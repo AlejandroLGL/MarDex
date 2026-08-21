@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Leptothecata (medusas), nombradas como {id}.jpg
+
+Especies de este orden:
+- medusacristal.jpg  (Aequorea victoria — Medusa de cristal)

@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Dactylopteriformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- rubiovolador.jpg  (Dactylopterus volitans — Rubio volador)

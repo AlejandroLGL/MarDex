@@ -2,3 +2,5 @@ Coloca aquí las fotos de Scorpaeniformes (peces), nombradas como {id}.jpg
 
 Especies de este orden:
 - cabracho.jpg  ✓ presente (Scorpaena scrofa — Cabracho)
+- pezleon.jpg  (Pterois volitans — Pez león)
+- pezpiedra.jpg  (Synanceia verrucosa — Pez piedra)

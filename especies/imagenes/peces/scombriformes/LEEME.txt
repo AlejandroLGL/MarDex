@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Scombriformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- bacoreta.jpg  (Euthynnus alletteratus — Bacoreta)

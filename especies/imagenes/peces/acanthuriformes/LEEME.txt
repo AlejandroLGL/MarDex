@@ -1,0 +1,5 @@
+Coloca aquí las fotos de Acanthuriformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- cirujanoazul.jpg  (Paracanthurus hepatus — Cirujano azul)
+- angelemperador.jpg  (Pomacanthus imperator — Pez ángel emperador)

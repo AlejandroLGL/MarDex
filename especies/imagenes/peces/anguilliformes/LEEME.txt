@@ -3,3 +3,8 @@ Coloca aquí las fotos de Anguilliformes (peces), nombradas como {id}.jpg
 Especies de este orden:
 - morena.jpg   ✓ presente (Muraena helena — Morena)
 - congrio.jpg  ✓ presente (Conger conger — Congrio)
+- anguilajardinera.jpg  (Heteroconger longissimus — Anguila jardinera)
+- morenacinta.jpg  (Rhinomuraena quaesita — Morena cinta)
+- morenanegra.jpg  (Muraena augusti — Morena negra)
+- morenafogosa.jpg  (Enchelycore anatina — Morena fogosa)
+- morion.jpg  (Gymnothorax unicolor — Murión)

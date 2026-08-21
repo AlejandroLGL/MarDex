@@ -1,0 +1,10 @@
+Coloca aquí las fotos de Tetraodontiformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- pezglobo.jpg  (Diodon holocanthus — Pez globo)
+- pezerizo.jpg  (Diodon hystrix — Pez erizo)
+- pezluna.jpg  (Mola mola — Pez luna)
+- pezcofre.jpg  (Ostracion cubicus — Pez cofre)
+- tamboril.jpg  (Sphoeroides marmoratus — Tamboril)
+- ballesta.jpg  (Balistes capriscus — Pez ballesta)
+- gallinita.jpg  (Canthigaster capistrata — Gallinita)
