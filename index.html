@@ -5024,8 +5024,30 @@ function initBottomNav(){
     if(svg){ svg.style.width=ICON_BASE+'px'; svg.style.height=ICON_BASE+'px'; }
   });
 
-  nav.addEventListener('mousemove', e=>setTargets(e.clientX));
-  nav.addEventListener('mouseleave',()=>{ springs.forEach(s=>s.target=ICON_BASE); kick(); });
+  // Área de influencia del dock: los botones sobresalen del propio
+  // rectángulo del <nav> (padding + transform:translateY(-14px) los eleva
+  // por encima de su caja), así que escuchar mousemove/mouseleave solo en
+  // `nav` puede perder el hover justo en el hueco entre dos iconos, donde
+  // el ratón cae fuera de esa caja estrecha aunque siga "dentro" del dock
+  // a la vista. En vez de depender de la caja exacta del nav, definimos
+  // un rectángulo de influencia ampliado (cubre toda la fila de iconos
+  // más un margen) y escuchamos en document: mientras el ratón esté
+  // dentro de ese rectángulo, la magnificación se mantiene aunque no
+  // esté sobre un icono en concreto.
+  const INFLUENCE_PAD_X = 24, INFLUENCE_PAD_TOP = 40, INFLUENCE_PAD_BOTTOM = 24;
+  function influenceRect(){
+    const r = nav.getBoundingClientRect();
+    return {
+      left: r.left - INFLUENCE_PAD_X, right: r.right + INFLUENCE_PAD_X,
+      top: r.top - INFLUENCE_PAD_TOP, bottom: r.bottom + INFLUENCE_PAD_BOTTOM,
+    };
+  }
+  document.addEventListener('mousemove', e=>{
+    const r = influenceRect();
+    const inside = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
+    if(inside) setTargets(e.clientX);
+    else { springs.forEach(s=>s.target=ICON_BASE); kick(); }
+  });
 
   // --- navegación ---
   btns.forEach(btn=>{
