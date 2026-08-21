@@ -5681,6 +5681,48 @@ let zonesMapCircles = [];
 const ZONE_WHEEL_R = 88;
 let wheelRotation = 0;
 
+// Radio (en grados de lat/lng) con el que se redondean las esquinas de los
+// polígonos de zona en el mapa. Súbelo para esquinas más redondeadas,
+// bájalo (o ponlo a 0) para esquinas más afiladas — se aplica por igual
+// a las 5 zonas. Como el "corte" en cada esquina nunca puede ser mayor
+// que la mitad del lado más corto que llega a ella, en zonas con lados
+// cortos (p. ej. Canarias) el radio real queda limitado automáticamente
+// aunque subas esta constante.
+const ZONE_CORNER_RADIUS = 0.8;
+
+// Sustituye cada esquina afilada del polígono por una curva (bezier
+// cuadrática) que recorta el vértice en `radius` grados a cada lado y
+// pasa suavemente cerca de él. Se muestrea en varios segmentos rectos
+// porque Leaflet dibuja polígonos como listas de puntos, no como paths
+// con curvas reales.
+function roundPolygonCorners(points, radius, segments = 8){
+  if(!radius || radius <= 0) return points;
+  const n = points.length;
+  const result = [];
+  for(let i=0;i<n;i++){
+    const prev = points[(i-1+n)%n];
+    const curr = points[i];
+    const next = points[(i+1)%n];
+    const v1 = [curr[0]-prev[0], curr[1]-prev[1]];
+    const v2 = [next[0]-curr[0], next[1]-curr[1]];
+    const len1 = Math.hypot(v1[0], v1[1]) || 1;
+    const len2 = Math.hypot(v2[0], v2[1]) || 1;
+    const r1 = Math.min(radius, len1*0.5);
+    const r2 = Math.min(radius, len2*0.5);
+    const a = [curr[0]-(v1[0]/len1)*r1, curr[1]-(v1[1]/len1)*r1];
+    const b = [curr[0]+(v2[0]/len2)*r2, curr[1]+(v2[1]/len2)*r2];
+    result.push(a);
+    for(let s=1;s<segments;s++){
+      const t = s/segments;
+      const x = (1-t)*(1-t)*a[0] + 2*(1-t)*t*curr[0] + t*t*b[0];
+      const y = (1-t)*(1-t)*a[1] + 2*(1-t)*t*curr[1] + t*t*b[1];
+      result.push([x,y]);
+    }
+    result.push(b);
+  }
+  return result;
+}
+
 function openZonesPanel(){
   document.getElementById('zonesOverlay').classList.add('open');
   renderZonesPanel();
@@ -5728,7 +5770,7 @@ function initZonesMap(){
   zonesMapInstance = L.map('zonesMapEl', { zoomControl:false, attributionControl:false }).setView([20,10], 1);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:6, minZoom:1 }).addTo(zonesMapInstance);
   zonesMapCircles = ZONES.map((z,i)=>{
-    const poly = L.polygon(z.polygon, {
+    const poly = L.polygon(roundPolygonCorners(z.polygon, ZONE_CORNER_RADIUS), {
       color:z.color, weight:2, fillColor:z.color, fillOpacity:0.25
     }).addTo(zonesMapInstance);
     poly.on('click', ()=>selectZone(i));
