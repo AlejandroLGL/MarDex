@@ -605,12 +605,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .admin-user-username{ color:var(--muted); font-size:12px; }
 
   /* ── Zonas de buceo (mapa + ruleta) ──────────────────────────────── */
-  .zones-layout{ display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start; margin-bottom:28px; }
-  .zones-map-wrap{ flex:1 1 320px; min-width:280px; }
-  #zonesMapEl{ width:100%; height:320px; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow); }
-  .zone-wheel-wrap{ flex:0 0 260px; display:flex; flex-direction:column; align-items:center; gap:6px; margin:0 auto; }
+  .zones-layout{ display:flex; flex-direction:column; align-items:center; gap:22px; margin-bottom:28px; }
+  .zones-map-wrap{ width:100%; max-width:680px; margin:0 auto; }
+  #zonesMapEl{ width:100%; height:300px; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow); }
+  .zone-wheel-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; }
   .zone-wheel{
-    position:relative; width:240px; height:240px; border-radius:50%;
+    position:relative; width:260px; height:260px; border-radius:50%;
     background:radial-gradient(circle, var(--card) 0%, var(--bg) 72%);
     border:1px solid var(--line); box-shadow:inset 0 0 24px rgba(7,59,92,0.06);
     touch-action:none; cursor:grab; user-select:none;
@@ -619,25 +619,25 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .zone-wheel-pointer{
     position:absolute; top:-3px; left:50%; transform:translateX(-50%);
     width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent;
-    border-top:10px solid var(--ocean); z-index:3; pointer-events:none;
+    border-top:10px solid var(--ocean); z-index:50; pointer-events:none;
   }
   .zone-wheel-ring{ position:absolute; inset:0; }
   .zone-wheel-center{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    text-align:center; pointer-events:none; width:130px; z-index:2;
+    text-align:center; pointer-events:none; width:140px; z-index:2;
   }
   .zone-wheel-center-label{ font-family:var(--serif); font-size:17px; color:var(--ink); line-height:1.15; }
   .zone-wheel-center-count{ font-size:11px; color:var(--muted); font-weight:700; margin-top:3px; }
   .zone-wheel-item{
-    position:absolute; top:50%; left:50%; width:66px; height:66px; margin:-33px 0 0 -33px;
+    position:absolute; top:50%; left:50%; width:60px; height:60px; margin:-30px 0 0 -30px;
     border-radius:50%; border:1.5px solid var(--line); background:var(--card);
     display:flex; align-items:center; justify-content:center; text-align:center;
-    cursor:pointer; transition:background .3s, border-color .3s, box-shadow .3s;
+    cursor:pointer; transition:background .25s, border-color .25s, box-shadow .25s;
   }
-  .zone-wheel-item.active{ box-shadow:0 6px 18px rgba(7,59,92,0.25); z-index:2; border-color:transparent; }
+  .zone-wheel-item.active{ box-shadow:0 6px 18px rgba(7,59,92,0.25); border-color:transparent; }
   .zone-wheel-item-inner{
     font-size:10.5px; font-weight:700; color:var(--muted); padding:4px; width:100%;
-    transition:color .3s;
+    transition:color .25s;
   }
   .zone-wheel-item.active .zone-wheel-item-inner{ color:#fff; }
   .zones-species-title{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.1px; color:var(--faint); margin-bottom:16px; }
@@ -5951,7 +5951,7 @@ const ZONES = [
 let selectedZoneIdx = 0;
 let zonesMapInstance = null;
 let zonesMapCircles = [];
-const ZONE_WHEEL_R = 88;
+const ZONE_WHEEL_R = 96;
 let wheelRotation = 0;
 
 // Radio (en grados de lat/lng) con el que se redondean las esquinas de los
@@ -6060,8 +6060,11 @@ function updateZonesMapHighlight(){
 // Ruleta real: un anillo (.zone-wheel-ring) que gira de verdad con
 // transform:rotate(), tanto al arrastrarlo con el puntero como al hacer
 // clic en una zona (la rotación siempre anima hasta dejar la zona elegida
-// bajo el indicador fijo de arriba). Las etiquetas de cada burbuja se
-// contra-rotan en tiempo real para no quedar boca abajo mientras gira.
+// bajo el indicador fijo de arriba). Cada burbuja cambia de tamaño,
+// opacidad y desenfoque en función de lo lejos que esté del indicador,
+// recalculado en cada fotograma (durante el arrastre y durante la
+// animación de selección), así que el efecto es continuo y no un salto
+// entre "activa" e "inactiva".
 function zoneAngle(i){ return i * (360/ZONES.length); }
 function nearestRotationForIndex(idx, current){
   const target = -zoneAngle(idx);
@@ -6074,29 +6077,63 @@ function shortestAngleDelta(from, to){
   if(d < -180) d += 360;
   return d;
 }
-function applyWheelRotation(rot, animate){
+// Pinta el anillo y todas las burbujas para el valor actual de
+// wheelRotation: la que esté bajo el indicador de arriba se hace grande
+// y a color; cuanto más lejos del indicador esté una burbuja, más
+// pequeña, borrosa y transparente se dibuja.
+function renderWheelFrame(){
   const ring = document.getElementById('zoneWheelRing');
   if(!ring) return;
-  ring.style.transition = animate ? 'transform .5s cubic-bezier(.34,1.35,.64,1)' : 'none';
-  ring.style.transform = `rotate(${rot}deg)`;
+  ring.style.transform = `rotate(${wheelRotation}deg)`;
+  const n = ZONES.length;
+  const halfStep = 180/n;
   ring.querySelectorAll('.zone-wheel-item').forEach(el=>{
-    const base = Number(el.dataset.base);
-    const inner = el.querySelector('.zone-wheel-item-inner');
-    if(inner){
-      inner.style.transition = animate ? 'transform .5s cubic-bezier(.34,1.35,.64,1)' : 'none';
-      inner.style.transform = `rotate(${-(rot+base)}deg)`;
-    }
-  });
-}
-function updateWheelActiveStates(){
-  document.querySelectorAll('.zone-wheel-item').forEach(el=>{
     const i = Number(el.dataset.idx);
     const base = Number(el.dataset.base);
-    const isActive = i===selectedZoneIdx;
-    el.classList.toggle('active', isActive);
-    el.style.background = isActive ? ZONES[i].color : '';
-    el.style.transform = `rotate(${base}deg) translate(0,-${ZONE_WHEEL_R}px)${isActive?' scale(1.18)':''}`;
+    const raw = ((base + wheelRotation) % 360 + 360) % 360;
+    const dist = Math.min(raw, 360-raw);
+    const t = Math.min(1, dist/140);
+    const scale = 1.4 - 0.85*t;
+    const blur = 2*t;
+    const opacity = 1 - 0.4*t;
+    const isTop = dist <= halfStep;
+    el.classList.toggle('active', isTop);
+    el.style.background = isTop ? ZONES[i].color : '';
+    el.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
+    el.style.opacity = opacity.toFixed(2);
+    el.style.zIndex = String(Math.round((1-t)*40)+1);
+    el.style.transform = `rotate(${base}deg) translate(0,-${ZONE_WHEEL_R}px) scale(${scale.toFixed(3)})`;
+    const inner = el.querySelector('.zone-wheel-item-inner');
+    if(inner) inner.style.transform = `rotate(${-(wheelRotation+base)}deg)`;
   });
+}
+// Anima wheelRotation desde su valor actual hasta target con un pequeño
+// rebote (easeOutBack), repintando la ruleta en cada fotograma para que
+// el tamaño/desenfoque de cada burbuja se actualice en tiempo real.
+let wheelAnimHandle = null;
+function easeOutBack(t){
+  const c1 = 1.70158, c3 = c1+1;
+  return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2);
+}
+function animateWheelTo(target, duration=500){
+  if(wheelAnimHandle) cancelAnimationFrame(wheelAnimHandle);
+  const start = wheelRotation;
+  const delta = target - start;
+  if(Math.abs(delta) < 0.001){ wheelRotation = target; renderWheelFrame(); return; }
+  const t0 = performance.now();
+  function tick(now){
+    const t = Math.min(1, (now-t0)/duration);
+    wheelRotation = start + delta*easeOutBack(t);
+    renderWheelFrame();
+    if(t < 1){
+      wheelAnimHandle = requestAnimationFrame(tick);
+    } else {
+      wheelRotation = target;
+      renderWheelFrame();
+      wheelAnimHandle = null;
+    }
+  }
+  wheelAnimHandle = requestAnimationFrame(tick);
 }
 function updateWheelCenterLabel(){
   const labelEl = document.querySelector('.zone-wheel-center-label');
@@ -6108,8 +6145,7 @@ function renderZoneWheel(){
   let itemsHtml = '';
   ZONES.forEach((z,i)=>{
     const base = zoneAngle(i);
-    const isActive = i===selectedZoneIdx;
-    itemsHtml += `<div class="zone-wheel-item${isActive?' active':''}" data-idx="${i}" data-base="${base}" style="transform:rotate(${base}deg) translate(0,-${ZONE_WHEEL_R}px)${isActive?' scale(1.18)':''}; background:${isActive?z.color:''};">
+    itemsHtml += `<div class="zone-wheel-item" data-idx="${i}" data-base="${base}">
       <div class="zone-wheel-item-inner">${escapeHtml(z.label)}</div>
     </div>`;
   });
@@ -6119,7 +6155,7 @@ function renderZoneWheel(){
       <div class="zone-wheel-center-label">${escapeHtml(ZONES[selectedZoneIdx].label)}</div>
       <div class="zone-wheel-center-count" id="zoneWheelCount"></div>
     </div>`;
-  applyWheelRotation(wheelRotation, false);
+  renderWheelFrame();
   wheel.querySelectorAll('.zone-wheel-item').forEach(el=>{
     el.onclick = ()=> selectZone(Number(el.dataset.idx));
   });
@@ -6139,6 +6175,7 @@ function initWheelDrag(wheel){
     return Math.atan2(e.clientY-cy, e.clientX-cx) * 180/Math.PI + 90;
   }
   wheel.addEventListener('pointerdown', e=>{
+    if(wheelAnimHandle){ cancelAnimationFrame(wheelAnimHandle); wheelAnimHandle = null; }
     dragging = true;
     totalMovement = 0;
     const itemEl = e.target.closest('.zone-wheel-item');
@@ -6153,7 +6190,7 @@ function initWheelDrag(wheel){
     wheelRotation += delta;
     totalMovement += Math.abs(delta);
     lastAngle = cur;
-    applyWheelRotation(wheelRotation, false);
+    renderWheelFrame();
   });
   function endDrag(){
     if(!dragging) return;
@@ -6174,13 +6211,10 @@ function initWheelDrag(wheel){
       });
       targetIdx = bestIdx;
     }
-    wheelRotation = nearestRotationForIndex(targetIdx, wheelRotation);
-    applyWheelRotation(wheelRotation, true);
+    animateWheelTo(nearestRotationForIndex(targetIdx, wheelRotation));
     if(targetIdx !== selectedZoneIdx){
       selectedZoneIdx = targetIdx;
       afterZoneChange();
-    } else {
-      updateWheelActiveStates();
     }
   }
   wheel.addEventListener('pointerup', endDrag);
@@ -6188,7 +6222,6 @@ function initWheelDrag(wheel){
 }
 
 function afterZoneChange(){
-  updateWheelActiveStates();
   updateWheelCenterLabel();
   updateZonesMapHighlight();
   if(zonesMapInstance && zonesMapCircles[selectedZoneIdx]){
@@ -6200,8 +6233,7 @@ function afterZoneChange(){
 function selectZone(idx){
   if(idx===selectedZoneIdx) return;
   selectedZoneIdx = idx;
-  wheelRotation = nearestRotationForIndex(idx, wheelRotation);
-  applyWheelRotation(wheelRotation, true);
+  animateWheelTo(nearestRotationForIndex(idx, wheelRotation));
   afterZoneChange();
 }
 
