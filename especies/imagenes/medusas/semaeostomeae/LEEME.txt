@@ -1,0 +1,8 @@
+Coloca aquí las fotos de Semaeostomeae (medusas), nombradas como {id}.jpg
+
+Especies de este orden:
+- medusaluna.jpg  (Aurelia aurita — Medusa luna)
+- medusacompas.jpg  (Chrysaora hysoscella — Medusa compás)
+- ortigapacifico.jpg  (Chrysaora fuscescens — Medusa ortiga del Pacífico)
+- medusaclavel.jpg  (Pelagia noctiluca — Medusa clavel)
+- melenaleon.jpg  (Cyanea capillata — Medusa melena de león)

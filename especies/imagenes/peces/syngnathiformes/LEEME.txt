@@ -1,0 +1,7 @@
+Coloca aquí las fotos de Syngnathiformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- caballitocomun.jpg  (Hippocampus hippocampus — Caballito de mar común)
+- caballitomediterraneo.jpg  (Hippocampus guttulatus — Caballito de mar mediterráneo)
+- trompetaoriental.jpg  (Aulostomus strigosus — Pez trompeta del Atlántico oriental)
+- trompetero.jpg  (Macroramphosus scolopax — Trompetero)

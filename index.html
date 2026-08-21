@@ -58,6 +58,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     --sand:#F0D9A8;
     --amber:#E08A2E;
     --amber-soft:#F7D9A8;
+    --violet:#7C3AED;
+    --violet-soft:#E9D5FF;
+    --rust:#C2410C;
+    --rust-soft:#FED7AA;
     --serif:'DM Serif Display',Georgia,serif;
     --sans:'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif;
     --mono:ui-monospace,'SF Mono','Cascadia Mono','Courier New',monospace;
@@ -668,6 +672,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .progress-item.ray .progress-fill{ background:var(--lagoon); }
   .progress-item.fish .progress-bar{ background:rgba(255,255,255,0.08); }
   .progress-item.fish .progress-fill{ background:var(--amber); }
+  .progress-item.medusa .progress-bar{ background:rgba(255,255,255,0.08); }
+  .progress-item.medusa .progress-fill{ background:var(--violet); }
+  .progress-item.crustaceo .progress-bar{ background:rgba(255,255,255,0.08); }
+  .progress-item.crustaceo .progress-fill{ background:var(--rust); }
 
   /* main */
   .main-col{ flex:1; min-width:0; }
@@ -858,6 +866,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-hover); border-color:var(--sky); }
   .card.ray:hover{ border-color:var(--seafoam); }
   .card.fish:hover{ border-color:var(--amber-soft); }
+  .card.medusa:hover{ border-color:var(--violet-soft); }
+  .card.crustaceo:hover{ border-color:var(--rust-soft); }
 
   .photo-box{
     position:relative; aspect-ratio:3/2; overflow:hidden;
@@ -865,6 +875,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .card.ray .photo-box{ background:linear-gradient(135deg, #00BDD6 0%, #2DD4A4 55%, #96EDD2 100%); }
   .card.fish .photo-box{ background:linear-gradient(135deg, #E08A2E 0%, #F2B84C 55%, #F7D9A8 100%); }
+  .card.medusa .photo-box{ background:linear-gradient(135deg, #7C3AED 0%, #C084FC 55%, #E9D5FF 100%); }
+  .card.crustaceo .photo-box{ background:linear-gradient(135deg, #C2410C 0%, #F97316 55%, #FED7AA 100%); }
   .photo-box img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:1; transition:transform .5s ease; }
   .card:hover .photo-box img{ transform:scale(1.05); }
 
@@ -979,6 +991,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .modal.ray-theme .modal-photo{ background:linear-gradient(135deg, #00BDD6 0%, #2DD4A4 55%, #96EDD2 100%); }
   .modal.fish-theme .modal-photo{ background:linear-gradient(135deg, #E08A2E 0%, #F2B84C 55%, #F7D9A8 100%); }
+  .modal.medusa-theme .modal-photo{ background:linear-gradient(135deg, #7C3AED 0%, #C084FC 55%, #E9D5FF 100%); }
+  .modal.crustaceo-theme .modal-photo{ background:linear-gradient(135deg, #C2410C 0%, #F97316 55%, #FED7AA 100%); }
   .modal-photo img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:2; }
   .modal-photo::after{
     content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
@@ -1957,10 +1971,19 @@ function icon(name, cls){ return `<span class="icon ${cls||''}">${ICONS[name]}</
 const SHARK_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M2 40 C20 20, 40 12, 58 14 C56 6, 66 2, 78 4 C72 10, 70 16, 72 20 C86 22, 96 30, 98 38 C88 36, 80 37, 74 40 C70 48, 58 54, 44 52 C48 46, 48 42, 44 40 C30 44, 12 44, 2 40 Z"/></svg>`;
 const RAY_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M50 6 C20 6, 2 24, 2 34 C2 40, 10 42, 18 38 C24 46, 34 52, 50 52 C66 52, 76 46, 82 38 C90 42, 98 40, 98 34 C98 24, 80 6, 50 6 Z M50 52 L54 60 M50 52 L46 60"/></svg>`;
 const FISH_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M8 30 C8 16, 30 8, 52 8 C70 8, 82 16, 88 22 L98 8 L92 30 L98 52 L88 38 C82 44, 70 52, 52 52 C30 52, 8 44, 8 30 Z M28 24 C31.3 24, 34 26.7, 34 30 C34 33.3, 31.3 36, 28 36 C24.7 36, 22 33.3, 22 30 C22 26.7, 24.7 24, 28 24 Z"/></svg>`;
+const MEDUSA_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M50 2 C30 2, 14 14, 14 26 C14 32, 22 34, 30 30 C34 34, 42 34, 46 30 C46 34, 54 34, 54 30 C58 34, 66 34, 70 30 C78 34, 86 32, 86 26 C86 14, 70 2, 50 2 Z M24 32 C22 40, 26 44, 22 52 C21 54, 23 56, 25 54 C29 46, 25 42, 27 34 Z M38 33 C37 42, 41 46, 38 55 C37 57, 39 58, 41 56 C44 47, 40 43, 42 34 Z M50 33 C50 42, 54 47, 51 56 C50 58, 52 59, 54 57 C56 48, 52 44, 53 34 Z M62 33 C62 42, 66 46, 63 55 C62 57, 64 58, 66 56 C69 47, 65 43, 66 34 Z M76 32 C75 40, 79 44, 76 52 C75 54, 77 55, 79 53 C82 45, 78 41, 79 34 Z"/></svg>`;
+const CRUSTACEO_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M50 18 C64 18, 74 28, 74 38 C74 48, 63 54, 50 54 C37 54, 26 48, 26 38 C26 28, 36 18, 50 18 Z M22 24 C14 20, 6 22, 4 16 C10 18, 16 16, 20 20 Z M78 24 C86 20, 94 22, 96 16 C90 18, 84 16, 80 20 Z M20 30 C10 30, 4 34, 0 30 C6 34, 10 38, 18 36 Z M80 30 C90 30, 96 34, 100 30 C94 34, 90 38, 82 36 Z M22 40 C12 42, 6 48, 0 46 C6 48, 10 54, 18 48 Z M78 40 C88 42, 94 48, 100 46 C94 48, 90 54, 82 48 Z"/></svg>`;
 
 // Carpeta de imágenes y silueta de placeholder según la categoría de la especie.
-function catFolder(cat){ return cat==='raya' ? 'rayas' : cat==='pez' ? 'peces' : 'tiburones'; }
-function catSilhouette(cat){ return cat==='raya' ? RAY_SILHOUETTE : cat==='pez' ? FISH_SILHOUETTE : SHARK_SILHOUETTE; }
+const CAT_DEFS = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos'],['medusa','Medusas'],['crustaceo','Crustáceos']];
+const CAT_FOLDERS = { raya:'rayas', pez:'peces', medusa:'medusas', crustaceo:'crustaceos', tiburon:'tiburones' };
+// Nombres de clase CSS de tema por categoría — 'ray'/'fish' son los nombres
+// históricos (de cuando solo existían tiburón/raya/pez); medusa/crustaceo
+// coinciden con su propio valor de `cat`, no necesitan alias.
+const CARD_THEME_CLASS = { raya:'ray', pez:'fish', medusa:'medusa', crustaceo:'crustaceo' };
+function catFolder(cat){ return CAT_FOLDERS[cat] || 'tiburones'; }
+const CAT_SILHOUETTES = { raya:RAY_SILHOUETTE, pez:FISH_SILHOUETTE, medusa:MEDUSA_SILHOUETTE, crustaceo:CRUSTACEO_SILHOUETTE, tiburon:SHARK_SILHOUETTE };
+function catSilhouette(cat){ return CAT_SILHOUETTES[cat] || SHARK_SILHOUETTE; }
 function speciesImgPath(s){ return `especies/imagenes/${catFolder(s.cat)}/${s.order.toLowerCase()}/${s.id}.jpg`; }
 
 function placeholderMarkup(cat){
@@ -2052,6 +2075,91 @@ let SPECIES = [
   {id:'morena', cat:'pez', order:'Anguilliformes', name:'Morena', sci:'Muraena helena', region:'Mediterráneo', code:'PEZ-21', size:'1.5 m', habitat:'Grietas y cuevas rocosas', depth:'0–80 m', speed:'Lenta', diet:'Peces y cefalópodos', rarity:2, blurb:'Cuerpo serpentiforme con un llamativo patrón marmoleado. Pasa el día asomando la cabeza desde su refugio entre las rocas, abriendo y cerrando la boca para respirar, no como gesto de amenaza.'},
   {id:'congrio', cat:'pez', order:'Anguilliformes', name:'Congrio', sci:'Conger conger', region:'Mediterráneo', code:'PEZ-22', size:'2 m', habitat:'Cuevas, grietas y restos de naufragios', depth:'0–300 m', speed:'Lenta', diet:'Peces, crustáceos y cefalópodos', rarity:2, blurb:'La mayor de las anguilas mediterráneas, de color gris uniforme y sin escamas. Habitual en pecios y grutas, donde puede alcanzar tamaños considerables.'},
   {id:'oblada', cat:'pez', order:'Spariformes', name:'Oblada', sci:'Oblada melanura', region:'Mediterráneo', code:'PEZ-23', size:'0.3 m', habitat:'Fondos rocosos y praderas de posidonia', depth:'0–100 m', speed:'Moderada', diet:'Pequeños invertebrados y algas', rarity:1, blurb:'Fácil de identificar por la mancha negra bordeada de blanco junto a la cola, que imita un ojo para despistar a los depredadores. Forma bancos numerosos y es una de las presencias más habituales en cualquier inmersión mediterránea.'},
+
+  // ── Rayas (añadidas desde pendientes.csv) ──
+  {id:'rayatoro', cat:'raya', order:'Myliobatiformes', name:'Raya toro', sci:'Aetomylaeus bovinus', region:'Mediterráneo', code:'RAY-20', size:'2.4 m', habitat:'Fondos arenosos y estuarios costeros', depth:'1–100 m', speed:'Moderada', diet:'Moluscos y crustáceos bentónicos', rarity:5, blurb:'Águila marina de morro prominente y larga cola en látigo. Sus poblaciones se han desplomado por la pesca y está catalogada en peligro crítico de extinción.'},
+  {id:'sierrapequena', cat:'raya', order:'Rhinopristiformes', name:'Pez sierra de dientes pequeños', sci:'Pristis pectinata', region:'Global', code:'RAY-21', size:'5.5 m', habitat:'Estuarios y aguas costeras someras', depth:'0–25 m', speed:'Lenta', diet:'Peces pequeños, localizados con su rostro sensorial', rarity:5, blurb:'Se distingue de la sierra común por tener más dientes rostrales, más pequeños y juntos. Uno de los elasmobranquios más amenazados del planeta, extinguido en gran parte de su antigua área de distribución.'},
+
+  // ── Peces óseos (añadidos desde pendientes.csv) ──
+  {id:'payaso', cat:'pez', order:'Perciformes', name:'Pez payaso', sci:'Amphiprion ocellaris', region:'Indo-Pacífico', code:'PEZ-24', size:'0.11 m', habitat:'Arrecifes de coral, entre los tentáculos de anémonas', depth:'1–15 m', speed:'Lenta', diet:'Zooplancton y restos de la anémona huésped', rarity:2, blurb:'Vive en una relación de mutualismo con anémonas urticantes, a las que es inmune gracias a una capa de mucosidad protectora. Uno de los peces de acuario más reconocibles del mundo.'},
+  {id:'cirujanoazul', cat:'pez', order:'Acanthuriformes', name:'Cirujano azul', sci:'Paracanthurus hepatus', region:'Indo-Pacífico', code:'PEZ-25', size:'0.31 m', habitat:'Arrecifes de coral', depth:'2–40 m', speed:'Rápida', diet:'Zooplancton y algas', rarity:2, blurb:'De color azul intenso con una franja negra en forma de paleta, lleva a cada lado de la cola una espina afilada como un bisturí que usa para defenderse.'},
+  {id:'angelemperador', cat:'pez', order:'Acanthuriformes', name:'Pez ángel emperador', sci:'Pomacanthus imperator', region:'Indo-Pacífico', code:'PEZ-26', size:'0.4 m', habitat:'Arrecifes de coral y paredes rocosas', depth:'1–100 m', speed:'Moderada', diet:'Esponjas y tunicados', rarity:3, blurb:'De adulto luce rayas doradas y azules; de joven, un patrón concéntrico blanco y azul completamente distinto que tarda años en transformarse.'},
+  {id:'pezleon', cat:'pez', order:'Scorpaeniformes', name:'Pez león', sci:'Pterois volitans', region:'Indo-Pacífico', code:'PEZ-27', size:'0.38 m', habitat:'Arrecifes de coral y fondos rocosos', depth:'1–55 m', speed:'Lenta', diet:'Peces pequeños y crustáceos', rarity:2, blurb:'Sus vistosas aletas en forma de abanico ocultan espinas venenosas. Introducido accidentalmente en el Caribe y el Atlántico occidental, es hoy una especie invasora sin depredadores naturales allí.'},
+  {id:'pezglobo', cat:'pez', order:'Tetraodontiformes', name:'Pez globo', sci:'Diodon holocanthus', region:'Global', code:'PEZ-28', size:'0.5 m', habitat:'Arrecifes y fondos de arena someros', depth:'2–100 m', speed:'Lenta', diet:'Moluscos, erizos y crustáceos de caparazón duro', rarity:2, blurb:'Ante una amenaza, traga agua para hincharse hasta triplicar su tamaño y erizar sus espinas, disuadiendo a casi cualquier depredador.'},
+  {id:'pezerizo', cat:'pez', order:'Tetraodontiformes', name:'Pez erizo', sci:'Diodon hystrix', region:'Global', code:'PEZ-29', size:'0.9 m', habitat:'Arrecifes de coral y cuevas', depth:'2–50 m', speed:'Lenta', diet:'Moluscos, cangrejos y erizos de mar', rarity:3, blurb:'Primo mayor del pez globo, con espinas más largas y permanentemente erguidas. De hábitos nocturnos, pasa el día escondido en grietas y cuevas.'},
+  {id:'napoleon', cat:'pez', order:'Labriformes', name:'Napoleón', sci:'Cheilinus undulatus', region:'Indo-Pacífico', code:'PEZ-30', size:'2 m', habitat:'Arrecifes de coral exteriores y pendientes', depth:'1–100 m', speed:'Lenta', diet:'Moluscos, erizos, crustáceos y estrellas de mar', rarity:4, blurb:'El mayor de los lábridos, reconocible por la joroba de su frente. Curioso y confiado, es uno de los grandes iconos del buceo en arrecife, aunque está amenazado por la sobrepesca.'},
+  {id:'pezluna', cat:'pez', order:'Tetraodontiformes', name:'Pez luna', sci:'Mola mola', region:'Global', code:'PEZ-31', size:'3 m', habitat:'Aguas abiertas templadas y tropicales', depth:'0–600 m', speed:'Lenta', diet:'Medusas y zooplancton gelatinoso', rarity:4, blurb:'El pez óseo más pesado del mundo, con un cuerpo aplanado y sin cola aparente. Sube a la superficie a tomar el sol para que las aves le limpien de parásitos.'},
+  {id:'caballitocomun', cat:'pez', order:'Syngnathiformes', name:'Caballito de mar común', sci:'Hippocampus hippocampus', region:'Mediterráneo', code:'PEZ-32', size:'0.15 m', habitat:'Praderas de posidonia y fondos de algas', depth:'0–20 m', speed:'Muy lenta', diet:'Pequeños crustáceos planctónicos', rarity:4, blurb:'El macho incuba los huevos en una bolsa ventral hasta el nacimiento de las crías. Se sujeta a las algas con la cola prensil para no ser arrastrado por la corriente.'},
+  {id:'caballitomediterraneo', cat:'pez', order:'Syngnathiformes', name:'Caballito de mar mediterráneo', sci:'Hippocampus guttulatus', region:'Mediterráneo', code:'PEZ-33', size:'0.18 m', habitat:'Praderas de posidonia y fondos de algas', depth:'0–30 m', speed:'Muy lenta', diet:'Pequeños crustáceos planctónicos', rarity:4, blurb:'Se diferencia del caballito común por su hocico más largo y los filamentos que le cubren la cabeza y el cuerpo, a modo de camuflaje entre las algas.'},
+  {id:'trompetaoriental', cat:'pez', order:'Syngnathiformes', name:'Pez trompeta del Atlántico oriental', sci:'Aulostomus strigosus', region:'Canarias', code:'PEZ-34', size:'1 m', habitat:'Fondos rocosos y de coral', depth:'3–30 m', speed:'Lenta', diet:'Peces pequeños y crustáceos', rarity:3, blurb:'Cuerpo alargado como un tubo, con la boca al final de un hocico tubular. Caza al acecho, a menudo camuflado verticalmente entre gorgonias o siguiendo a otros peces herbívoros.'},
+  {id:'pezloro', cat:'pez', order:'Labriformes', name:'Pez loro', sci:'Scarus ghobban', region:'Indo-Pacífico', code:'PEZ-35', size:'0.75 m', habitat:'Arrecifes de coral', depth:'1–30 m', speed:'Moderada', diet:'Algas y coral, que tritura con su pico fusionado', rarity:2, blurb:'Sus dientes fusionados en forma de pico raspan las algas del coral, generando gran parte de la arena blanca de los arrecifes tropicales tras digerir el carbonato cálcico.'},
+  {id:'pezcofre', cat:'pez', order:'Tetraodontiformes', name:'Pez cofre', sci:'Ostracion cubicus', region:'Indo-Pacífico', code:'PEZ-36', size:'0.45 m', habitat:'Arrecifes de coral y lagunas', depth:'1–35 m', speed:'Lenta', diet:'Algas, esponjas e invertebrados bentónicos', rarity:3, blurb:'Su cuerpo, encerrado en una coraza ósea rígida en forma de caja, le obliga a nadar aleteando en vez de ondulando. Puede liberar una toxina en la piel si se siente muy amenazado.'},
+  {id:'pezpiedra', cat:'pez', order:'Scorpaeniformes', name:'Pez piedra', sci:'Synanceia verrucosa', region:'Indo-Pacífico', code:'PEZ-37', size:'0.4 m', habitat:'Fondos rocosos y arrecifes, camuflado entre piedras', depth:'0–40 m', speed:'Muy lenta', diet:'Peces y crustáceos, caza al acecho', rarity:4, blurb:'Considerado el pez más venenoso del mundo. Su aspecto de roca cubierta de algas lo hace casi invisible hasta que es demasiado tarde; sus espinas dorsales inyectan un veneno extremadamente doloroso.'},
+  {id:'anguilajardinera', cat:'pez', order:'Anguilliformes', name:'Anguila jardinera', sci:'Heteroconger longissimus', region:'Global', code:'PEZ-38', size:'0.6 m', habitat:'Fondos de arena en corrientes moderadas', depth:'15–45 m', speed:'Muy lenta', diet:'Zooplancton arrastrado por la corriente', rarity:3, blurb:'Vive enterrada en colonias de cientos de individuos, cada uno asomando solo la cabeza y el cuerpo superior, como un jardín ondulante que se retrae por completo ante cualquier amenaza.'},
+  {id:'morenacinta', cat:'pez', order:'Anguilliformes', name:'Morena cinta', sci:'Rhinomuraena quaesita', region:'Indo-Pacífico', code:'PEZ-39', size:'1.3 m', habitat:'Fondos de arena y escombros coralinos', depth:'2–60 m', speed:'Lenta', diet:'Peces pequeños', rarity:3, blurb:'Cambia de sexo y color a lo largo de su vida: nace macho y negro, pasa a macho azul, y termina como hembra amarilla. Sus fosas nasales en forma de cinta le dan el nombre.'},
+  {id:'vieja', cat:'pez', order:'Labriformes', name:'Vieja', sci:'Sparisoma cretense', region:'Canarias', code:'PEZ-40', size:'0.5 m', habitat:'Fondos rocosos y praderas marinas', depth:'0–50 m', speed:'Moderada', diet:'Algas, que raspa de las rocas con su pico', rarity:1, blurb:'Único representante de los peces loro en aguas españolas. Las hembras son rojizas y los machos, tras cambiar de sexo, adquieren tonos verdosos y azulados.'},
+  {id:'abade', cat:'pez', order:'Perciformes', name:'Abade', sci:'Mycteroperca fusca', region:'Canarias', code:'PEZ-41', size:'0.6 m', habitat:'Fondos rocosos y cuevas', depth:'5–60 m', speed:'Lenta', diet:'Peces y crustáceos', rarity:3, blurb:'Mero esbelto endémico de Macaronesia, de color pardo con la aleta caudal recortada. Confiado y curioso con los buceadores en zonas protegidas de Canarias.'},
+  {id:'fulanegra', cat:'pez', order:'Perciformes', name:'Fula negra', sci:'Abudefduf luridus', region:'Canarias', code:'PEZ-42', size:'0.2 m', habitat:'Fondos rocosos someros', depth:'0–15 m', speed:'Rápida', diet:'Algas y pequeños invertebrados', rarity:1, blurb:'Damisela oscura endémica de Macaronesia, territorial y agresiva pese a su pequeño tamaño: defiende con fiereza su parcela de alga frente a otros peces.'},
+  {id:'fulablanca', cat:'pez', order:'Perciformes', name:'Fula blanca', sci:'Chromis limbata', region:'Canarias', code:'PEZ-43', size:'0.14 m', habitat:'Paredes rocosas', depth:'1–35 m', speed:'Rápida', diet:'Zooplancton', rarity:1, blurb:'Damisela de color pardo con la base de la cola blanca, muy común en Canarias. Forma nubes densas sobre las paredes rocosas, sustituyendo aquí a la castañuela mediterránea.'},
+  {id:'catalufa', cat:'pez', order:'Perciformes', name:'Catalufa', sci:'Heteropriacanthus cruentatus', region:'Canarias', code:'PEZ-44', size:'0.3 m', habitat:'Cuevas y paredes rocosas en penumbra', depth:'3–70 m', speed:'Lenta', diet:'Zooplancton y pequeños invertebrados nocturnos', rarity:3, blurb:'De grandes ojos adaptados a la escasa luz y color rojizo intenso, pasa el día inmóvil en cuevas y grietas, y sale a alimentarse al anochecer.'},
+  {id:'morenanegra', cat:'pez', order:'Anguilliformes', name:'Morena negra', sci:'Muraena augusti', region:'Canarias', code:'PEZ-45', size:'1 m', habitat:'Grietas y cuevas rocosas', depth:'0–40 m', speed:'Lenta', diet:'Peces y crustáceos', rarity:2, blurb:'Endémica de Macaronesia, se distingue de la morena mediterránea por su color más oscuro y uniforme. Comparte el mismo hábito de asomar la cabeza desde su refugio para respirar.'},
+  {id:'tamboril', cat:'pez', order:'Tetraodontiformes', name:'Tamboril', sci:'Sphoeroides marmoratus', region:'Canarias', code:'PEZ-46', size:'0.25 m', habitat:'Fondos de arena y roca someros', depth:'0–30 m', speed:'Lenta', diet:'Moluscos, crustáceos y algas', rarity:2, blurb:'Pequeño pez globo de patrón moteado, capaz de hincharse tragando agua cuando se siente amenazado. Su carne y vísceras contienen tetrodotoxina, altamente tóxica.'},
+  {id:'trompetero', cat:'pez', order:'Syngnathiformes', name:'Trompetero', sci:'Macroramphosus scolopax', region:'Canarias', code:'PEZ-47', size:'0.2 m', habitat:'Fondos de arena y aguas semipelágicas', depth:'25–600 m', speed:'Moderada', diet:'Zooplancton y pequeños invertebrados bentónicos', rarity:2, blurb:'De cuerpo comprimido y hocico tubular muy alargado, forma bancos numerosos cerca del fondo. La primera espina de su aleta dorsal es larga y erguida.'},
+  {id:'ballesta', cat:'pez', order:'Tetraodontiformes', name:'Pez ballesta', sci:'Balistes capriscus', region:'Canarias', code:'PEZ-48', size:'0.6 m', habitat:'Fondos rocosos y de arena', depth:'3–55 m', speed:'Moderada', diet:'Moluscos, erizos y crustáceos de caparazón duro', rarity:2, blurb:'Puede trabar su primera espina dorsal en posición erguida como un mecanismo de ballesta, encajándose en una grieta para que ningún depredador pueda extraerlo.'},
+  {id:'rubiovolador', cat:'pez', order:'Dactylopteriformes', name:'Rubio volador', sci:'Dactylopterus volitans', region:'Canarias', code:'PEZ-49', size:'0.5 m', habitat:'Fondos de arena y fango', depth:'3–100 m', speed:'Lenta', diet:'Crustáceos e invertebrados bentónicos', rarity:2, blurb:'Sus enormes aletas pectorales, como alas de mariposa, no le permiten volar de verdad, pero las despliega para intimidar a los depredadores y "camina" por el fondo con los radios inferiores.'},
+  {id:'morenafogosa', cat:'pez', order:'Anguilliformes', name:'Morena fogosa', sci:'Enchelycore anatina', region:'Canarias', code:'PEZ-50', size:'0.8 m', habitat:'Grietas y cuevas en fondos rocosos', depth:'2–40 m', speed:'Lenta', diet:'Peces y cefalópodos', rarity:3, blurb:'También llamada morena picopato, por su mandíbula curvada que le impide cerrar la boca del todo. Endémica de Macaronesia, de colores rojizos con manchas amarillas.'},
+  {id:'reyezuelo', cat:'pez', order:'Perciformes', name:'Reyezuelo', sci:'Apogon imberbis', region:'Mediterráneo', code:'PEZ-51', size:'0.14 m', habitat:'Cuevas y grietas en penumbra', depth:'3–200 m', speed:'Lenta', diet:'Zooplancton nocturno', rarity:2, blurb:'Pequeño pez cardinal de color rojo intenso y grandes ojos, típico de la entrada de cuevas. El macho incuba los huevos en la boca hasta la eclosión.'},
+  {id:'pejerrey', cat:'pez', order:'Atheriniformes', name:'Pejerrey mediterráneo', sci:'Atherina boyeri', region:'Mediterráneo', code:'PEZ-52', size:'0.13 m', habitat:'Aguas costeras someras, lagunas y estuarios', depth:'0–10 m', speed:'Rápida', diet:'Zooplancton', rarity:1, blurb:'Pequeño pez plateado que forma bancos muy numerosos cerca de la orilla, con una franja plateada brillante a lo largo del cuerpo. Tolera bien aguas salobres.'},
+  {id:'pezperro', cat:'pez', order:'Labriformes', name:'Pez perro', sci:'Bodianus scrofa', region:'Canarias', code:'PEZ-53', size:'0.5 m', habitat:'Fondos rocosos y de coralígeno', depth:'10–200 m', speed:'Moderada', diet:'Moluscos, crustáceos y erizos', rarity:3, blurb:'Lábrido de gran tamaño y colores vivos —rosa, amarillo y verde— endémico del Atlántico oriental. Rompe el caparazón de sus presas con sus fuertes dientes.'},
+  {id:'podas', cat:'pez', order:'Pleuronectiformes', name:'Podas', sci:'Bothus podas', region:'Mediterráneo', code:'PEZ-54', size:'0.2 m', habitat:'Fondos de arena y fango someros', depth:'2–100 m', speed:'Lenta', diet:'Pequeños peces y crustáceos', rarity:2, blurb:'Pez plano que, como todos los bótidos, tiene ambos ojos en el lado izquierdo del cuerpo. Se entierra en la arena dejando solo los ojos al descubierto, a la espera de presas.'},
+  {id:'gallinita', cat:'pez', order:'Tetraodontiformes', name:'Gallinita', sci:'Canthigaster capistrata', region:'Canarias', code:'PEZ-55', size:'0.1 m', habitat:'Fondos de arena y roca', depth:'5–70 m', speed:'Moderada', diet:'Invertebrados bentónicos y algas', rarity:2, blurb:'El pez globo más pequeño de las aguas canarias, con un patrón de puntos azules característico. A diferencia de otros tetraodóntidos, nada de forma ágil y activa.'},
+  {id:'chavito', cat:'pez', order:'Zeiformes', name:'Chavito', sci:'Capros aper', region:'Mediterráneo', code:'PEZ-56', size:'0.12 m', habitat:'Fondos rocosos y de coralígeno profundos', depth:'20–600 m', speed:'Lenta', diet:'Zooplancton', rarity:3, blurb:'Pequeño pez de cuerpo comprimido y color rosado intenso, con una boca protráctil que proyecta hacia delante como un tubo para capturar plancton.'},
+  {id:'dorado', cat:'pez', order:'Perciformes', name:'Dorado', sci:'Coryphaena hippurus', region:'Global', code:'PEZ-57', size:'2 m', habitat:'Aguas pelágicas abiertas, cerca de objetos flotantes', depth:'0–85 m', speed:'Muy rápida', diet:'Peces voladores, calamares y crustáceos', rarity:3, blurb:'Uno de los peces más rápidos y de colores más vivos del océano —verde, azul y dorado—, que se apagan rápidamente al salir del agua. Nada en grupos bajo objetos flotantes.'},
+  {id:'lubina', cat:'pez', order:'Perciformes', name:'Lubina', sci:'Dicentrarchus labrax', region:'Mediterráneo', code:'PEZ-58', size:'1 m', habitat:'Aguas costeras, estuarios y puertos', depth:'0–100 m', speed:'Rápida', diet:'Peces pequeños y crustáceos', rarity:2, blurb:'Depredador plateado muy apreciado en gastronomía, frecuenta rompientes y desembocaduras donde caza pequeños peces. Puede vivir tanto en agua salada como salobre.'},
+  {id:'baila', cat:'pez', order:'Perciformes', name:'Baila', sci:'Dicentrarchus punctatus', region:'Mediterráneo', code:'PEZ-59', size:'0.6 m', habitat:'Aguas costeras y estuarios', depth:'0–50 m', speed:'Rápida', diet:'Peces pequeños y crustáceos', rarity:2, blurb:'Muy parecida a la lubina, se distingue por las manchas oscuras que salpican sus costados. Suele formar bancos más numerosos que su pariente.'},
+  {id:'raspallon', cat:'pez', order:'Spariformes', name:'Raspallón', sci:'Diplodus annularis', region:'Mediterráneo', code:'PEZ-60', size:'0.2 m', habitat:'Fondos de arena y praderas de posidonia', depth:'0–30 m', speed:'Moderada', diet:'Pequeños invertebrados y algas', rarity:1, blurb:'El más pequeño de los sargos mediterráneos, con un anillo negro característico en el pedúnculo caudal. Muy común en fondos someros de arena.'},
+  {id:'sargopicudo', cat:'pez', order:'Spariformes', name:'Sargo picudo', sci:'Diplodus puntazzo', region:'Mediterráneo', code:'PEZ-61', size:'0.6 m', habitat:'Fondos rocosos y de arena', depth:'0–160 m', speed:'Moderada', diet:'Moluscos y crustáceos', rarity:2, blurb:'Se diferencia del resto de sargos por su hocico puntiagudo, adaptado a hurgar en la arena en busca de moluscos e invertebrados enterrados.'},
+  {id:'salvariego', cat:'pez', order:'Trachiniformes', name:'Salvariego', sci:'Echiichthys vipera', region:'Mediterráneo', code:'PEZ-62', size:'0.15 m', habitat:'Fondos de arena someros', depth:'1–150 m', speed:'Muy lenta', diet:'Pequeños peces y crustáceos', rarity:2, blurb:'Pasa el día enterrado en la arena con solo los ojos y las espinas dorsales venenosas al descubierto. Su picadura es muy dolorosa, típica de bañistas que lo pisan sin querer.'},
+  {id:'meroguasa', cat:'pez', order:'Perciformes', name:'Mero guasa', sci:'Epinephelus itajara', region:'Global', code:'PEZ-63', size:'2.5 m', habitat:'Manglares, arrecifes y pecios', depth:'1–100 m', speed:'Lenta', diet:'Peces, crustáceos y tortugas pequeñas', rarity:5, blurb:'Uno de los peces óseos más grandes de los arrecifes, capaz de superar los 300 kg. En peligro crítico por la sobrepesca; protegido en gran parte de su área de distribución.'},
+  {id:'bacoreta', cat:'pez', order:'Scombriformes', name:'Bacoreta', sci:'Euthynnus alletteratus', region:'Mediterráneo', code:'PEZ-64', size:'1 m', habitat:'Aguas costeras y pelágicas', depth:'0–100 m', speed:'Muy rápida', diet:'Peces pequeños y crustáceos planctónicos', rarity:2, blurb:'Pariente pequeño del atún, con un característico dibujo de líneas onduladas en el dorso. Caza en bancos veloces cerca de la superficie.'},
+  {id:'pezvolador', cat:'pez', order:'Beloniformes', name:'Pez volador común', sci:'Exocoetus volitans', region:'Global', code:'PEZ-65', size:'0.3 m', habitat:'Aguas pelágicas cálidas de superficie', depth:'0–10 m', speed:'Muy rápida', diet:'Zooplancton', rarity:2, blurb:'Sus enormes aletas pectorales, a modo de alas, le permiten planear varios metros sobre la superficie del agua para escapar de depredadores como el dorado.'},
+  {id:'gobionegro', cat:'pez', order:'Gobiiformes', name:'Gobio negro', sci:'Gobius niger', region:'Mediterráneo', code:'PEZ-66', size:'0.18 m', habitat:'Fondos de arena y fango, praderas marinas', depth:'0–75 m', speed:'Lenta', diet:'Pequeños invertebrados bentónicos', rarity:1, blurb:'Pequeño pez de fondo que descansa apoyado sobre sus aletas pélvicas fusionadas en forma de ventosa. El macho vigila los huevos hasta la eclosión.'},
+  {id:'gobioroca', cat:'pez', order:'Gobiiformes', name:'Gobio de roca', sci:'Gobius paganellus', region:'Mediterráneo', code:'PEZ-67', size:'0.12 m', habitat:'Pozas de marea y fondos rocosos someros', depth:'0–15 m', speed:'Lenta', diet:'Pequeños invertebrados y algas', rarity:1, blurb:'Habitual en las pozas de marea de la zona intermareal, donde permanece inmóvil apoyado en las rocas gracias a su aleta ventral en forma de disco adhesivo.'},
+  {id:'morion', cat:'pez', order:'Anguilliformes', name:'Murión', sci:'Gymnothorax unicolor', region:'Mediterráneo', code:'PEZ-68', size:'0.65 m', habitat:'Grietas y cuevas en fondos rocosos', depth:'0–40 m', speed:'Lenta', diet:'Peces y crustáceos', rarity:3, blurb:'Morena de color pardo uniforme, sin el moteado de la morena común. Más esquiva y de hábitos más nocturnos que su pariente, suele pasar desapercibida.'},
+  {id:'chopa', cat:'pez', order:'Perciformes', name:'Chopa', sci:'Kyphosus sectatrix', region:'Global', code:'PEZ-69', size:'0.45 m', habitat:'Fondos rocosos someros', depth:'0–30 m', speed:'Moderada', diet:'Algas', rarity:1, blurb:'Pez herbívoro plateado que forma bancos numerosos junto a las rocas costeras, donde pasta sobre las algas incrustantes durante el día.'},
+  {id:'merlo', cat:'pez', order:'Labriformes', name:'Merlo', sci:'Labrus merula', region:'Mediterráneo', code:'PEZ-70', size:'0.4 m', habitat:'Fondos rocosos y praderas de posidonia', depth:'0–50 m', speed:'Moderada', diet:'Moluscos, crustáceos y erizos', rarity:2, blurb:'Lábrido robusto de color pardo oscuro casi negro, con la boca gruesa característica del género. Suele verse en solitario cerca de paredes rocosas.'},
+  {id:'gorrion', cat:'pez', order:'Labriformes', name:'Gorrión', sci:'Labrus mixtus', region:'Mediterráneo', code:'PEZ-71', size:'0.4 m', habitat:'Fondos rocosos y de coralígeno', depth:'5–200 m', speed:'Moderada', diet:'Moluscos y crustáceos', rarity:3, blurb:'Uno de los peces más coloridos del Mediterráneo: el macho luce un intenso patrón azul y naranja, mientras que la hembra es rosada con manchas oscuras.'},
+  {id:'rapenegro', cat:'pez', order:'Lophiiformes', name:'Rape negro', sci:'Lophius budegassa', region:'Mediterráneo', code:'PEZ-72', size:'1 m', habitat:'Fondos de arena y fango', depth:'20–800 m', speed:'Muy lenta', diet:'Peces, atraídos con su señuelo dorsal', rarity:3, blurb:'Se distingue del rape común por el peritoneo negro que recubre su cavidad abdominal. Camuflado en el fondo, agita un filamento con forma de cebo para atraer a sus presas.'},
+  {id:'rapecomun', cat:'pez', order:'Lophiiformes', name:'Rape común', sci:'Lophius piscatorius', region:'Mediterráneo', code:'PEZ-73', size:'2 m', habitat:'Fondos de arena y fango', depth:'0–1000 m', speed:'Muy lenta', diet:'Peces, atraídos con su señuelo dorsal', rarity:3, blurb:'Cabeza enorme y aplanada casi tan ancha como el resto del cuerpo, perfectamente camuflada entre el sedimento. Caza al acecho, inmóvil, agitando su "caña" dorsal como cebo.'},
+  {id:'herrera', cat:'pez', order:'Spariformes', name:'Herrera', sci:'Lithognathus mormyrus', region:'Mediterráneo', code:'PEZ-74', size:'0.55 m', habitat:'Fondos de arena costeros', depth:'0–50 m', speed:'Moderada', diet:'Invertebrados enterrados en la arena', rarity:1, blurb:'Cuerpo plateado con bandas verticales doradas y hocico puntiagudo, adaptado a hurgar en la arena en busca de gusanos y pequeños moluscos.'},
+
+  // ── Medusas (categoría nueva) ──
+  {id:'medusaluna', cat:'medusa', order:'Semaeostomeae', name:'Medusa luna', sci:'Aurelia aurita', region:'Global', code:'MED-01', size:'0.3 m', habitat:'Aguas costeras y bahías', depth:'0–20 m', speed:'Muy lenta', diet:'Zooplancton', rarity:1, blurb:'Translúcida, con cuatro anillos en forma de herradura visibles a través de la umbrela. Una de las medusas más comunes y reconocibles del mundo, con picadura muy leve.'},
+  {id:'huevofrito', cat:'medusa', order:'Rhizostomeae', name:'Medusa huevo frito', sci:'Cotylorhiza tuberculata', region:'Mediterráneo', code:'MED-02', size:'0.35 m', habitat:'Aguas costeras cálidas', depth:'0–20 m', speed:'Muy lenta', diet:'Zooplancton', rarity:1, blurb:'Debe su nombre a la umbrela amarillenta con un abultamiento central que recuerda a una yema de huevo frito. Su picadura es leve o casi imperceptible.'},
+  {id:'medusacompas', cat:'medusa', order:'Semaeostomeae', name:'Medusa compás', sci:'Chrysaora hysoscella', region:'Mediterráneo', code:'MED-03', size:'0.3 m', habitat:'Aguas costeras y pelágicas someras', depth:'0–30 m', speed:'Lenta', diet:'Zooplancton y peces pequeños', rarity:2, blurb:'Su umbrela translúcida está marcada con 16 franjas radiales oscuras, como las agujas de una brújula. Picadura moderadamente urticante.'},
+  {id:'ortigapacifico', cat:'medusa', order:'Semaeostomeae', name:'Medusa ortiga del Pacífico', sci:'Chrysaora fuscescens', region:'Global', code:'MED-04', size:'0.5 m', habitat:'Aguas costeras templadas', depth:'0–30 m', speed:'Lenta', diet:'Zooplancton y peces pequeños', rarity:2, blurb:'De umbrela dorada y largos tentáculos oscuros, forma enjambres espectaculares en la costa del Pacífico. Muy popular en acuarios por su elegante nado ondulante.'},
+  {id:'medusaclavel', cat:'medusa', order:'Semaeostomeae', name:'Medusa clavel', sci:'Pelagia noctiluca', region:'Mediterráneo', code:'MED-05', size:'0.12 m', habitat:'Aguas pelágicas abiertas', depth:'0–100 m', speed:'Lenta', diet:'Zooplancton y peces pequeños', rarity:2, blurb:'También llamada medusa fosforescente por su bioluminiscencia, es la principal responsable de las picaduras en las costas mediterráneas durante el verano.'},
+  {id:'melenaleon', cat:'medusa', order:'Semaeostomeae', name:'Medusa melena de león', sci:'Cyanea capillata', region:'Global', code:'MED-06', size:'2 m', habitat:'Aguas frías y templadas de superficie', depth:'0–20 m', speed:'Lenta', diet:'Zooplancton, peces pequeños y otras medusas', rarity:3, blurb:'La medusa más grande conocida: sus tentáculos, agrupados en mechones como una melena, pueden superar los 30 metros de longitud en los ejemplares más grandes.'},
+  {id:'bolacanon', cat:'medusa', order:'Rhizostomeae', name:'Medusa bola de cañón', sci:'Stomolophus meleagris', region:'Global', code:'MED-07', size:'0.25 m', habitat:'Aguas costeras someras y estuarios', depth:'0–20 m', speed:'Lenta', diet:'Zooplancton', rarity:2, blurb:'De umbrela esférica y firme como una bola de cañón, carece de tentáculos marginales largos. Su picadura es prácticamente inofensiva para el ser humano.'},
+  {id:'medusainvertida', cat:'medusa', order:'Rhizostomeae', name:'Medusa invertida', sci:'Cassiopea andromeda', region:'Global', code:'MED-08', size:'0.3 m', habitat:'Fondos someros de manglar y lagunas', depth:'0–5 m', speed:'Sedentaria', diet:'Fotosíntesis de algas simbióticas y zooplancton', rarity:2, blurb:'A diferencia del resto de medusas, reposa boca arriba sobre el fondo, con los brazos hacia el sol para alimentar a las algas simbióticas que viven en su tejido.'},
+  {id:'medusacristal', cat:'medusa', order:'Leptothecata', name:'Medusa de cristal', sci:'Aequorea victoria', region:'Global', code:'MED-09', size:'0.1 m', habitat:'Aguas costeras templadas', depth:'0–30 m', speed:'Muy lenta', diet:'Zooplancton', rarity:3, blurb:'Casi completamente transparente, bioluminiscente en azul-verde. La proteína que le da ese brillo (GFP) revolucionó la biología al usarse como marcador fluorescente en laboratorios de todo el mundo.'},
+  {id:'medusamoteada', cat:'medusa', order:'Rhizostomeae', name:'Medusa moteada', sci:'Phyllorhiza punctata', region:'Global', code:'MED-10', size:'0.5 m', habitat:'Aguas costeras cálidas', depth:'0–15 m', speed:'Lenta', diet:'Zooplancton', rarity:2, blurb:'También llamada medusa australiana, tiene la umbrela salpicada de puntos blancos. Especie muy exhibida en grandes acuarios por su llamativa silueta.'},
+  {id:'carabelaportuguesa', cat:'medusa', order:'Siphonophorae', name:'Carabela portuguesa', sci:'Physalia physalis', region:'Canarias', code:'MED-11', size:'0.3 m', habitat:'Superficie de aguas pelágicas, arrastrada por el viento', depth:'0–1 m', speed:'A la deriva', diet:'Peces pequeños y zooplancton', rarity:2, blurb:'No es una medusa verdadera sino una colonia de organismos especializados. Su flotador azulado sobresale del agua como una vela; sus tentáculos, de hasta 30 metros, causan picaduras muy dolorosas.'},
+  {id:'aguamala', cat:'medusa', order:'Rhizostomeae', name:'Aguamala', sci:'Rhizostoma pulmo', region:'Mediterráneo', code:'MED-12', size:'0.6 m', habitat:'Aguas costeras y pelágicas someras', depth:'0–30 m', speed:'Lenta', diet:'Zooplancton', rarity:1, blurb:'Gran medusa de umbrela blanquecina bordeada de violeta y sin tentáculos marginales largos. Pese a su tamaño, su picadura es leve.'},
+
+  // ── Crustáceos (categoría nueva) ──
+  {id:'bogavante', cat:'crustaceo', order:'Decapoda', name:'Bogavante europeo', sci:'Homarus gammarus', region:'Global', code:'CRU-01', size:'0.5 m', habitat:'Fondos rocosos y grietas', depth:'0–150 m', speed:'Lenta', diet:'Moluscos, crustáceos y carroña', rarity:3, blurb:'De color azulado con manchas claras (que se vuelve rojo solo al cocinarlo), es uno de los crustáceos más apreciados en gastronomía. Defiende su refugio con sus grandes pinzas asimétricas.'},
+  {id:'langosta', cat:'crustaceo', order:'Decapoda', name:'Langosta común', sci:'Palinurus elephas', region:'Mediterráneo', code:'CRU-02', size:'0.5 m', habitat:'Fondos rocosos y cuevas', depth:'5–150 m', speed:'Moderada', diet:'Moluscos, erizos y pequeños invertebrados', rarity:3, blurb:'A diferencia del bogavante, carece de grandes pinzas y se defiende con sus largas antenas espinosas. De hábitos nocturnos, de día se refugia en grietas y cuevas.'},
+  {id:'centollo', cat:'crustaceo', order:'Decapoda', name:'Centollo', sci:'Maja squinado', region:'Mediterráneo', code:'CRU-03', size:'0.2 m', habitat:'Fondos rocosos y de arena', depth:'0–100 m', speed:'Lenta', diet:'Algas, moluscos y carroña', rarity:2, blurb:'Cangrejo de caparazón espinoso que a menudo se camufla decorándolo con algas y esponjas. Muy apreciado en la gastronomía costera española.'},
+  {id:'bueymar', cat:'crustaceo', order:'Decapoda', name:'Buey de mar', sci:'Cancer pagurus', region:'Mediterráneo', code:'CRU-04', size:'0.25 m', habitat:'Fondos rocosos y de arena', depth:'0–100 m', speed:'Lenta', diet:'Moluscos, crustáceos y carroña', rarity:2, blurb:'Cangrejo robusto de caparazón oval con el borde ondulado, como una empanadilla. Sus grandes pinzas de puntas negras pueden ejercer una fuerza considerable.'},
+  {id:'necora', cat:'crustaceo', order:'Decapoda', name:'Nécora', sci:'Necora puber', region:'Mediterráneo', code:'CRU-05', size:'0.08 m', habitat:'Fondos rocosos someros', depth:'0–70 m', speed:'Rápida', diet:'Moluscos, algas y pequeños invertebrados', rarity:2, blurb:'Pequeño cangrejo nadador de caparazón velludo y ojos rojos, con el último par de patas aplanado en forma de remo. Muy activo y agresivo pese a su tamaño.'},
+  {id:'cangrejoarania', cat:'crustaceo', order:'Decapoda', name:'Cangrejo araña japonés', sci:'Macrocheira kaempferi', region:'Indo-Pacífico', code:'CRU-06', size:'3.7 m', habitat:'Fondos profundos de arena y fango', depth:'50–600 m', speed:'Muy lenta', diet:'Moluscos, carroña y algas', rarity:4, blurb:'El artrópodo vivo más grande del mundo: con las patas extendidas puede superar los 3.5 metros. Puede vivir más de 50 años y es una de las estrellas de los grandes acuarios.'},
+  {id:'cangrejoherradura', cat:'crustaceo', order:'Xiphosura', name:'Cangrejo herradura', sci:'Limulus polyphemus', region:'Global', code:'CRU-07', size:'0.6 m', habitat:'Fondos de arena y fango costeros', depth:'0–30 m', speed:'Lenta', diet:'Moluscos y gusanos marinos', rarity:3, blurb:'Pese al nombre, no es un crustáceo sino un pariente cercano de las arañas, prácticamente sin cambios desde hace más de 400 millones de años. Su sangre azul es clave en pruebas médicas de detección de bacterias.'},
+  {id:'ermitano', cat:'crustaceo', order:'Decapoda', name:'Cangrejo ermitaño', sci:'Pagurus bernhardus', region:'Mediterráneo', code:'CRU-08', size:'0.1 m', habitat:'Fondos de arena, roca y pozas de marea', depth:'0–100 m', speed:'Lenta', diet:'Carroña, algas y pequeños invertebrados', rarity:1, blurb:'Al carecer de caparazón propio en el abdomen, ocupa conchas vacías de caracoles marinos, cambiando de "casa" a medida que crece.'},
+  {id:'camaronlimpiador', cat:'crustaceo', order:'Decapoda', name:'Camarón limpiador', sci:'Lysmata amboinensis', region:'Indo-Pacífico', code:'CRU-09', size:'0.06 m', habitat:'Arrecifes de coral, cerca de anémonas', depth:'1–40 m', speed:'Lenta', diet:'Parásitos y tejido muerto de otros peces', rarity:2, blurb:'Instala pequeñas "estaciones de limpieza" en el arrecife donde los peces, incluso depredadores, acuden a que les retire parásitos y piel muerta.'},
+  {id:'gambamantis', cat:'crustaceo', order:'Stomatopoda', name:'Gamba mantis', sci:'Odontodactylus scyllarus', region:'Indo-Pacífico', code:'CRU-10', size:'0.18 m', habitat:'Arrecifes de coral y fondos de arena', depth:'3–40 m', speed:'Rápida', diet:'Moluscos, cangrejos y peces pequeños', rarity:3, blurb:'Golpea a sus presas con sus apéndices delanteros a una velocidad tan alta que genera burbujas de cavitación capaces de romper el cristal de un acuario. Posee uno de los sistemas visuales más complejos del reino animal.'},
+  {id:'percebe', cat:'crustaceo', order:'Sessilia', name:'Percebe', sci:'Pollicipes pollicipes', region:'Mediterráneo', code:'CRU-11', size:'0.07 m', habitat:'Rocas expuestas al oleaje intermareal', depth:'0–2 m', speed:'Sedentario', diet:'Filtrador de plancton', rarity:3, blurb:'Crustáceo sésil que pasa toda su vida adulta fijado a rocas batidas por el oleaje, filtrando plancton con sus apéndices plumosos. Su recolección es una de las más peligrosas de la pesca artesanal.'},
+  {id:'cangrejomoro', cat:'crustaceo', order:'Decapoda', name:'Cangrejo moro', sci:'Grapsus adscensionis', region:'Canarias', code:'CRU-12', size:'0.08 m', habitat:'Rocas volcánicas del litoral batidas por el oleaje', depth:'0–2 m', speed:'Muy rápida', diet:'Algas y carroña', rarity:1, blurb:'De colores vivos rojizos y azulados, es extraordinariamente ágil trepando por las rocas de la orilla, escapando de un salto en cuanto detecta movimiento.'},
 ];
 
 // ---------- estado ----------
@@ -2473,18 +2581,21 @@ function buildTreeData(){
     });
   });
 
-  // ── Peces óseos (datos reales) ──
-  const pezSpp = SPECIES.filter(s=>s.cat==='pez');
-  if(pezSpp.length){
-    const pezNode = mk('pez','Peces Óseos','cat',{ cat:'pez', count:pezSpp.length });
-    root.children.push(pezNode);
-    [...new Set(pezSpp.map(s=>s.order))].sort().forEach(ord=>{
-      const n = mk('ord:'+ord, ord, 'order', { cat:'pez', order:ord, count:pezSpp.filter(s=>s.order===ord).length });
-      pezNode.children.push(n);
+  // ── Resto de categorías con datos reales (Peces óseos, Medusas, Crustáceos) ──
+  // Mismo patrón que Elasmobranquios, pero como nodo de nivel superior
+  // directo bajo la raíz en vez de agrupados bajo un nodo intermedio.
+  [['pez','Peces Óseos'],['medusa','Medusas'],['crustaceo','Crustáceos']].forEach(([cat, label])=>{
+    const spp = SPECIES.filter(s=>s.cat===cat);
+    if(!spp.length) return;
+    const catNode = mk(cat, label, 'cat', { cat, count:spp.length });
+    root.children.push(catNode);
+    [...new Set(spp.map(s=>s.order))].sort().forEach(ord=>{
+      const n = mk('ord:'+ord, ord, 'order', { cat, order:ord, count:spp.filter(s=>s.order===ord).length });
+      catNode.children.push(n);
     });
-  }
+  });
 
-  // ── Grupos placeholder ──
+  // ── Grupos placeholder (sin datos reales todavía) ──
   function addGroup(def, parent){
     const n = mk(def.id, def.label, 'group', { placeholder:true });
     parent.children.push(n);
@@ -2497,13 +2608,7 @@ function buildTreeData(){
       { id:'calamares',  label:'Calamares' },
       { id:'sepias',     label:'Sepias'    },
     ]},
-    { id:'crustaceos',   label:'Crustáceos',   ch:[
-      { id:'cangrejos',  label:'Cangrejos' },
-      { id:'langostas',  label:'Langostas' },
-      { id:'camarones',  label:'Camarones' },
-    ]},
-    { id:'cnidarios',    label:'Cnidarios',    ch:[
-      { id:'medusas',    label:'Medusas'   },
+    { id:'cnidarios',    label:'Otros cnidarios', ch:[
       { id:'anemonas',   label:'Anémonas'  },
       { id:'corales',    label:'Corales'   },
     ]},
@@ -2532,15 +2637,19 @@ function treeNodeColors(node){
 
   if(ph) return { fill:'#F2F6FA', stroke:'#CBD8E4', text:'#9EB5C4', badge:null, sw:1.5, dash:'6,4', shadow:false };
   if(sel){
-    const selFill = node.cat==='raya' ? '#0891B2' : node.cat==='pez' ? '#C87F0A' : '#1563CC';
+    const selFillByCat = { raya:'#0891B2', pez:'#C87F0A', medusa:'#7C3AED', crustaceo:'#C2410C' };
+    const selFill = selFillByCat[node.cat] || '#1563CC';
     return { fill: selFill, stroke:'rgba(255,255,255,0.18)', text:'#fff', badge:'rgba(255,255,255,0.2)', badgeT:'rgba(255,255,255,0.9)', sw:2.5, dash:'none', shadow:true };
   }
   if(node.type==='root')   return { fill:'#fff', stroke:'#4CCEF5', text:'#052E4A', badge:'rgba(76,206,245,0.16)', badgeT:'#0080C8', sw:2, dash:'none', shadow:false };
   if(node.id==='elasmobranquios') return { fill:'#fff', stroke:'#087CC1', text:'#052E4A', badge:'rgba(8,124,193,0.12)', badgeT:'#087CC1', sw:1.8, dash:'none', shadow:false };
   if(node.type==='group')  return { fill:'#fff', stroke:'#7EB0C8', text:'#0D2B40', badge:null, sw:1.5, dash:'none', shadow:false };
-  if(node.cat==='tiburon') return { fill:'#F5FAFF', stroke:'#89C8ED', text:'#0D2B40', badge:'rgba(0,128,200,0.1)', badgeT:'#0080C8', sw:1.5, dash:'none', shadow:false };
-  if(node.cat==='pez')     return { fill:'#FFF9F0', stroke:'#EAC17E', text:'#0D2B40', badge:'rgba(224,138,46,0.14)', badgeT:'#B96F1E', sw:1.5, dash:'none', shadow:false };
-  return                         { fill:'#F0FEFB', stroke:'#7ADAD8', text:'#0D2B40', badge:'rgba(0,189,214,0.12)', badgeT:'#009BB0', sw:1.5, dash:'none', shadow:false };
+  if(node.cat==='tiburon')    return { fill:'#F5FAFF', stroke:'#89C8ED', text:'#0D2B40', badge:'rgba(0,128,200,0.1)', badgeT:'#0080C8', sw:1.5, dash:'none', shadow:false };
+  if(node.cat==='pez')        return { fill:'#FFF9F0', stroke:'#EAC17E', text:'#0D2B40', badge:'rgba(224,138,46,0.14)', badgeT:'#B96F1E', sw:1.5, dash:'none', shadow:false };
+  if(node.cat==='raya')       return { fill:'#F0FEFB', stroke:'#7ADAD8', text:'#0D2B40', badge:'rgba(0,189,214,0.12)', badgeT:'#009BB0', sw:1.5, dash:'none', shadow:false };
+  if(node.cat==='medusa')     return { fill:'#FAF5FF', stroke:'#D8B4FE', text:'#0D2B40', badge:'rgba(124,58,237,0.12)', badgeT:'#7C3AED', sw:1.5, dash:'none', shadow:false };
+  if(node.cat==='crustaceo')  return { fill:'#FFF7ED', stroke:'#FDBA74', text:'#0D2B40', badge:'rgba(194,65,12,0.12)', badgeT:'#C2410C', sw:1.5, dash:'none', shadow:false };
+  return                         { fill:'#F5FAFF', stroke:'#89C8ED', text:'#0D2B40', badge:'rgba(0,128,200,0.1)', badgeT:'#0080C8', sw:1.5, dash:'none', shadow:false };
 }
 
 function trunc(s, max){ return s.length>max ? s.slice(0,max-1)+'...' : s; }
@@ -3705,9 +3814,8 @@ function renderCatNav(){
   document.getElementById('identifyIcon').innerHTML = ICONS.camera;
   document.getElementById('catChevIcon').innerHTML = ICONS.chevronDown;
   const nav = document.getElementById('catNav');
-  const defs = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
   nav.innerHTML = `<button class="side-btn ${selectedCats.size===0?'active':''}" data-cat="todos">Todos</button>` +
-    defs.map(([key,label])=>
+    CAT_DEFS.map(([key,label])=>
       `<button class="side-btn ${selectedCats.has(key)?'active':''}" data-cat="${key}">${label}</button>`
     ).join('');
   nav.querySelectorAll('[data-cat]').forEach(btn=>{
@@ -3779,29 +3887,18 @@ function renderEnvNav(){
 }
 
 function renderProgress(){
-  const totalSharks = SPECIES.filter(s=>s.cat==='tiburon').length;
-  const totalRays = SPECIES.filter(s=>s.cat==='raya').length;
-  const totalFish = SPECIES.filter(s=>s.cat==='pez').length;
-  const unlockedSharks = SPECIES.filter(s=>s.cat==='tiburon' && isUnlocked(s.id)).length;
-  const unlockedRays = SPECIES.filter(s=>s.cat==='raya' && isUnlocked(s.id)).length;
-  const unlockedFish = SPECIES.filter(s=>s.cat==='pez' && isUnlocked(s.id)).length;
-  const pctS = totalSharks ? Math.round(unlockedSharks/totalSharks*100) : 0;
-  const pctR = totalRays ? Math.round(unlockedRays/totalRays*100) : 0;
-  const pctF = totalFish ? Math.round(unlockedFish/totalFish*100) : 0;
-  document.getElementById('progressBlock').innerHTML = `
-    <div class="progress-item">
-      <div class="progress-label"><span>Tiburones</span><span>${unlockedSharks} / ${totalSharks}</span></div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pctS}%"></div></div>
-    </div>
-    <div class="progress-item ray">
-      <div class="progress-label"><span>Rayas</span><span>${unlockedRays} / ${totalRays}</span></div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pctR}%"></div></div>
-    </div>
-    ${totalFish ? `<div class="progress-item fish">
-      <div class="progress-label"><span>Peces óseos</span><span>${unlockedFish} / ${totalFish}</span></div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pctF}%"></div></div>
-    </div>` : ''}
-  `;
+  document.getElementById('progressBlock').innerHTML = CAT_DEFS.map(([cat,label])=>{
+    const total = SPECIES.filter(s=>s.cat===cat).length;
+    if(!total) return '';
+    const unlocked = SPECIES.filter(s=>s.cat===cat && isUnlocked(s.id)).length;
+    const pct = Math.round(unlocked/total*100);
+    const themeClass = CARD_THEME_CLASS[cat];
+    const cls = themeClass ? ' '+themeClass : '';
+    return `<div class="progress-item${cls}">
+      <div class="progress-label"><span>${label}</span><span>${unlocked} / ${total}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
 }
 
 function matchesSearch(s){
@@ -3838,7 +3935,7 @@ function renderGrid(){
   }
   grid.innerHTML = list.map(s=>{
     const unlockedFlag = isUnlocked(s.id);
-    const catClass = s.cat==='raya' ? 'ray' : s.cat==='pez' ? 'fish' : '';
+    const catClass = CARD_THEME_CLASS[s.cat] || '';
     const isFav = !!state.favorites[s.id];
     return `
       <div class="card ${catClass} ${unlockedFlag?'is-unlocked':''}" data-id="${s.id}" data-rarity="${s.rarity}">
@@ -3920,7 +4017,7 @@ function closeModal(){
 }
 
 function renderModal(s, sightings, showForm, editingSighting){
-  const themeClass = s.cat==='raya' ? 'ray-theme' : s.cat==='pez' ? 'fish-theme' : '';
+  const themeClass = CARD_THEME_CLASS[s.cat] ? CARD_THEME_CLASS[s.cat]+'-theme' : '';
   const unlockedFlag = sightings.length > 0;
   const isFav = !!state.favorites[s.id];
   const rarityDots = Array.from({length:5}, (_,i)=>`<span class="${i < s.rarity ? 'filled':''}"></span>`).join('');
@@ -4729,10 +4826,9 @@ function openGlobalMap(){
   // Filtros — misma lista de categoría/orden/entorno/favoritos/búsqueda
   // que la barra lateral del explorador, compartiendo el mismo estado.
   function renderMapFilters(){
-    const catDefs = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos']];
     const catNav = document.getElementById('mapCatNav');
     catNav.innerHTML = `<button type="button" class="map-filter-pill ${selectedCats.size===0?'active':''}" data-cat="todos">Todos</button>` +
-      catDefs.map(([k,l])=>`<button type="button" class="map-filter-pill ${selectedCats.has(k)?'active':''}" data-cat="${k}">${l}</button>`).join('');
+      CAT_DEFS.map(([k,l])=>`<button type="button" class="map-filter-pill ${selectedCats.has(k)?'active':''}" data-cat="${k}">${l}</button>`).join('');
     catNav.querySelectorAll('[data-cat]').forEach(btn=>{
       btn.onclick = ()=>{
         const key = btn.dataset.cat;

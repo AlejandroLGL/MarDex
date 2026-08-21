@@ -1,0 +1,8 @@
+Coloca aquí las fotos de Rhizostomeae (medusas), nombradas como {id}.jpg
+
+Especies de este orden:
+- huevofrito.jpg  (Cotylorhiza tuberculata — Medusa huevo frito)
+- bolacanon.jpg  (Stomolophus meleagris — Medusa bola de cañón)
+- medusainvertida.jpg  (Cassiopea andromeda — Medusa invertida)
+- medusamoteada.jpg  (Phyllorhiza punctata — Medusa moteada)
+- aguamala.jpg  (Rhizostoma pulmo — Aguamala)

@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Stomatopoda (crustaceos), nombradas como {id}.jpg
+
+Especies de este orden:
+- gambamantis.jpg  (Odontodactylus scyllarus — Gamba mantis)

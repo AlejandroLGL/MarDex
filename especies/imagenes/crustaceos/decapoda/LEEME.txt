@@ -1,0 +1,12 @@
+Coloca aquí las fotos de Decapoda (crustaceos), nombradas como {id}.jpg
+
+Especies de este orden:
+- bogavante.jpg  (Homarus gammarus — Bogavante europeo)
+- langosta.jpg  (Palinurus elephas — Langosta común)
+- centollo.jpg  (Maja squinado — Centollo)
+- bueymar.jpg  (Cancer pagurus — Buey de mar)
+- necora.jpg  (Necora puber — Nécora)
+- cangrejoarania.jpg  (Macrocheira kaempferi — Cangrejo araña japonés)
+- ermitano.jpg  (Pagurus bernhardus — Cangrejo ermitaño)
+- camaronlimpiador.jpg  (Lysmata amboinensis — Camarón limpiador)
+- cangrejomoro.jpg  (Grapsus adscensionis — Cangrejo moro)

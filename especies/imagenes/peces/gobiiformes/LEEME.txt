@@ -1,0 +1,5 @@
+Coloca aquí las fotos de Gobiiformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- gobionegro.jpg  (Gobius niger — Gobio negro)
+- gobioroca.jpg  (Gobius paganellus — Gobio de roca)

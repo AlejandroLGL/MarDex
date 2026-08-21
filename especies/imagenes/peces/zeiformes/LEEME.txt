@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Zeiformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- chavito.jpg  (Capros aper — Chavito)
