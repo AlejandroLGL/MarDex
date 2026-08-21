@@ -6131,6 +6131,8 @@ function initWheelDrag(wheel){
   wheel.dataset.dragBound = '1';
   let dragging = false;
   let lastAngle = 0;
+  let totalMovement = 0;
+  let downIdx = null;
   function angleFromEvent(e){
     const rect = wheel.getBoundingClientRect();
     const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
@@ -6138,29 +6140,44 @@ function initWheelDrag(wheel){
   }
   wheel.addEventListener('pointerdown', e=>{
     dragging = true;
+    totalMovement = 0;
+    const itemEl = e.target.closest('.zone-wheel-item');
+    downIdx = itemEl ? Number(itemEl.dataset.idx) : null;
     wheel.setPointerCapture(e.pointerId);
     lastAngle = angleFromEvent(e);
   });
   wheel.addEventListener('pointermove', e=>{
     if(!dragging) return;
     const cur = angleFromEvent(e);
-    wheelRotation += shortestAngleDelta(lastAngle, cur);
+    const delta = shortestAngleDelta(lastAngle, cur);
+    wheelRotation += delta;
+    totalMovement += Math.abs(delta);
     lastAngle = cur;
     applyWheelRotation(wheelRotation, false);
   });
   function endDrag(){
     if(!dragging) return;
     dragging = false;
-    let bestIdx = 0, bestDiff = Infinity;
-    ZONES.forEach((z,i)=>{
-      const screenAngle = ((zoneAngle(i) + wheelRotation) % 360 + 360) % 360;
-      const diff = Math.min(screenAngle, 360-screenAngle);
-      if(diff < bestDiff){ bestDiff = diff; bestIdx = i; }
-    });
-    wheelRotation = nearestRotationForIndex(bestIdx, wheelRotation);
+    // Un gesto sin apenas giro (toque/clic) selecciona directamente la
+    // burbuja pulsada, en vez de recalcular la zona más cercana según la
+    // rotación (que no habría cambiado). Así el clic funciona igual que
+    // el arrastre para hacer girar la ruleta hasta la zona elegida.
+    let targetIdx;
+    if(totalMovement < 4 && downIdx !== null){
+      targetIdx = downIdx;
+    } else {
+      let bestIdx = 0, bestDiff = Infinity;
+      ZONES.forEach((z,i)=>{
+        const screenAngle = ((zoneAngle(i) + wheelRotation) % 360 + 360) % 360;
+        const diff = Math.min(screenAngle, 360-screenAngle);
+        if(diff < bestDiff){ bestDiff = diff; bestIdx = i; }
+      });
+      targetIdx = bestIdx;
+    }
+    wheelRotation = nearestRotationForIndex(targetIdx, wheelRotation);
     applyWheelRotation(wheelRotation, true);
-    if(bestIdx !== selectedZoneIdx){
-      selectedZoneIdx = bestIdx;
+    if(targetIdx !== selectedZoneIdx){
+      selectedZoneIdx = targetIdx;
       afterZoneChange();
     } else {
       updateWheelActiveStates();
