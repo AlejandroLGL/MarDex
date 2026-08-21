@@ -551,7 +551,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   /* ── Admin panel ─────────────────────────────────────────────────── */
   .admin-overlay{
     display:none; position:fixed; inset:0; background:rgba(8,18,34,0.82); z-index:90;
-    overflow-y:auto; justify-content:center;
+    overflow-y:auto; justify-content:center; align-items:flex-start;
   }
   .admin-overlay.open{ display:flex; }
   .admin-sheet{
@@ -613,10 +613,18 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     position:relative; width:240px; height:240px; border-radius:50%;
     background:radial-gradient(circle, var(--card) 0%, var(--bg) 72%);
     border:1px solid var(--line); box-shadow:inset 0 0 24px rgba(7,59,92,0.06);
+    touch-action:none; cursor:grab; user-select:none;
   }
+  .zone-wheel:active{ cursor:grabbing; }
+  .zone-wheel-pointer{
+    position:absolute; top:-3px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent;
+    border-top:10px solid var(--ocean); z-index:3; pointer-events:none;
+  }
+  .zone-wheel-ring{ position:absolute; inset:0; }
   .zone-wheel-center{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    text-align:center; pointer-events:none; width:130px;
+    text-align:center; pointer-events:none; width:130px; z-index:2;
   }
   .zone-wheel-center-label{ font-family:var(--serif); font-size:17px; color:var(--ink); line-height:1.15; }
   .zone-wheel-center-count{ font-size:11px; color:var(--muted); font-weight:700; margin-top:3px; }
@@ -624,14 +632,26 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     position:absolute; top:50%; left:50%; width:66px; height:66px; margin:-33px 0 0 -33px;
     border-radius:50%; border:1.5px solid var(--line); background:var(--card);
     display:flex; align-items:center; justify-content:center; text-align:center;
-    font-size:10.5px; font-weight:700; color:var(--muted); cursor:pointer; padding:4px;
-    transition:left .45s cubic-bezier(.34,1.35,.64,1), top .45s cubic-bezier(.34,1.35,.64,1), background .3s, color .3s, transform .3s, box-shadow .3s;
+    cursor:pointer; transition:background .3s, border-color .3s, box-shadow .3s;
   }
-  .zone-wheel-item.active{
-    color:#fff; transform:scale(1.18); box-shadow:0 6px 18px rgba(7,59,92,0.25); z-index:2; border-color:transparent;
+  .zone-wheel-item.active{ box-shadow:0 6px 18px rgba(7,59,92,0.25); z-index:2; border-color:transparent; }
+  .zone-wheel-item-inner{
+    font-size:10.5px; font-weight:700; color:var(--muted); padding:4px; width:100%;
+    transition:color .3s;
   }
-  .zones-species-title{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.1px; color:var(--faint); margin-bottom:12px; }
-  .zones-species-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:12px; }
+  .zone-wheel-item.active .zone-wheel-item-inner{ color:#fff; }
+  .zones-species-title{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.1px; color:var(--faint); margin-bottom:16px; }
+  .zones-cat-group{ margin-bottom:26px; }
+  .zones-cat-group:last-child{ margin-bottom:0; }
+  .zones-cat-title{
+    font-family:var(--serif); font-size:18px; font-weight:700; color:var(--ink);
+    padding-bottom:8px; margin-bottom:14px; border-bottom:2px solid var(--line);
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .zones-cat-count{ font-size:11px; font-weight:700; color:var(--muted); font-family:-apple-system,sans-serif; }
+  .zones-order-title{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--faint); margin:14px 0 8px; }
+  .zones-order-title:first-of-type{ margin-top:0; }
+  .zones-order-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:12px; margin-bottom:4px; }
   .zone-mini-card{ display:flex; flex-direction:column; }
   .zone-mini-photo{ aspect-ratio:1 !important; }
   .zone-mini-name{ padding:6px 8px; font-size:11px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -5626,16 +5646,40 @@ function renderLogbookPanel(){
 // ══════════════════════════════════════════════════════════════════
 // ZONAS DE BUCEO — mapa + selector tipo ruleta
 // ══════════════════════════════════════════════════════════════════
+// Cada zona define su forma como una lista de puntos [lat,lng] que forman
+// un polígono libre (no tiene por qué ser regular). Para retocar la forma,
+// posición o tamaño de una zona: dibuja el contorno que quieras en
+// https://geojson.io (clic para ir añadiendo vértices sobre el mapa),
+// copia las coordenadas [lng,lat] que genera esa web y pégalas aquí
+// invirtiendo el orden a [lat,lng] en cada punto.
 const ZONES = [
-  { key:'mediterraneo',  label:'Mediterráneo',                 center:[38.5, 15],   radius:900000,  color:'#0080C8' },
-  { key:'cantabrico',    label:'Cantábrico / Atlántico norte',  center:[45, -6],     radius:700000,  color:'#2DD4A4' },
-  { key:'canarias',      label:'Canarias',                      center:[28.3, -15.8],radius:350000,  color:'#E08A2E' },
-  { key:'caribe',        label:'Caribe',                        center:[18, -75],    radius:1200000, color:'#FF5F53' },
-  { key:'indopacifico',  label:'Indo-Pacífico',                 center:[-5, 130],    radius:2500000, color:'#7C3AED' },
+  { key:'mediterraneo', label:'Mediterráneo', color:'#0080C8', polygon:[
+    [36.0,-5.5],[36.9,-1],[37.5,3],[38.2,8],[39.5,9.5],[41,9],[43.5,7.5],[44,10],
+    [45.5,13.5],[45.7,15.5],[43.5,18],[40.5,19],[39,20.5],[35.5,23],[31,24],
+    [31,34.5],[36.8,36.2],[41,29],[41.2,26.5],[39.5,26],[36.5,27.5],[34.5,24],
+    [33,20],[32.5,15],[33.5,11.5],[32.8,9],[35,9.5],[35.8,-1],[36.0,-5.5]
+  ]},
+  { key:'cantabrico', label:'Cantábrico / Atlántico norte', color:'#2DD4A4', polygon:[
+    [42.5,-9.6],[43.9,-9.3],[46,-5],[48,-6],[50.5,-4],[51,2],[47,3],[44,-2],
+    [42.2,-3.2],[42.5,-9.6]
+  ]},
+  { key:'canarias', label:'Canarias', color:'#E08A2E', polygon:[
+    [29.6,-18.3],[29.5,-13.2],[27.5,-12.7],[27.3,-15.9],[27.6,-18.3],[29.6,-18.3]
+  ]},
+  { key:'caribe', label:'Caribe', color:'#FF5F53', polygon:[
+    [21.5,-87],[23.5,-82],[21.8,-77],[20,-72],[18.5,-64.5],[15,-61],[10.5,-63],
+    [9,-77],[9.5,-83],[15,-83.5],[18.5,-88],[21.5,-87]
+  ]},
+  { key:'indopacifico', label:'Indo-Pacífico', color:'#7C3AED', polygon:[
+    [30,32],[30,60],[15,70],[-10,60],[-35,50],[-35,140],[-10,170],[20,150],
+    [30,140],[30,100],[10,95],[10,60],[30,32]
+  ]},
 ];
 let selectedZoneIdx = 0;
 let zonesMapInstance = null;
 let zonesMapCircles = [];
+const ZONE_WHEEL_R = 88;
+let wheelRotation = 0;
 
 function openZonesPanel(){
   document.getElementById('zonesOverlay').classList.add('open');
@@ -5664,7 +5708,7 @@ function renderZonesPanel(){
     </div>
   </div>
   <div class="zones-species-title" id="zonesSpeciesTitle"></div>
-  <div class="zones-species-grid" id="zonesSpeciesGrid"></div>`;
+  <div id="zonesSpeciesGrid"></div>`;
 
   document.getElementById('zonesCloseBtn').onclick = closeZonesPanel;
 
@@ -5684,11 +5728,11 @@ function initZonesMap(){
   zonesMapInstance = L.map('zonesMapEl', { zoomControl:false, attributionControl:false }).setView([20,10], 1);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:6, minZoom:1 }).addTo(zonesMapInstance);
   zonesMapCircles = ZONES.map((z,i)=>{
-    const circle = L.circle(z.center, {
-      radius:z.radius, color:z.color, weight:2, fillColor:z.color, fillOpacity:0.25
+    const poly = L.polygon(z.polygon, {
+      color:z.color, weight:2, fillColor:z.color, fillOpacity:0.25
     }).addTo(zonesMapInstance);
-    circle.on('click', ()=>selectZone(i));
-    return circle;
+    poly.on('click', ()=>selectZone(i));
+    return poly;
   });
   updateZonesMapHighlight();
 }
@@ -5698,62 +5742,171 @@ function updateZonesMapHighlight(){
   });
 }
 
-// Ruleta: los N botones se recolocan en círculo con el elegido siempre
-// arriba (ángulo 0). Al cambiar de zona no se rota nada de verdad — se
-// recalculan las posiciones de todos los ítems y la transición CSS en
-// left/top hace que "giren" hasta su nuevo sitio, incluido el efecto de
-// intercambio típico de una ruleta, sin tener que rotar textos.
+// Ruleta real: un anillo (.zone-wheel-ring) que gira de verdad con
+// transform:rotate(), tanto al arrastrarlo con el puntero como al hacer
+// clic en una zona (la rotación siempre anima hasta dejar la zona elegida
+// bajo el indicador fijo de arriba). Las etiquetas de cada burbuja se
+// contra-rotan en tiempo real para no quedar boca abajo mientras gira.
+function zoneAngle(i){ return i * (360/ZONES.length); }
+function nearestRotationForIndex(idx, current){
+  const target = -zoneAngle(idx);
+  const k = Math.round((current - target)/360);
+  return target + k*360;
+}
+function shortestAngleDelta(from, to){
+  let d = (to - from) % 360;
+  if(d > 180) d -= 360;
+  if(d < -180) d += 360;
+  return d;
+}
+function applyWheelRotation(rot, animate){
+  const ring = document.getElementById('zoneWheelRing');
+  if(!ring) return;
+  ring.style.transition = animate ? 'transform .5s cubic-bezier(.34,1.35,.64,1)' : 'none';
+  ring.style.transform = `rotate(${rot}deg)`;
+  ring.querySelectorAll('.zone-wheel-item').forEach(el=>{
+    const base = Number(el.dataset.base);
+    const inner = el.querySelector('.zone-wheel-item-inner');
+    if(inner){
+      inner.style.transition = animate ? 'transform .5s cubic-bezier(.34,1.35,.64,1)' : 'none';
+      inner.style.transform = `rotate(${-(rot+base)}deg)`;
+    }
+  });
+}
+function updateWheelActiveStates(){
+  document.querySelectorAll('.zone-wheel-item').forEach(el=>{
+    const i = Number(el.dataset.idx);
+    const base = Number(el.dataset.base);
+    const isActive = i===selectedZoneIdx;
+    el.classList.toggle('active', isActive);
+    el.style.background = isActive ? ZONES[i].color : '';
+    el.style.transform = `rotate(${base}deg) translate(0,-${ZONE_WHEEL_R}px)${isActive?' scale(1.18)':''}`;
+  });
+}
+function updateWheelCenterLabel(){
+  const labelEl = document.querySelector('.zone-wheel-center-label');
+  if(labelEl) labelEl.textContent = ZONES[selectedZoneIdx].label;
+}
 function renderZoneWheel(){
   const wheel = document.getElementById('zoneWheel');
-  const n = ZONES.length;
-  const R = 88;
-  const center = 120;
-  let html = `<div class="zone-wheel-center">
-    <div class="zone-wheel-center-label">${escapeHtml(ZONES[selectedZoneIdx].label)}</div>
-    <div class="zone-wheel-center-count" id="zoneWheelCount"></div>
-  </div>`;
+  wheelRotation = nearestRotationForIndex(selectedZoneIdx, 0);
+  let itemsHtml = '';
   ZONES.forEach((z,i)=>{
-    const rel = i - selectedZoneIdx;
-    const angle = (rel * (360/n) - 90) * Math.PI/180;
-    const x = center + R*Math.cos(angle) - 33;
-    const y = center + R*Math.sin(angle) - 33;
-    const activeStyle = i===selectedZoneIdx ? `background:${z.color};` : '';
-    html += `<div class="zone-wheel-item${i===selectedZoneIdx?' active':''}" data-idx="${i}" style="left:${x}px; top:${y}px; ${activeStyle}">${escapeHtml(z.label)}</div>`;
+    const base = zoneAngle(i);
+    const isActive = i===selectedZoneIdx;
+    itemsHtml += `<div class="zone-wheel-item${isActive?' active':''}" data-idx="${i}" data-base="${base}" style="transform:rotate(${base}deg) translate(0,-${ZONE_WHEEL_R}px)${isActive?' scale(1.18)':''}; background:${isActive?z.color:''};">
+      <div class="zone-wheel-item-inner">${escapeHtml(z.label)}</div>
+    </div>`;
   });
-  wheel.innerHTML = html;
-  wheel.querySelectorAll('[data-idx]').forEach(el=>{
+  wheel.innerHTML = `<div class="zone-wheel-pointer"></div>
+    <div class="zone-wheel-ring" id="zoneWheelRing">${itemsHtml}</div>
+    <div class="zone-wheel-center">
+      <div class="zone-wheel-center-label">${escapeHtml(ZONES[selectedZoneIdx].label)}</div>
+      <div class="zone-wheel-center-count" id="zoneWheelCount"></div>
+    </div>`;
+  applyWheelRotation(wheelRotation, false);
+  wheel.querySelectorAll('.zone-wheel-item').forEach(el=>{
     el.onclick = ()=> selectZone(Number(el.dataset.idx));
   });
+  initWheelDrag(wheel);
+}
+
+function initWheelDrag(wheel){
+  if(wheel.dataset.dragBound) return;
+  wheel.dataset.dragBound = '1';
+  let dragging = false;
+  let lastAngle = 0;
+  function angleFromEvent(e){
+    const rect = wheel.getBoundingClientRect();
+    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    return Math.atan2(e.clientY-cy, e.clientX-cx) * 180/Math.PI + 90;
+  }
+  wheel.addEventListener('pointerdown', e=>{
+    dragging = true;
+    wheel.setPointerCapture(e.pointerId);
+    lastAngle = angleFromEvent(e);
+  });
+  wheel.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const cur = angleFromEvent(e);
+    wheelRotation += shortestAngleDelta(lastAngle, cur);
+    lastAngle = cur;
+    applyWheelRotation(wheelRotation, false);
+  });
+  function endDrag(){
+    if(!dragging) return;
+    dragging = false;
+    let bestIdx = 0, bestDiff = Infinity;
+    ZONES.forEach((z,i)=>{
+      const screenAngle = ((zoneAngle(i) + wheelRotation) % 360 + 360) % 360;
+      const diff = Math.min(screenAngle, 360-screenAngle);
+      if(diff < bestDiff){ bestDiff = diff; bestIdx = i; }
+    });
+    wheelRotation = nearestRotationForIndex(bestIdx, wheelRotation);
+    applyWheelRotation(wheelRotation, true);
+    if(bestIdx !== selectedZoneIdx){
+      selectedZoneIdx = bestIdx;
+      afterZoneChange();
+    } else {
+      updateWheelActiveStates();
+    }
+  }
+  wheel.addEventListener('pointerup', endDrag);
+  wheel.addEventListener('pointercancel', endDrag);
+}
+
+function afterZoneChange(){
+  updateWheelActiveStates();
+  updateWheelCenterLabel();
+  updateZonesMapHighlight();
+  if(zonesMapInstance && zonesMapCircles[selectedZoneIdx]){
+    zonesMapInstance.flyToBounds(zonesMapCircles[selectedZoneIdx].getBounds(), { padding:[24,24], duration:0.6 });
+  }
+  renderZoneSpeciesGrid();
 }
 
 function selectZone(idx){
   if(idx===selectedZoneIdx) return;
   selectedZoneIdx = idx;
-  renderZoneWheel();
-  updateZonesMapHighlight();
-  if(zonesMapInstance) zonesMapInstance.flyTo(ZONES[idx].center, ZONES[idx].key==='canarias'?5:3, {duration:0.6});
-  renderZoneSpeciesGrid();
+  wheelRotation = nearestRotationForIndex(idx, wheelRotation);
+  applyWheelRotation(wheelRotation, true);
+  afterZoneChange();
 }
 
 function renderZoneSpeciesGrid(){
   const zone = ZONES[selectedZoneIdx];
-  const list = SPECIES.filter(s=> s.zones.includes(zone.key) || s.zones.includes('global'))
-    .sort((a,b)=>a.name.localeCompare(b.name,'es'));
+  const list = SPECIES.filter(s=> s.zones.includes(zone.key) || s.zones.includes('global'));
   document.getElementById('zonesSpeciesTitle').textContent = `${list.length} especie${list.length!==1?'s':''} en ${zone.label}`;
   const countEl = document.getElementById('zoneWheelCount');
   if(countEl) countEl.textContent = list.length + ' especies';
   const grid = document.getElementById('zonesSpeciesGrid');
   if(!list.length){ grid.innerHTML = `<div class="zones-empty">No hay especies registradas todavía en esta zona.</div>`; return; }
-  grid.innerHTML = list.map(s=>{
-    const themeClass = CARD_THEME_CLASS[s.cat] || '';
-    return `<div class="card ${themeClass} zone-mini-card" data-id="${s.id}">
-      <div class="photo-box zone-mini-photo">
-        ${placeholderMarkup(s.cat)}
-        <img src="${speciesImgPath(s)}" onerror="this.remove()">
-      </div>
-      <div class="zone-mini-name">${escapeHtml(s.name)}</div>
-    </div>`;
-  }).join('');
+
+  let html = '';
+  CAT_DEFS.forEach(([cat,catLabel])=>{
+    const catList = list.filter(s=>s.cat===cat);
+    if(!catList.length) return;
+    html += `<div class="zones-cat-group">
+      <div class="zones-cat-title">${escapeHtml(catLabel)} <span class="zones-cat-count">${catList.length}</span></div>`;
+    const orders = [...new Set(catList.map(s=>s.order))].sort((a,b)=>a.localeCompare(b,'es'));
+    orders.forEach(ord=>{
+      const ordList = catList.filter(s=>s.order===ord).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+      html += `<div class="zones-order-title">${escapeHtml(ord)}</div><div class="zones-order-grid">`;
+      html += ordList.map(s=>{
+        const themeClass = CARD_THEME_CLASS[s.cat] || '';
+        return `<div class="card ${themeClass} zone-mini-card" data-id="${s.id}">
+          <div class="photo-box zone-mini-photo">
+            ${placeholderMarkup(s.cat)}
+            <img src="${speciesImgPath(s)}" onerror="this.remove()">
+          </div>
+          <div class="zone-mini-name">${escapeHtml(s.name)}</div>
+        </div>`;
+      }).join('');
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  grid.innerHTML = html;
   grid.querySelectorAll('[data-id]').forEach(card=>{
     card.onclick = ()=>{ closeZonesPanel(); openModal(card.dataset.id); };
   });
