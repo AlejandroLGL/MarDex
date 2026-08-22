@@ -6,6 +6,9 @@
     "name": "Tiburón nodriza",
     "sci": "Ginglymostoma cirratum",
     "region": "Global",
+    "zones": [
+      "caribe"
+    ],
     "code": "TBR-01",
     "size": "3 m",
     "habitat": "Fondos arenosos y cuevas",
@@ -22,6 +25,9 @@
     "name": "Tiburón cebra",
     "sci": "Stegostoma tigrinum",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-02",
     "size": "2.5 m",
     "habitat": "Arrecifes de coral",
@@ -38,6 +44,9 @@
     "name": "Tiburón ballena",
     "sci": "Rhincodon typus",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "TBR-03",
     "size": "12 m",
     "habitat": "Aguas abiertas tropicales",
@@ -54,6 +63,9 @@
     "name": "Tiburón alfombra ornamentado",
     "sci": "Orectolobus ornatus",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-04",
     "size": "1.2 m",
     "habitat": "Arrecifes rocosos",
@@ -70,6 +82,9 @@
     "name": "Tiburón charretera",
     "sci": "Hemiscyllium ocellatum",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-05",
     "size": "0.9 m",
     "habitat": "Arrecifes someros",
@@ -86,6 +101,9 @@
     "name": "Tiburón punta blanca de arrecife",
     "sci": "Triaenodon obesus",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-06",
     "size": "1.6 m",
     "habitat": "Arrecifes de coral",
@@ -102,6 +120,9 @@
     "name": "Tiburón punta negra de arrecife",
     "sci": "Carcharhinus melanopterus",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-07",
     "size": "1.6 m",
     "habitat": "Lagunas de arrecife",
@@ -118,6 +139,10 @@
     "name": "Pintarroja",
     "sci": "Scyliorhinus canicula",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-08",
     "size": "0.6 m",
     "habitat": "Fondos de arena y roca",
@@ -134,6 +159,10 @@
     "name": "Cazón",
     "sci": "Mustelus mustelus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-09",
     "size": "1.5 m",
     "habitat": "Fondos arenosos costeros",
@@ -150,6 +179,9 @@
     "name": "Tiburón martillo común",
     "sci": "Sphyrna lewini",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "TBR-10",
     "size": "3.5 m",
     "habitat": "Montes submarinos",
@@ -166,6 +198,9 @@
     "name": "Tiburón limón",
     "sci": "Negaprion brevirostris",
     "region": "Global",
+    "zones": [
+      "caribe"
+    ],
     "code": "TBR-11",
     "size": "3 m",
     "habitat": "Manglares y aguas costeras",
@@ -182,6 +217,10 @@
     "name": "Tiburón tope (alitán)",
     "sci": "Galeorhinus galeus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-12",
     "size": "1.9 m",
     "habitat": "Fondos costeros",
@@ -198,6 +237,10 @@
     "name": "Tiburón toro",
     "sci": "Carcharhinus leucas",
     "region": "Global",
+    "zones": [
+      "global",
+      "caribe"
+    ],
     "code": "TBR-13",
     "size": "3.4 m",
     "habitat": "Estuarios y ríos",
@@ -214,6 +257,9 @@
     "name": "Tiburón sedoso",
     "sci": "Carcharhinus falciformis",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "TBR-14",
     "size": "3.3 m",
     "habitat": "Arrecifes de pared",
@@ -230,6 +276,10 @@
     "name": "Tintorera (tiburón azul)",
     "sci": "Prionace glauca",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-15",
     "size": "3.8 m",
     "habitat": "Aguas pelágicas",
@@ -246,6 +296,9 @@
     "name": "Tiburón tigre de arena",
     "sci": "Carcharias taurus",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "TBR-16",
     "size": "3.2 m",
     "habitat": "Cuevas y pecios",
@@ -262,6 +315,10 @@
     "name": "Tiburón peregrino",
     "sci": "Cetorhinus maximus",
     "region": "Global",
+    "zones": [
+      "global",
+      "cantabrico"
+    ],
     "code": "TBR-17",
     "size": "9 m",
     "habitat": "Aguas templadas costeras",
@@ -278,6 +335,10 @@
     "name": "Tiburón blanco",
     "sci": "Carcharodon carcharias",
     "region": "Global",
+    "zones": [
+      "global",
+      "mediterraneo"
+    ],
     "code": "TBR-18",
     "size": "5.5 m",
     "habitat": "Aguas costeras templadas",
@@ -294,6 +355,10 @@
     "name": "Marrajo dientuso",
     "sci": "Isurus oxyrinchus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-19",
     "size": "3.5 m",
     "habitat": "Aguas pelágicas",
@@ -310,6 +375,10 @@
     "name": "Angelote",
     "sci": "Squatina squatina",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-20",
     "size": "2 m",
     "habitat": "Fondos arenosos",
@@ -326,6 +395,9 @@
     "name": "Tiburón de Port Jackson",
     "sci": "Heterodontus portusjacksoni",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-21",
     "size": "1.6 m",
     "habitat": "Fondos rocosos",
@@ -342,6 +414,9 @@
     "name": "Tiburón cuerno de California",
     "sci": "Heterodontus francisci",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "TBR-22",
     "size": "1.2 m",
     "habitat": "Fondos rocosos y algas",
@@ -358,6 +433,10 @@
     "name": "Tiburón de siete branquias",
     "sci": "Notorynchus cepedianus",
     "region": "Global",
+    "zones": [
+      "global",
+      "cantabrico"
+    ],
     "code": "TBR-23",
     "size": "3 m",
     "habitat": "Bahías costeras",
@@ -374,6 +453,11 @@
     "name": "Quelvacho (tiburón anguila)",
     "sci": "Hexanchus griseus",
     "region": "Global",
+    "zones": [
+      "global",
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-24",
     "size": "4.8 m",
     "habitat": "Fondos profundos",
@@ -390,6 +474,10 @@
     "name": "Mielga (tollo espinoso)",
     "sci": "Squalus acanthias",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-25",
     "size": "1.2 m",
     "habitat": "Aguas costeras frías",
@@ -406,6 +494,10 @@
     "name": "Centrina",
     "sci": "Oxynotus centrina",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "TBR-26",
     "size": "1.5 m",
     "habitat": "Plataforma continental",
@@ -422,6 +514,9 @@
     "name": "Tiburón sierra",
     "sci": "Pristiophorus cirratus",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-27",
     "size": "1.4 m",
     "habitat": "Fondos arenosos profundos",
@@ -438,6 +533,10 @@
     "name": "Raya águila",
     "sci": "Myliobatis aquila",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-01",
     "size": "1.5 m",
     "habitat": "Fondos arenosos costeros",
@@ -454,6 +553,9 @@
     "name": "Manta raya",
     "sci": "Mobula birostris",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "RAY-02",
     "size": "6 m",
     "habitat": "Estaciones de limpieza",
@@ -470,6 +572,10 @@
     "name": "Raya látigo (pastinaca)",
     "sci": "Dasyatis pastinaca",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-03",
     "size": "1 m",
     "habitat": "Fondos arenosos someros",
@@ -486,6 +592,10 @@
     "name": "Raya de clavos",
     "sci": "Bathytoshia centroura",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-04",
     "size": "2.5 m",
     "habitat": "Fondos arenosos",
@@ -502,6 +612,10 @@
     "name": "Águila moteada",
     "sci": "Aetobatus narinari",
     "region": "Global",
+    "zones": [
+      "caribe",
+      "indopacifico"
+    ],
     "code": "RAY-05",
     "size": "2.3 m",
     "habitat": "Aguas costeras abiertas",
@@ -518,6 +632,10 @@
     "name": "Mantelina",
     "sci": "Gymnura altavela",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-06",
     "size": "1.8 m",
     "habitat": "Fondos arenosos someros",
@@ -534,6 +652,9 @@
     "name": "Raya de manchas azules",
     "sci": "Taeniura lymma",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "RAY-07",
     "size": "0.7 m",
     "habitat": "Arrecifes someros",
@@ -550,6 +671,10 @@
     "name": "Raya pelágica violeta",
     "sci": "Pteroplatytrygon violacea",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-08",
     "size": "0.9 m",
     "habitat": "Aguas abiertas",
@@ -566,6 +691,10 @@
     "name": "Raya común",
     "sci": "Raja clavata",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-09",
     "size": "1.2 m",
     "habitat": "Fondos de arena y grava",
@@ -582,6 +711,10 @@
     "name": "Raya de espejos",
     "sci": "Raja miraletus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-10",
     "size": "0.6 m",
     "habitat": "Fondos blandos",
@@ -598,6 +731,10 @@
     "name": "Raya santiaguesa",
     "sci": "Rostroraja alba",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-11",
     "size": "2.3 m",
     "habitat": "Fondos de la plataforma",
@@ -614,6 +751,10 @@
     "name": "Raya mosaica",
     "sci": "Raja undulata",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-17",
     "size": "1 m",
     "habitat": "Fondos arenosos y de grava",
@@ -630,6 +771,10 @@
     "name": "Torpedo (tremielga)",
     "sci": "Torpedo torpedo",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-12",
     "size": "0.6 m",
     "habitat": "Fondos arenosos someros",
@@ -646,6 +791,10 @@
     "name": "Torpedo marmoreado",
     "sci": "Torpedo marmorata",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-13",
     "size": "1 m",
     "habitat": "Praderas de posidonia",
@@ -662,6 +811,10 @@
     "name": "Pez guitarra común",
     "sci": "Rhinobatos rhinobatos",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-14",
     "size": "1.6 m",
     "habitat": "Fondos arenosos",
@@ -678,6 +831,10 @@
     "name": "Guitarra mora",
     "sci": "Glaucostegus cemiculus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-15",
     "size": "1.5 m",
     "habitat": "Fondos arenosos costeros",
@@ -694,6 +851,9 @@
     "name": "Pez sierra",
     "sci": "Pristis pristis",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "RAY-16",
     "size": "5.5 m",
     "habitat": "Estuarios y costas someras",
@@ -710,6 +870,9 @@
     "name": "Tiburón cabeza de pala",
     "sci": "Sphyrna tiburo",
     "region": "Global",
+    "zones": [
+      "caribe"
+    ],
     "code": "TBR-28",
     "size": "1.5 m",
     "habitat": "Costas arenosas y praderas de pastos marinos",
@@ -726,6 +889,9 @@
     "name": "Tiburón nodriza de cola corta",
     "sci": "Pseudoginglymostoma brevicaudatum",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-29",
     "size": "0.75 m",
     "habitat": "Arrecifes de coral someros",
@@ -742,6 +908,9 @@
     "name": "Tiburón cigarro",
     "sci": "Isistius brasiliensis",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "TBR-30",
     "size": "0.5 m",
     "habitat": "Aguas oceánicas profundas",
@@ -758,6 +927,9 @@
     "name": "Guitarra bocuda",
     "sci": "Rhina ancylostoma",
     "region": "Global",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "RAY-18",
     "size": "2.7 m",
     "habitat": "Fondos arenosos y de coral",
@@ -774,6 +946,10 @@
     "name": "Raya redonda",
     "sci": "Taeniura grabata",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-19",
     "size": "1 m",
     "habitat": "Fondos arenosos y rocosos",
@@ -790,6 +966,9 @@
     "name": "Tiburón de puntas negras de arrecife",
     "sci": "Carcharhinus melanopterus",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "TBR-31",
     "size": "1.8 m",
     "habitat": "Arrecifes de coral someros y lagunas",
@@ -806,6 +985,10 @@
     "name": "Salpa",
     "sci": "Sarpa salpa",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-01",
     "size": "0.5 m",
     "habitat": "Praderas de posidonia y fondos rocosos someros",
@@ -822,6 +1005,10 @@
     "name": "Sargo",
     "sci": "Diplodus sargus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-02",
     "size": "0.45 m",
     "habitat": "Fondos rocosos y praderas de posidonia",
@@ -838,6 +1025,10 @@
     "name": "Sargo Imperial",
     "sci": "Diplodus cervinus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-03",
     "size": "0.6 m",
     "habitat": "Fondos rocosos",
@@ -854,6 +1045,10 @@
     "name": "Dorada",
     "sci": "Sparus aurata",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-04",
     "size": "0.7 m",
     "habitat": "Fondos arenosos, praderas y estuarios",
@@ -870,6 +1065,10 @@
     "name": "Denton",
     "sci": "Dentex dentex",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-05",
     "size": "1 m",
     "habitat": "Fondos rocosos y aguas abiertas cercanas a la costa",
@@ -886,6 +1085,10 @@
     "name": "Boga",
     "sci": "Boops boops",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-06",
     "size": "0.3 m",
     "habitat": "Aguas costeras abiertas",
@@ -902,6 +1105,10 @@
     "name": "Mojarra",
     "sci": "Diplodus vulgaris",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-07",
     "size": "0.3 m",
     "habitat": "Fondos rocosos y praderas de posidonia",
@@ -918,6 +1125,10 @@
     "name": "Castañuela",
     "sci": "Chromis chromis",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-08",
     "size": "0.15 m",
     "habitat": "Paredes rocosas",
@@ -934,6 +1145,10 @@
     "name": "Mero",
     "sci": "Epinephelus marginatus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-09",
     "size": "1.5 m",
     "habitat": "Cuevas y paredes rocosas",
@@ -950,6 +1165,10 @@
     "name": "Falso abadejo",
     "sci": "Epinephelus costae",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-10",
     "size": "0.9 m",
     "habitat": "Fondos rocosos y de coralígeno",
@@ -966,6 +1185,10 @@
     "name": "Tres colas",
     "sci": "Anthias anthias",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-11",
     "size": "0.24 m",
     "habitat": "Cuevas y paredes con corriente",
@@ -982,6 +1205,10 @@
     "name": "Corvina",
     "sci": "Sciaena umbra",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-12",
     "size": "0.5 m",
     "habitat": "Cuevas y paredes en penumbra",
@@ -998,6 +1225,10 @@
     "name": "Cabrilla",
     "sci": "Serranus cabrilla",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-13",
     "size": "0.25 m",
     "habitat": "Fondos rocosos y praderas de posidonia",
@@ -1014,6 +1245,10 @@
     "name": "Salmonete de roca",
     "sci": "Mullus surmuletus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-14",
     "size": "0.3 m",
     "habitat": "Fondos rocosos y de arena",
@@ -1030,6 +1265,10 @@
     "name": "Espetón",
     "sci": "Sphyraena viridensis",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-15",
     "size": "1 m",
     "habitat": "Aguas costeras abiertas",
@@ -1046,6 +1285,10 @@
     "name": "Cabracho",
     "sci": "Scorpaena scrofa",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-16",
     "size": "0.5 m",
     "habitat": "Fondos rocosos, camuflado entre algas y piedras",
@@ -1062,6 +1305,10 @@
     "name": "Tordo",
     "sci": "Symphodus tinca",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-17",
     "size": "0.4 m",
     "habitat": "Praderas de posidonia y fondos rocosos",
@@ -1078,6 +1325,10 @@
     "name": "Julia",
     "sci": "Coris julis",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-18",
     "size": "0.25 m",
     "habitat": "Fondos rocosos y praderas de posidonia",
@@ -1094,6 +1345,10 @@
     "name": "Fredi",
     "sci": "Thalassoma pavo",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-19",
     "size": "0.2 m",
     "habitat": "Fondos rocosos someros",
@@ -1110,6 +1365,10 @@
     "name": "Lisa",
     "sci": "Chelon labrosus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-20",
     "size": "0.7 m",
     "habitat": "Aguas costeras, estuarios y puertos",
@@ -1126,6 +1385,10 @@
     "name": "Morena",
     "sci": "Muraena helena",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-21",
     "size": "1.5 m",
     "habitat": "Grietas y cuevas rocosas",
@@ -1142,6 +1405,10 @@
     "name": "Congrio",
     "sci": "Conger conger",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-22",
     "size": "2 m",
     "habitat": "Cuevas, grietas y restos de naufragios",
@@ -1158,6 +1425,10 @@
     "name": "Oblada",
     "sci": "Oblada melanura",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-23",
     "size": "0.3 m",
     "habitat": "Fondos rocosos y praderas de posidonia",
@@ -1174,6 +1445,10 @@
     "name": "Raya toro",
     "sci": "Aetomylaeus bovinus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "RAY-20",
     "size": "2.4 m",
     "habitat": "Fondos arenosos y estuarios costeros",
@@ -1190,6 +1465,9 @@
     "name": "Pez sierra de dientes pequeños",
     "sci": "Pristis pectinata",
     "region": "Global",
+    "zones": [
+      "caribe"
+    ],
     "code": "RAY-21",
     "size": "5.5 m",
     "habitat": "Estuarios y aguas costeras someras",
@@ -1206,6 +1484,9 @@
     "name": "Pez payaso",
     "sci": "Amphiprion ocellaris",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-24",
     "size": "0.11 m",
     "habitat": "Arrecifes de coral, entre los tentáculos de anémonas",
@@ -1222,6 +1503,9 @@
     "name": "Cirujano azul",
     "sci": "Paracanthurus hepatus",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-25",
     "size": "0.31 m",
     "habitat": "Arrecifes de coral",
@@ -1238,6 +1522,9 @@
     "name": "Pez ángel emperador",
     "sci": "Pomacanthus imperator",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-26",
     "size": "0.4 m",
     "habitat": "Arrecifes de coral y paredes rocosas",
@@ -1254,6 +1541,9 @@
     "name": "Pez león",
     "sci": "Pterois volitans",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-27",
     "size": "0.38 m",
     "habitat": "Arrecifes de coral y fondos rocosos",
@@ -1270,6 +1560,11 @@
     "name": "Pez globo",
     "sci": "Diodon holocanthus",
     "region": "Global",
+    "zones": [
+      "global",
+      "canarias",
+      "mediterraneo"
+    ],
     "code": "PEZ-28",
     "size": "0.5 m",
     "habitat": "Arrecifes y fondos de arena someros",
@@ -1286,6 +1581,9 @@
     "name": "Pez erizo",
     "sci": "Diodon hystrix",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "PEZ-29",
     "size": "0.9 m",
     "habitat": "Arrecifes de coral y cuevas",
@@ -1302,6 +1600,9 @@
     "name": "Napoleón",
     "sci": "Cheilinus undulatus",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-30",
     "size": "2 m",
     "habitat": "Arrecifes de coral exteriores y pendientes",
@@ -1318,6 +1619,9 @@
     "name": "Pez luna",
     "sci": "Mola mola",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "PEZ-31",
     "size": "3 m",
     "habitat": "Aguas abiertas templadas y tropicales",
@@ -1334,6 +1638,10 @@
     "name": "Caballito de mar común",
     "sci": "Hippocampus hippocampus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-32",
     "size": "0.15 m",
     "habitat": "Praderas de posidonia y fondos de algas",
@@ -1350,6 +1658,10 @@
     "name": "Caballito de mar mediterráneo",
     "sci": "Hippocampus guttulatus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-33",
     "size": "0.18 m",
     "habitat": "Praderas de posidonia y fondos de algas",
@@ -1366,6 +1678,9 @@
     "name": "Pez trompeta del Atlántico oriental",
     "sci": "Aulostomus strigosus",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-34",
     "size": "1 m",
     "habitat": "Fondos rocosos y de coral",
@@ -1382,6 +1697,9 @@
     "name": "Pez loro",
     "sci": "Scarus ghobban",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-35",
     "size": "0.75 m",
     "habitat": "Arrecifes de coral",
@@ -1398,6 +1716,9 @@
     "name": "Pez cofre",
     "sci": "Ostracion cubicus",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-36",
     "size": "0.45 m",
     "habitat": "Arrecifes de coral y lagunas",
@@ -1414,6 +1735,9 @@
     "name": "Pez piedra",
     "sci": "Synanceia verrucosa",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-37",
     "size": "0.4 m",
     "habitat": "Fondos rocosos y arrecifes, camuflado entre piedras",
@@ -1430,6 +1754,10 @@
     "name": "Anguila jardinera",
     "sci": "Heteroconger longissimus",
     "region": "Global",
+    "zones": [
+      "caribe",
+      "canarias"
+    ],
     "code": "PEZ-38",
     "size": "0.6 m",
     "habitat": "Fondos de arena en corrientes moderadas",
@@ -1446,6 +1774,9 @@
     "name": "Morena cinta",
     "sci": "Rhinomuraena quaesita",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "PEZ-39",
     "size": "1.3 m",
     "habitat": "Fondos de arena y escombros coralinos",
@@ -1462,6 +1793,9 @@
     "name": "Vieja",
     "sci": "Sparisoma cretense",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-40",
     "size": "0.5 m",
     "habitat": "Fondos rocosos y praderas marinas",
@@ -1478,6 +1812,9 @@
     "name": "Abade",
     "sci": "Mycteroperca fusca",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-41",
     "size": "0.6 m",
     "habitat": "Fondos rocosos y cuevas",
@@ -1494,6 +1831,9 @@
     "name": "Fula negra",
     "sci": "Abudefduf luridus",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-42",
     "size": "0.2 m",
     "habitat": "Fondos rocosos someros",
@@ -1510,6 +1850,9 @@
     "name": "Fula blanca",
     "sci": "Chromis limbata",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-43",
     "size": "0.14 m",
     "habitat": "Paredes rocosas",
@@ -1526,6 +1869,9 @@
     "name": "Catalufa",
     "sci": "Heteropriacanthus cruentatus",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-44",
     "size": "0.3 m",
     "habitat": "Cuevas y paredes rocosas en penumbra",
@@ -1542,6 +1888,9 @@
     "name": "Morena negra",
     "sci": "Muraena augusti",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-45",
     "size": "1 m",
     "habitat": "Grietas y cuevas rocosas",
@@ -1558,6 +1907,9 @@
     "name": "Tamboril",
     "sci": "Sphoeroides marmoratus",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-46",
     "size": "0.25 m",
     "habitat": "Fondos de arena y roca someros",
@@ -1574,6 +1926,9 @@
     "name": "Trompetero",
     "sci": "Macroramphosus scolopax",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-47",
     "size": "0.2 m",
     "habitat": "Fondos de arena y aguas semipelágicas",
@@ -1590,6 +1945,9 @@
     "name": "Pez ballesta",
     "sci": "Balistes capriscus",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-48",
     "size": "0.6 m",
     "habitat": "Fondos rocosos y de arena",
@@ -1606,6 +1964,9 @@
     "name": "Rubio volador",
     "sci": "Dactylopterus volitans",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-49",
     "size": "0.5 m",
     "habitat": "Fondos de arena y fango",
@@ -1622,6 +1983,9 @@
     "name": "Morena fogosa",
     "sci": "Enchelycore anatina",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-50",
     "size": "0.8 m",
     "habitat": "Grietas y cuevas en fondos rocosos",
@@ -1638,6 +2002,10 @@
     "name": "Reyezuelo",
     "sci": "Apogon imberbis",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-51",
     "size": "0.14 m",
     "habitat": "Cuevas y grietas en penumbra",
@@ -1654,6 +2022,10 @@
     "name": "Pejerrey mediterráneo",
     "sci": "Atherina boyeri",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-52",
     "size": "0.13 m",
     "habitat": "Aguas costeras someras, lagunas y estuarios",
@@ -1670,6 +2042,9 @@
     "name": "Pez perro",
     "sci": "Bodianus scrofa",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-53",
     "size": "0.5 m",
     "habitat": "Fondos rocosos y de coralígeno",
@@ -1686,6 +2061,10 @@
     "name": "Podas",
     "sci": "Bothus podas",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-54",
     "size": "0.2 m",
     "habitat": "Fondos de arena y fango someros",
@@ -1702,6 +2081,9 @@
     "name": "Gallinita",
     "sci": "Canthigaster capistrata",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "PEZ-55",
     "size": "0.1 m",
     "habitat": "Fondos de arena y roca",
@@ -1718,6 +2100,10 @@
     "name": "Chavito",
     "sci": "Capros aper",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-56",
     "size": "0.12 m",
     "habitat": "Fondos rocosos y de coralígeno profundos",
@@ -1734,6 +2120,9 @@
     "name": "Dorado",
     "sci": "Coryphaena hippurus",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "PEZ-57",
     "size": "2 m",
     "habitat": "Aguas pelágicas abiertas, cerca de objetos flotantes",
@@ -1750,6 +2139,10 @@
     "name": "Lubina",
     "sci": "Dicentrarchus labrax",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-58",
     "size": "1 m",
     "habitat": "Aguas costeras, estuarios y puertos",
@@ -1766,6 +2159,10 @@
     "name": "Baila",
     "sci": "Dicentrarchus punctatus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-59",
     "size": "0.6 m",
     "habitat": "Aguas costeras y estuarios",
@@ -1782,6 +2179,10 @@
     "name": "Raspallón",
     "sci": "Diplodus annularis",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-60",
     "size": "0.2 m",
     "habitat": "Fondos de arena y praderas de posidonia",
@@ -1798,6 +2199,10 @@
     "name": "Sargo picudo",
     "sci": "Diplodus puntazzo",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-61",
     "size": "0.6 m",
     "habitat": "Fondos rocosos y de arena",
@@ -1814,6 +2219,10 @@
     "name": "Salvariego",
     "sci": "Echiichthys vipera",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-62",
     "size": "0.15 m",
     "habitat": "Fondos de arena someros",
@@ -1830,6 +2239,9 @@
     "name": "Mero guasa",
     "sci": "Epinephelus itajara",
     "region": "Global",
+    "zones": [
+      "caribe"
+    ],
     "code": "PEZ-63",
     "size": "2.5 m",
     "habitat": "Manglares, arrecifes y pecios",
@@ -1846,6 +2258,10 @@
     "name": "Bacoreta",
     "sci": "Euthynnus alletteratus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-64",
     "size": "1 m",
     "habitat": "Aguas costeras y pelágicas",
@@ -1862,6 +2278,9 @@
     "name": "Pez volador común",
     "sci": "Exocoetus volitans",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "PEZ-65",
     "size": "0.3 m",
     "habitat": "Aguas pelágicas cálidas de superficie",
@@ -1878,6 +2297,10 @@
     "name": "Gobio negro",
     "sci": "Gobius niger",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-66",
     "size": "0.18 m",
     "habitat": "Fondos de arena y fango, praderas marinas",
@@ -1894,6 +2317,10 @@
     "name": "Gobio de roca",
     "sci": "Gobius paganellus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-67",
     "size": "0.12 m",
     "habitat": "Pozas de marea y fondos rocosos someros",
@@ -1910,6 +2337,10 @@
     "name": "Murión",
     "sci": "Gymnothorax unicolor",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-68",
     "size": "0.65 m",
     "habitat": "Grietas y cuevas en fondos rocosos",
@@ -1926,6 +2357,10 @@
     "name": "Chopa",
     "sci": "Kyphosus sectatrix",
     "region": "Global",
+    "zones": [
+      "caribe",
+      "canarias"
+    ],
     "code": "PEZ-69",
     "size": "0.45 m",
     "habitat": "Fondos rocosos someros",
@@ -1942,6 +2377,10 @@
     "name": "Merlo",
     "sci": "Labrus merula",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-70",
     "size": "0.4 m",
     "habitat": "Fondos rocosos y praderas de posidonia",
@@ -1958,6 +2397,10 @@
     "name": "Gorrión",
     "sci": "Labrus mixtus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-71",
     "size": "0.4 m",
     "habitat": "Fondos rocosos y de coralígeno",
@@ -1974,6 +2417,10 @@
     "name": "Rape negro",
     "sci": "Lophius budegassa",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-72",
     "size": "1 m",
     "habitat": "Fondos de arena y fango",
@@ -1990,6 +2437,10 @@
     "name": "Rape común",
     "sci": "Lophius piscatorius",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-73",
     "size": "2 m",
     "habitat": "Fondos de arena y fango",
@@ -2006,6 +2457,10 @@
     "name": "Herrera",
     "sci": "Lithognathus mormyrus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "PEZ-74",
     "size": "0.55 m",
     "habitat": "Fondos de arena costeros",
@@ -2022,6 +2477,11 @@
     "name": "Medusa luna",
     "sci": "Aurelia aurita",
     "region": "Global",
+    "zones": [
+      "global",
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "MED-01",
     "size": "0.3 m",
     "habitat": "Aguas costeras y bahías",
@@ -2038,6 +2498,10 @@
     "name": "Medusa huevo frito",
     "sci": "Cotylorhiza tuberculata",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "MED-02",
     "size": "0.35 m",
     "habitat": "Aguas costeras cálidas",
@@ -2054,6 +2518,10 @@
     "name": "Medusa compás",
     "sci": "Chrysaora hysoscella",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "MED-03",
     "size": "0.3 m",
     "habitat": "Aguas costeras y pelágicas someras",
@@ -2070,6 +2538,9 @@
     "name": "Medusa ortiga del Pacífico",
     "sci": "Chrysaora fuscescens",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "MED-04",
     "size": "0.5 m",
     "habitat": "Aguas costeras templadas",
@@ -2086,6 +2557,10 @@
     "name": "Medusa clavel",
     "sci": "Pelagia noctiluca",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "MED-05",
     "size": "0.12 m",
     "habitat": "Aguas pelágicas abiertas",
@@ -2102,6 +2577,10 @@
     "name": "Medusa melena de león",
     "sci": "Cyanea capillata",
     "region": "Global",
+    "zones": [
+      "global",
+      "cantabrico"
+    ],
     "code": "MED-06",
     "size": "2 m",
     "habitat": "Aguas frías y templadas de superficie",
@@ -2118,6 +2597,9 @@
     "name": "Medusa bola de cañón",
     "sci": "Stomolophus meleagris",
     "region": "Global",
+    "zones": [
+      "caribe"
+    ],
     "code": "MED-07",
     "size": "0.25 m",
     "habitat": "Aguas costeras someras y estuarios",
@@ -2134,6 +2616,10 @@
     "name": "Medusa invertida",
     "sci": "Cassiopea andromeda",
     "region": "Global",
+    "zones": [
+      "indopacifico",
+      "mediterraneo"
+    ],
     "code": "MED-08",
     "size": "0.3 m",
     "habitat": "Fondos someros de manglar y lagunas",
@@ -2150,6 +2636,9 @@
     "name": "Medusa de cristal",
     "sci": "Aequorea victoria",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "MED-09",
     "size": "0.1 m",
     "habitat": "Aguas costeras templadas",
@@ -2166,6 +2655,10 @@
     "name": "Medusa moteada",
     "sci": "Phyllorhiza punctata",
     "region": "Global",
+    "zones": [
+      "indopacifico",
+      "mediterraneo"
+    ],
     "code": "MED-10",
     "size": "0.5 m",
     "habitat": "Aguas costeras cálidas",
@@ -2182,6 +2675,10 @@
     "name": "Carabela portuguesa",
     "sci": "Physalia physalis",
     "region": "Canarias",
+    "zones": [
+      "canarias",
+      "global"
+    ],
     "code": "MED-11",
     "size": "0.3 m",
     "habitat": "Superficie de aguas pelágicas, arrastrada por el viento",
@@ -2198,6 +2695,10 @@
     "name": "Aguamala",
     "sci": "Rhizostoma pulmo",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "MED-12",
     "size": "0.6 m",
     "habitat": "Aguas costeras y pelágicas someras",
@@ -2214,6 +2715,10 @@
     "name": "Bogavante europeo",
     "sci": "Homarus gammarus",
     "region": "Global",
+    "zones": [
+      "cantabrico",
+      "mediterraneo"
+    ],
     "code": "CRU-01",
     "size": "0.5 m",
     "habitat": "Fondos rocosos y grietas",
@@ -2230,6 +2735,10 @@
     "name": "Langosta común",
     "sci": "Palinurus elephas",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "CRU-02",
     "size": "0.5 m",
     "habitat": "Fondos rocosos y cuevas",
@@ -2246,6 +2755,10 @@
     "name": "Centollo",
     "sci": "Maja squinado",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "CRU-03",
     "size": "0.2 m",
     "habitat": "Fondos rocosos y de arena",
@@ -2262,6 +2775,10 @@
     "name": "Buey de mar",
     "sci": "Cancer pagurus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "CRU-04",
     "size": "0.25 m",
     "habitat": "Fondos rocosos y de arena",
@@ -2278,6 +2795,10 @@
     "name": "Nécora",
     "sci": "Necora puber",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "CRU-05",
     "size": "0.08 m",
     "habitat": "Fondos rocosos someros",
@@ -2294,6 +2815,9 @@
     "name": "Cangrejo araña japonés",
     "sci": "Macrocheira kaempferi",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "CRU-06",
     "size": "3.7 m",
     "habitat": "Fondos profundos de arena y fango",
@@ -2310,6 +2834,9 @@
     "name": "Cangrejo herradura",
     "sci": "Limulus polyphemus",
     "region": "Global",
+    "zones": [
+      "global"
+    ],
     "code": "CRU-07",
     "size": "0.6 m",
     "habitat": "Fondos de arena y fango costeros",
@@ -2326,6 +2853,10 @@
     "name": "Cangrejo ermitaño",
     "sci": "Pagurus bernhardus",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "CRU-08",
     "size": "0.1 m",
     "habitat": "Fondos de arena, roca y pozas de marea",
@@ -2342,6 +2873,9 @@
     "name": "Camarón limpiador",
     "sci": "Lysmata amboinensis",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "CRU-09",
     "size": "0.06 m",
     "habitat": "Arrecifes de coral, cerca de anémonas",
@@ -2358,6 +2892,9 @@
     "name": "Gamba mantis",
     "sci": "Odontodactylus scyllarus",
     "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
     "code": "CRU-10",
     "size": "0.18 m",
     "habitat": "Arrecifes de coral y fondos de arena",
@@ -2374,6 +2911,10 @@
     "name": "Percebe",
     "sci": "Pollicipes pollicipes",
     "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico"
+    ],
     "code": "CRU-11",
     "size": "0.07 m",
     "habitat": "Rocas expuestas al oleaje intermareal",
@@ -2390,6 +2931,9 @@
     "name": "Cangrejo moro",
     "sci": "Grapsus adscensionis",
     "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
     "code": "CRU-12",
     "size": "0.08 m",
     "habitat": "Rocas volcánicas del litoral batidas por el oleaje",
