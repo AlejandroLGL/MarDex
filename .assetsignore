@@ -2,6 +2,7 @@
 .github
 .claude
 .wrangler
+node_modules
 .gitignore
 .gitattributes
 wrangler.jsonc
