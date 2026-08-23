@@ -192,6 +192,29 @@
     "blurb": "Reconocible por su cabeza en forma de martillo. Suele verse en cardúmenes cerca de montes submarinos y en puntos de buceo tropicales."
   },
   {
+    "id": "martilloliso",
+    "cat": "tiburon",
+    "order": "Carcharhiniformes",
+    "name": "Tiburón martillo liso",
+    "sci": "Sphyrna zygaena",
+    "region": "Global",
+    "zones": [
+      "mediterraneo",
+      "cantabrico",
+      "canarias",
+      "caribe",
+      "indopacifico"
+    ],
+    "code": "TBR-32",
+    "size": "3.5 m",
+    "habitat": "Aguas costeras y pelágicas templadas",
+    "depth": "0–200 m",
+    "speed": "Rápida",
+    "diet": "Peces, calamares y otros tiburones",
+    "rarity": 4,
+    "blurb": "Se diferencia de otras especies de tiburón martillo por el borde frontal de su cabeza, liso y sin muescas centrales. Tolera aguas más frías que sus parientes, por lo que se ve en zonas templadas además de tropicales."
+  },
+  {
     "id": "limon",
     "cat": "tiburon",
     "order": "Carcharhiniformes",
