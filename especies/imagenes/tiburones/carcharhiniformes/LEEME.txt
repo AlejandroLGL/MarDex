@@ -12,3 +12,4 @@ Especies de este orden:
 - sedoso.jpg       ✓ presente
 - azul.jpg         ✓ presente
 - puntanegraarrecife.jpg  ✓ presente (Carcharhinus melanopterus — Tiburón de puntas negras de arrecife)
+- martilloliso.jpg  ✓ presente (Sphyrna zygaena — Tiburón martillo liso)

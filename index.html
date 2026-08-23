@@ -1046,7 +1046,19 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .modal.fish-theme .modal-photo{ background:linear-gradient(135deg, #E08A2E 0%, #F2B84C 55%, #F7D9A8 100%); }
   .modal.medusa-theme .modal-photo{ background:linear-gradient(135deg, #7C3AED 0%, #C084FC 55%, #E9D5FF 100%); }
   .modal.crustaceo-theme .modal-photo{ background:linear-gradient(135deg, #C2410C 0%, #F97316 55%, #FED7AA 100%); }
-  .modal-photo img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:2; }
+  .modal-photo img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:2; cursor:zoom-in; }
+
+  /* Lightbox: ampliar la foto de la ficha a pantalla completa */
+  .lightbox-overlay{
+    display:none; position:fixed; inset:0; background:rgba(4,10,20,0.92); z-index:500;
+    align-items:center; justify-content:center; padding:32px 20px;
+  }
+  .lightbox-overlay.open{ display:flex; }
+  .lightbox-overlay img{
+    max-width:92vw; max-height:88vh; object-fit:contain; border-radius:var(--r-md);
+    box-shadow:0 24px 70px rgba(0,0,0,0.55); cursor:zoom-out;
+  }
+  .lightbox-close{ position:fixed; top:20px; right:20px; z-index:2; }
   .modal-photo::after{
     content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
     background:linear-gradient(to bottom, rgba(8,18,34,0) 30%, rgba(8,18,34,0.85) 100%);
@@ -1712,6 +1724,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   <div class="modal identify-modal" id="identifyModalCard"></div>
 </div>
 
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <button type="button" class="icon-btn lightbox-close" id="lightboxCloseBtn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="12" y2="12"/><line x1="12" y1="1" x2="1" y2="12"/></svg></button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
     <p id="confirmMsg"></p>
@@ -2068,6 +2085,7 @@ let SPECIES = [
   {id:'pintarroja', cat:'tiburon', order:'Carcharhiniformes', name:'Pintarroja', sci:'Scyliorhinus canicula', region:'Mediterráneo', zones:['mediterraneo','cantabrico'], code:'TBR-08', size:'0.6 m', habitat:'Fondos de arena y roca', depth:'5–100 m', speed:'Lenta', diet:'Crustáceos y moluscos', rarity:2, blurb:'El tiburón más común en fondos de arena y roca del Mediterráneo y costa atlántica española. Pequeño, moteado, y de hábitos nocturnos.'},
   {id:'cazon', cat:'tiburon', order:'Carcharhiniformes', name:'Cazón', sci:'Mustelus mustelus', region:'Mediterráneo', zones:['mediterraneo','cantabrico'], code:'TBR-09', size:'1.5 m', habitat:'Fondos arenosos costeros', depth:'5–50 m', speed:'Moderada', diet:'Crustáceos', rarity:2, blurb:'Tiburón gris de tamaño medio frecuente en fondos arenosos del litoral español. Se alimenta principalmente de crustáceos.'},
   {id:'martillo', cat:'tiburon', order:'Carcharhiniformes', name:'Tiburón martillo común', sci:'Sphyrna lewini', region:'Global', zones:['global'], code:'TBR-10', size:'3.5 m', habitat:'Montes submarinos', depth:'0–275 m', speed:'Rápida', diet:'Peces y cefalópodos', rarity:4, blurb:'Reconocible por su cabeza en forma de martillo. Suele verse en cardúmenes cerca de montes submarinos y en puntos de buceo tropicales.'},
+  {id:'martilloliso', cat:'tiburon', order:'Carcharhiniformes', name:'Tiburón martillo liso', sci:'Sphyrna zygaena', region:'Global', zones:['mediterraneo','cantabrico','canarias','caribe','indopacifico'], code:'TBR-32', size:'3.5 m', habitat:'Aguas costeras y pelágicas templadas', depth:'0–200 m', speed:'Rápida', diet:'Peces, calamares y otros tiburones', rarity:4, blurb:'Se diferencia de otras especies de tiburón martillo por el borde frontal de su cabeza, liso y sin muescas centrales. Tolera aguas más frías que sus parientes, por lo que se ve en zonas templadas además de tropicales.'},
   {id:'limon', cat:'tiburon', order:'Carcharhiniformes', name:'Tiburón limón', sci:'Negaprion brevirostris', region:'Global', zones:['caribe'], code:'TBR-11', size:'3 m', habitat:'Manglares y aguas costeras', depth:'1–90 m', speed:'Moderada', diet:'Peces óseos', rarity:3, blurb:'De color amarillo-grisáceo, frecuenta aguas costeras someras y manglares. Habitual en centros de buceo del Caribe y en acuarios.'},
   {id:'tope', cat:'tiburon', order:'Carcharhiniformes', name:'Tiburón tope (alitán)', sci:'Galeorhinus galeus', region:'Mediterráneo', zones:['mediterraneo','cantabrico'], code:'TBR-12', size:'1.9 m', habitat:'Fondos costeros', depth:'2–470 m', speed:'Moderada', diet:'Peces y cefalópodos', rarity:4, blurb:'Tiburón esbelto de fondos costeros mediterráneos, históricamente pescado por su carne y aletas. Suele desplazarse en pequeños grupos.'},
   {id:'toro', cat:'tiburon', order:'Carcharhiniformes', name:'Tiburón toro', sci:'Carcharhinus leucas', region:'Global', zones:['global','caribe'], code:'TBR-13', size:'3.4 m', habitat:'Estuarios y ríos', depth:'1–150 m', speed:'Moderada', diet:'Peces, rayas y crustáceos', rarity:4, blurb:'Tolera aguas dulces y remonta ríos. Uno de los tiburones costeros más adaptables, presente en estuarios y aguas someras de todo el mundo.'},
@@ -4075,6 +4093,18 @@ function closeModal(){
   }
 }
 
+// ── Lightbox: amplía la foto de la ficha a pantalla completa ───────────
+function openLightbox(src){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxOverlay').classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightboxOverlay').classList.remove('open');
+  document.getElementById('lightboxImg').src = '';
+}
+document.getElementById('lightboxOverlay').addEventListener('click', closeLightbox);
+document.getElementById('lightboxCloseBtn').addEventListener('click', e=>{ e.stopPropagation(); closeLightbox(); });
+
 function renderModal(s, sightings, showForm, editingSighting){
   const themeClass = CARD_THEME_CLASS[s.cat] ? CARD_THEME_CLASS[s.cat]+'-theme' : '';
   const unlockedFlag = sightings.length > 0;
@@ -4162,6 +4192,10 @@ function renderModal(s, sightings, showForm, editingSighting){
   `;
   document.getElementById('modalCloseBtn').onclick = closeModal;
   document.getElementById('modalXBtn').onclick = closeModal;
+  modalEl.querySelector('.modal-photo img')?.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    openLightbox(e.target.src);
+  });
   document.getElementById('modalFavBtn').onclick = async ()=>{
     const nowFav = !state.favorites[s.id];
     state.favorites[s.id] = nowFav;
