@@ -2965,5 +2965,28 @@
     "diet": "Algas y carroña",
     "rarity": 1,
     "blurb": "De colores vivos rojizos y azulados, es extraordinariamente ágil trepando por las rocas de la orilla, escapando de un salto en cuanto detecta movimiento."
+  },
+  {
+    "id": "tortugaboba",
+    "cat": "reptil",
+    "order": "Testudines",
+    "name": "Tortuga boba",
+    "sci": "Caretta caretta",
+    "region": "Global",
+    "zones": [
+      "mediterraneo",
+      "cantabrico",
+      "canarias",
+      "caribe",
+      "indopacifico"
+    ],
+    "code": "REP-01",
+    "size": "0.9 m",
+    "habitat": "Aguas costeras y pelágicas",
+    "depth": "0–50 m",
+    "speed": "Moderada",
+    "diet": "Medusas, moluscos y crustáceos",
+    "rarity": 3,
+    "blurb": "La tortuga marina más común en el Mediterráneo, donde también anida. Reconocible por su gran cabeza y su caparazón acorazonado de tono rojizo-pardo; puede recorrer miles de kilómetros entre sus zonas de alimentación y de puesta."
   }
 ]
