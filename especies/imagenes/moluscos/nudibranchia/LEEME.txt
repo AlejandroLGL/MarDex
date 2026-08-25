@@ -2,7 +2,7 @@ Coloca aquí las fotos de Nudibranchia (moluscos), nombradas como {id}.jpg
 
 Especies de este orden:
 - nudibranquiopinto.jpg  ✓ presente (Felimare picta — Nudibranquio pinto)
-- bermudella.jpg  (Bermudella polycerelloides — Bermudella)
+- bermudella.jpg  ✓ presente (Bermudella polycerelloides — Bermudella)
 - crimora.jpg  (Crimora papillata — Crimora)
 - kaloplocamus.jpg  (Kaloplocamus ramosus — Nudibranquio de flecos)
 - tambjaceutae.jpg  (Tambja ceutae — Tambja de Ceuta)
