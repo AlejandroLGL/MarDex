@@ -2019,6 +2019,25 @@
     "blurb": "También llamada morena picopato, por su mandíbula curvada que le impide cerrar la boca del todo. Endémica de Macaronesia, de colores rojizos con manchas amarillas."
   },
   {
+    "id": "morenaleopardo",
+    "cat": "pez",
+    "order": "Anguilliformes",
+    "name": "Morena leopardo",
+    "sci": "Gymnothorax favagineus",
+    "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
+    "code": "PEZ-76",
+    "size": "3 m",
+    "habitat": "Arrecifes de coral y cuevas rocosas",
+    "depth": "1–50 m",
+    "speed": "Lenta",
+    "diet": "Peces, pulpos y crustáceos",
+    "rarity": 3,
+    "blurb": "También llamada morena de puntos negros, por el intrincado dibujo de manchas oscuras sobre fondo claro que cubre todo su cuerpo. Una de las morenas de mayor tamaño, puede superar los 3 metros de longitud."
+  },
+  {
     "id": "reyezuelo",
     "cat": "pez",
     "order": "Perciformes",
