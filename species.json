@@ -2136,6 +2136,25 @@
     "blurb": "El pez globo más pequeño de las aguas canarias, con un patrón de puntos azules característico. A diferencia de otros tetraodóntidos, nada de forma ágil y activa."
   },
   {
+    "id": "tamborilespinoso",
+    "cat": "pez",
+    "order": "Tetraodontiformes",
+    "name": "Tamboril espinoso",
+    "sci": "Chilomycterus reticulatus",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "PEZ-77",
+    "size": "0.55 m",
+    "habitat": "Fondos rocosos y de arena",
+    "depth": "0–30 m",
+    "speed": "Lenta",
+    "diet": "Moluscos, crustáceos y erizos",
+    "rarity": 4,
+    "blurb": "Mucho mayor que el tamboril común, con el cuerpo cubierto de espinas cortas fijas (no erizables) y un patrón de manchas negras sobre fondo gris claro. Especie protegida en Canarias."
+  },
+  {
     "id": "chavito",
     "cat": "pez",
     "order": "Zeiformes",
@@ -3026,6 +3045,25 @@
     "diet": "Algas y pequeños invertebrados",
     "rarity": 2,
     "blurb": "Cuerpo triangular pequeño con dos largas pinzas y ocho patas finas que, extendidas, pueden alcanzar los 20 cm. De comportamiento tranquilo, no suele esconderse ante la presencia de un buceador."
+  },
+  {
+    "id": "maranuela",
+    "cat": "crustaceo",
+    "order": "Decapoda",
+    "name": "Marañuela",
+    "sci": "Percnon gibbesi",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "CRU-14",
+    "size": "0.04 m",
+    "habitat": "Fondos rocosos someros con algas, junto a erizos",
+    "depth": "0–4 m",
+    "speed": "Muy rápida",
+    "diet": "Algas filamentosas y calcáreas",
+    "rarity": 2,
+    "blurb": "También llamada cangrejo araña, aunque no está emparentada con él: cuerpo plano y ovalado de tonos pardo-rojizos con líneas azuladas y verdes fosforescentes. Ante cualquier amenaza escapa en zigzag entre las púas de los erizos de mar."
   },
   {
     "id": "roncador",
