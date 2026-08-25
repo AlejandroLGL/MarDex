@@ -3117,7 +3117,7 @@
       "canarias"
     ],
     "code": "MOL-01",
-    "size": "0.19 m",
+    "size": "35 mm",
     "habitat": "Fondos rocosos en penumbra",
     "depth": "0–50 m",
     "speed": "Muy lenta",
@@ -3136,7 +3136,7 @@
       "canarias"
     ],
     "code": "MOL-02",
-    "size": "0.015 m",
+    "size": "15 mm",
     "habitat": "Fondos rocosos someros",
     "depth": "0–30 m",
     "speed": "Muy lenta",
@@ -3155,7 +3155,7 @@
       "canarias"
     ],
     "code": "MOL-03",
-    "size": "0.03 m",
+    "size": "30 mm",
     "habitat": "Fondos rocosos someros",
     "depth": "0–30 m",
     "speed": "Muy lenta",
@@ -3174,7 +3174,7 @@
       "canarias"
     ],
     "code": "MOL-04",
-    "size": "0.03 m",
+    "size": "30 mm",
     "habitat": "Fondos rocosos y cuevas",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3193,7 +3193,7 @@
       "canarias"
     ],
     "code": "MOL-05",
-    "size": "0.04 m",
+    "size": "40 mm",
     "habitat": "Fondos rocosos y cuevas",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3212,7 +3212,7 @@
       "canarias"
     ],
     "code": "MOL-06",
-    "size": "0.05 m",
+    "size": "50 mm",
     "habitat": "Fondos rocosos",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3231,7 +3231,7 @@
       "canarias"
     ],
     "code": "MOL-07",
-    "size": "0.04 m",
+    "size": "40 mm",
     "habitat": "Fondos rocosos",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3250,7 +3250,7 @@
       "canarias"
     ],
     "code": "MOL-08",
-    "size": "0.04 m",
+    "size": "40 mm",
     "habitat": "Fondos rocosos",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3269,7 +3269,7 @@
       "canarias"
     ],
     "code": "MOL-09",
-    "size": "0.02 m",
+    "size": "20 mm",
     "habitat": "Rocas cubiertas de esponjas rojas",
     "depth": "0–30 m",
     "speed": "Muy lenta",
@@ -3288,7 +3288,7 @@
       "canarias"
     ],
     "code": "MOL-10",
-    "size": "0.03 m",
+    "size": "30 mm",
     "habitat": "Fondos rocosos",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3307,7 +3307,7 @@
       "canarias"
     ],
     "code": "MOL-11",
-    "size": "0.03 m",
+    "size": "30 mm",
     "habitat": "Fondos rocosos",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3326,7 +3326,7 @@
       "canarias"
     ],
     "code": "MOL-12",
-    "size": "0.08 m",
+    "size": "80 mm",
     "habitat": "Fondos rocosos y de coralígeno",
     "depth": "0–50 m",
     "speed": "Muy lenta",
@@ -3345,7 +3345,7 @@
       "canarias"
     ],
     "code": "MOL-13",
-    "size": "0.06 m",
+    "size": "60 mm",
     "habitat": "Fondos rocosos y de coralígeno",
     "depth": "0–50 m",
     "speed": "Muy lenta",
@@ -3364,7 +3364,7 @@
       "canarias"
     ],
     "code": "MOL-14",
-    "size": "0.02 m",
+    "size": "20 mm",
     "habitat": "Fondos rocosos con hidrozoos",
     "depth": "0–30 m",
     "speed": "Muy lenta",
@@ -3383,7 +3383,7 @@
       "canarias"
     ],
     "code": "MOL-15",
-    "size": "0.05 m",
+    "size": "50 mm",
     "habitat": "Sargazo flotante",
     "depth": "0–5 m",
     "speed": "Muy lenta",
@@ -3402,7 +3402,7 @@
       "canarias"
     ],
     "code": "MOL-16",
-    "size": "0.01 m",
+    "size": "10 mm",
     "habitat": "Fondos rocosos con hidrozoos",
     "depth": "0–30 m",
     "speed": "Muy lenta",
@@ -3421,7 +3421,7 @@
       "canarias"
     ],
     "code": "MOL-17",
-    "size": "0.03 m",
+    "size": "30 mm",
     "habitat": "Fondos rocosos con hidrozoos",
     "depth": "0–40 m",
     "speed": "Muy lenta",
@@ -3440,7 +3440,7 @@
       "canarias"
     ],
     "code": "MOL-18",
-    "size": "0.01 m",
+    "size": "10 mm",
     "habitat": "Fondos rocosos",
     "depth": "0–30 m",
     "speed": "Muy lenta",
@@ -3459,7 +3459,7 @@
       "canarias"
     ],
     "code": "MOL-19",
-    "size": "0.02 m",
+    "size": "20 mm",
     "habitat": "Fondos rocosos",
     "depth": "0–30 m",
     "speed": "Muy lenta",
@@ -3478,7 +3478,7 @@
       "canarias"
     ],
     "code": "MOL-20",
-    "size": "0.006 m",
+    "size": "6 mm",
     "habitat": "Fondos rocosos con hidrozoos",
     "depth": "0–30 m",
     "speed": "Muy lenta",
