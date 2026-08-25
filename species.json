@@ -3066,6 +3066,26 @@
     "blurb": "También llamada cangrejo araña, aunque no está emparentada con él: cuerpo plano y ovalado de tonos pardo-rojizos con líneas azuladas y verdes fosforescentes. Ante cualquier amenaza escapa en zigzag entre las púas de los erizos de mar."
   },
   {
+    "id": "cigarramar",
+    "cat": "crustaceo",
+    "order": "Decapoda",
+    "name": "Cigarra de mar",
+    "sci": "Scyllarides latus",
+    "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "canarias"
+    ],
+    "code": "CRU-15",
+    "size": "0.45 m",
+    "habitat": "Fondos rocosos, cuevas y grietas",
+    "depth": "4–100 m",
+    "speed": "Lenta",
+    "diet": "Moluscos y erizos de mar",
+    "rarity": 4,
+    "blurb": "También llamada langosta canaria. Sin las largas antenas de la langosta común, tiene en su lugar dos placas aplanadas a modo de antenas cortas. De hábitos nocturnos, pasa el día escondida en cuevas y grietas."
+  },
+  {
     "id": "roncador",
     "cat": "pez",
     "order": "Perciformes",
