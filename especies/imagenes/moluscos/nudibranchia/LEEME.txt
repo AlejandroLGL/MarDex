@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Nudibranchia (moluscos), nombradas como {id}.jpg
+
+Especies de este orden:
+- nudibranquiopinto.jpg  ✓ presente (Felimare picta — Nudibranquio pinto)

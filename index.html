@@ -64,6 +64,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     --rust-soft:#FED7AA;
     --sage:#2F855A;
     --sage-soft:#B7E4C7;
+    --magenta:#DB2777;
+    --magenta-soft:#FBCFE8;
     --serif:'DM Serif Display',Georgia,serif;
     --sans:'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif;
     --mono:ui-monospace,'SF Mono','Cascadia Mono','Courier New',monospace;
@@ -733,6 +735,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .progress-item.crustaceo .progress-fill{ background:var(--rust); }
   .progress-item.reptil .progress-bar{ background:rgba(255,255,255,0.08); }
   .progress-item.reptil .progress-fill{ background:var(--sage); }
+  .progress-item.molusco .progress-bar{ background:rgba(255,255,255,0.08); }
+  .progress-item.molusco .progress-fill{ background:var(--magenta); }
 
   /* main */
   .main-col{ flex:1; min-width:0; }
@@ -926,6 +930,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .card.medusa:hover{ border-color:var(--violet-soft); }
   .card.crustaceo:hover{ border-color:var(--rust-soft); }
   .card.reptil:hover{ border-color:var(--sage-soft); }
+  .card.molusco:hover{ border-color:var(--magenta-soft); }
 
   .photo-box{
     position:relative; aspect-ratio:3/2; overflow:hidden;
@@ -936,6 +941,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .card.medusa .photo-box{ background:linear-gradient(135deg, #7C3AED 0%, #C084FC 55%, #E9D5FF 100%); }
   .card.crustaceo .photo-box{ background:linear-gradient(135deg, #C2410C 0%, #F97316 55%, #FED7AA 100%); }
   .card.reptil .photo-box{ background:linear-gradient(135deg, #2F855A 0%, #48BB78 55%, #B7E4C7 100%); }
+  .card.molusco .photo-box{ background:linear-gradient(135deg, #DB2777 0%, #F472B6 55%, #FBCFE8 100%); }
   .photo-box img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:1; transition:transform .5s ease; }
   .card:hover .photo-box img{ transform:scale(1.05); }
 
@@ -1053,6 +1059,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .modal.medusa-theme .modal-photo{ background:linear-gradient(135deg, #7C3AED 0%, #C084FC 55%, #E9D5FF 100%); }
   .modal.crustaceo-theme .modal-photo{ background:linear-gradient(135deg, #C2410C 0%, #F97316 55%, #FED7AA 100%); }
   .modal.reptil-theme .modal-photo{ background:linear-gradient(135deg, #2F855A 0%, #48BB78 55%, #B7E4C7 100%); }
+  .modal.molusco-theme .modal-photo{ background:linear-gradient(135deg, #DB2777 0%, #F472B6 55%, #FBCFE8 100%); }
   .modal-photo img{ width:100%; height:100%; object-fit:cover; position:relative; z-index:2; cursor:zoom-in; }
 
   /* Lightbox: ampliar la foto de la ficha a pantalla completa */
@@ -2057,16 +2064,17 @@ const FISH_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="
 const MEDUSA_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M50 2 C30 2, 14 14, 14 26 C14 32, 22 34, 30 30 C34 34, 42 34, 46 30 C46 34, 54 34, 54 30 C58 34, 66 34, 70 30 C78 34, 86 32, 86 26 C86 14, 70 2, 50 2 Z M24 32 C22 40, 26 44, 22 52 C21 54, 23 56, 25 54 C29 46, 25 42, 27 34 Z M38 33 C37 42, 41 46, 38 55 C37 57, 39 58, 41 56 C44 47, 40 43, 42 34 Z M50 33 C50 42, 54 47, 51 56 C50 58, 52 59, 54 57 C56 48, 52 44, 53 34 Z M62 33 C62 42, 66 46, 63 55 C62 57, 64 58, 66 56 C69 47, 65 43, 66 34 Z M76 32 C75 40, 79 44, 76 52 C75 54, 77 55, 79 53 C82 45, 78 41, 79 34 Z"/></svg>`;
 const CRUSTACEO_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M50 18 C64 18, 74 28, 74 38 C74 48, 63 54, 50 54 C37 54, 26 48, 26 38 C26 28, 36 18, 50 18 Z M22 24 C14 20, 6 22, 4 16 C10 18, 16 16, 20 20 Z M78 24 C86 20, 94 22, 96 16 C90 18, 84 16, 80 20 Z M20 30 C10 30, 4 34, 0 30 C6 34, 10 38, 18 36 Z M80 30 C90 30, 96 34, 100 30 C94 34, 90 38, 82 36 Z M22 40 C12 42, 6 48, 0 46 C6 48, 10 54, 18 48 Z M78 40 C88 42, 94 48, 100 46 C94 48, 90 54, 82 48 Z"/></svg>`;
 const REPTIL_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M50 12 C65 12, 76 21, 76 32 C76 43, 65 51, 50 51 C35 51, 24 43, 24 32 C24 21, 35 12, 50 12 Z M46 8 C48 3, 52 3, 54 8 C52 10, 48 10, 46 8 Z M15 18 C6 13, 1 17, 3 23 C9 23, 14 21, 20 23 Z M15 46 C6 51, 1 47, 3 41 C9 41, 14 43, 20 41 Z M85 18 C94 13, 99 17, 97 23 C91 23, 86 21, 80 23 Z M85 46 C94 51, 99 47, 97 41 C91 41, 86 43, 80 41 Z M50 51 C50 55, 50 57, 50 59"/></svg>`;
+const MOLUSCO_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path d="M14 42 C10 32, 18 22, 32 20 C30 14, 34 8, 39 10 C42 14, 40 18, 38 21 C46 18, 48 12, 53 10 C58 8, 61 14, 57 20 C68 21, 79 27, 83 35 C87 42, 82 49, 71 51 C56 54, 28 54, 16 50 C11 48, 14 45, 14 42 Z"/></svg>`;
 
 // Carpeta de imágenes y silueta de placeholder según la categoría de la especie.
-const CAT_DEFS = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos'],['medusa','Medusas'],['crustaceo','Crustáceos'],['reptil','Reptiles']];
-const CAT_FOLDERS = { raya:'rayas', pez:'peces', medusa:'medusas', crustaceo:'crustaceos', tiburon:'tiburones', reptil:'reptiles' };
+const CAT_DEFS = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos'],['medusa','Medusas'],['crustaceo','Crustáceos'],['reptil','Reptiles'],['molusco','Moluscos']];
+const CAT_FOLDERS = { raya:'rayas', pez:'peces', medusa:'medusas', crustaceo:'crustaceos', tiburon:'tiburones', reptil:'reptiles', molusco:'moluscos' };
 // Nombres de clase CSS de tema por categoría — 'ray'/'fish' son los nombres
 // históricos (de cuando solo existían tiburón/raya/pez); medusa/crustaceo/reptil
 // coinciden con su propio valor de `cat`, no necesitan alias.
-const CARD_THEME_CLASS = { raya:'ray', pez:'fish', medusa:'medusa', crustaceo:'crustaceo', reptil:'reptil' };
+const CARD_THEME_CLASS = { raya:'ray', pez:'fish', medusa:'medusa', crustaceo:'crustaceo', reptil:'reptil', molusco:'molusco' };
 function catFolder(cat){ return CAT_FOLDERS[cat] || 'tiburones'; }
-const CAT_SILHOUETTES = { raya:RAY_SILHOUETTE, pez:FISH_SILHOUETTE, medusa:MEDUSA_SILHOUETTE, crustaceo:CRUSTACEO_SILHOUETTE, tiburon:SHARK_SILHOUETTE, reptil:REPTIL_SILHOUETTE };
+const CAT_SILHOUETTES = { raya:RAY_SILHOUETTE, pez:FISH_SILHOUETTE, medusa:MEDUSA_SILHOUETTE, crustaceo:CRUSTACEO_SILHOUETTE, tiburon:SHARK_SILHOUETTE, reptil:REPTIL_SILHOUETTE, molusco:MOLUSCO_SILHOUETTE };
 function catSilhouette(cat){ return CAT_SILHOUETTES[cat] || SHARK_SILHOUETTE; }
 function speciesImgPath(s){ return `especies/imagenes/${catFolder(s.cat)}/${s.order.toLowerCase()}/${s.id}.jpg`; }
 
@@ -2246,6 +2254,9 @@ let SPECIES = [
   {id:'percebe', cat:'crustaceo', order:'Sessilia', name:'Percebe', sci:'Pollicipes pollicipes', region:'Mediterráneo', zones:['mediterraneo','cantabrico'], code:'CRU-11', size:'0.07 m', habitat:'Rocas expuestas al oleaje intermareal', depth:'0–2 m', speed:'Sedentario', diet:'Filtrador de plancton', rarity:3, blurb:'Crustáceo sésil que pasa toda su vida adulta fijado a rocas batidas por el oleaje, filtrando plancton con sus apéndices plumosos. Su recolección es una de las más peligrosas de la pesca artesanal.'},
   {id:'cangrejomoro', cat:'crustaceo', order:'Decapoda', name:'Cangrejo moro', sci:'Grapsus adscensionis', region:'Canarias', zones:['canarias'], code:'CRU-12', size:'0.08 m', habitat:'Rocas volcánicas del litoral batidas por el oleaje', depth:'0–2 m', speed:'Muy rápida', diet:'Algas y carroña', rarity:1, blurb:'De colores vivos rojizos y azulados, es extraordinariamente ágil trepando por las rocas de la orilla, escapando de un salto en cuanto detecta movimiento.'},
   {id:'tortugaboba', cat:'reptil', order:'Testudines', name:'Tortuga boba', sci:'Caretta caretta', region:'Global', zones:['mediterraneo','cantabrico','canarias','caribe','indopacifico'], code:'REP-01', size:'0.9 m', habitat:'Aguas costeras y pelágicas', depth:'0–50 m', speed:'Moderada', diet:'Medusas, moluscos y crustáceos', rarity:3, blurb:'La tortuga marina más común en el Mediterráneo, donde también anida. Reconocible por su gran cabeza y su caparazón acorazonado de tono rojizo-pardo; puede recorrer miles de kilómetros entre sus zonas de alimentación y de puesta.'},
+  {id:'cangrejoaranacanarias', cat:'crustaceo', order:'Decapoda', name:'Cangrejo araña', sci:'Stenorhynchus lanceolatus', region:'Canarias', zones:['canarias'], code:'CRU-13', size:'0.2 m', habitat:'Fondos rocosos, a menudo junto a erizos diadema', depth:'0–100 m', speed:'Lenta', diet:'Algas y pequeños invertebrados', rarity:2, blurb:'Cuerpo triangular pequeño con dos largas pinzas y ocho patas finas que, extendidas, pueden alcanzar los 20 cm. De comportamiento tranquilo, no suele esconderse ante la presencia de un buceador.'},
+  {id:'roncador', cat:'pez', order:'Perciformes', name:'Roncador', sci:'Pomadasys incisus', region:'Mediterráneo', zones:['mediterraneo','cantabrico','canarias'], code:'PEZ-75', size:'0.5 m', habitat:'Fondos rocosos y de arena costeros', depth:'0–50 m', speed:'Moderada', diet:'Invertebrados bentónicos', rarity:2, blurb:'Forma bancos numerosos que pueden mantenerse en el mismo punto durante años, convirtiéndose en un atractivo propio para el buceo. Debe su nombre al sonido similar a un ronquido que emite al ser capturado.'},
+  {id:'nudibranquiopinto', cat:'molusco', order:'Nudibranchia', name:'Nudibranquio pinto', sci:'Felimare picta', region:'Canarias', zones:['canarias'], code:'MOL-01', size:'0.19 m', habitat:'Fondos rocosos en penumbra', depth:'0–50 m', speed:'Muy lenta', diet:'Esponjas del género Sarcotragus', rarity:2, blurb:'Uno de los nudibranquios más comunes y vistosos de Canarias: cuerpo oscuro cubierto por una densa red de líneas y motas amarillas, con rinóforos y branquia de puntas azules. Se desplaza raspando esponjas con su rádula.'},
 ];
 
 // ---------- estado ----------
@@ -2670,7 +2681,7 @@ function buildTreeData(){
   // ── Resto de categorías con datos reales (Peces óseos, Medusas, Crustáceos) ──
   // Mismo patrón que Elasmobranquios, pero como nodo de nivel superior
   // directo bajo la raíz en vez de agrupados bajo un nodo intermedio.
-  [['pez','Peces Óseos'],['medusa','Medusas'],['crustaceo','Crustáceos'],['reptil','Reptiles']].forEach(([cat, label])=>{
+  [['pez','Peces Óseos'],['medusa','Medusas'],['crustaceo','Crustáceos'],['reptil','Reptiles'],['molusco','Moluscos']].forEach(([cat, label])=>{
     const spp = SPECIES.filter(s=>s.cat===cat);
     if(!spp.length) return;
     const catNode = mk(cat, label, 'cat', { cat, count:spp.length });
@@ -2723,7 +2734,7 @@ function treeNodeColors(node){
 
   if(ph) return { fill:'#F2F6FA', stroke:'#CBD8E4', text:'#9EB5C4', badge:null, sw:1.5, dash:'6,4', shadow:false };
   if(sel){
-    const selFillByCat = { raya:'#0891B2', pez:'#C87F0A', medusa:'#7C3AED', crustaceo:'#C2410C', reptil:'#2F855A' };
+    const selFillByCat = { raya:'#0891B2', pez:'#C87F0A', medusa:'#7C3AED', crustaceo:'#C2410C', reptil:'#2F855A', molusco:'#DB2777' };
     const selFill = selFillByCat[node.cat] || '#1563CC';
     return { fill: selFill, stroke:'rgba(255,255,255,0.18)', text:'#fff', badge:'rgba(255,255,255,0.2)', badgeT:'rgba(255,255,255,0.9)', sw:2.5, dash:'none', shadow:true };
   }
@@ -2736,6 +2747,7 @@ function treeNodeColors(node){
   if(node.cat==='medusa')     return { fill:'#FAF5FF', stroke:'#D8B4FE', text:'#0D2B40', badge:'rgba(124,58,237,0.12)', badgeT:'#7C3AED', sw:1.5, dash:'none', shadow:false };
   if(node.cat==='crustaceo')  return { fill:'#FFF7ED', stroke:'#FDBA74', text:'#0D2B40', badge:'rgba(194,65,12,0.12)', badgeT:'#C2410C', sw:1.5, dash:'none', shadow:false };
   if(node.cat==='reptil')     return { fill:'#F0FDF4', stroke:'#86EFAC', text:'#0D2B40', badge:'rgba(47,133,90,0.14)', badgeT:'#2F855A', sw:1.5, dash:'none', shadow:false };
+  if(node.cat==='molusco')    return { fill:'#FDF2F8', stroke:'#F9A8D4', text:'#0D2B40', badge:'rgba(219,39,119,0.14)', badgeT:'#DB2777', sw:1.5, dash:'none', shadow:false };
   return                         { fill:'#F5FAFF', stroke:'#89C8ED', text:'#0D2B40', badge:'rgba(0,128,200,0.1)', badgeT:'#0080C8', sw:1.5, dash:'none', shadow:false };
 }
 

@@ -2988,5 +2988,64 @@
     "diet": "Medusas, moluscos y crustáceos",
     "rarity": 3,
     "blurb": "La tortuga marina más común en el Mediterráneo, donde también anida. Reconocible por su gran cabeza y su caparazón acorazonado de tono rojizo-pardo; puede recorrer miles de kilómetros entre sus zonas de alimentación y de puesta."
+  },
+  {
+    "id": "cangrejoaranacanarias",
+    "cat": "crustaceo",
+    "order": "Decapoda",
+    "name": "Cangrejo araña",
+    "sci": "Stenorhynchus lanceolatus",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "CRU-13",
+    "size": "0.2 m",
+    "habitat": "Fondos rocosos, a menudo junto a erizos diadema",
+    "depth": "0–100 m",
+    "speed": "Lenta",
+    "diet": "Algas y pequeños invertebrados",
+    "rarity": 2,
+    "blurb": "Cuerpo triangular pequeño con dos largas pinzas y ocho patas finas que, extendidas, pueden alcanzar los 20 cm. De comportamiento tranquilo, no suele esconderse ante la presencia de un buceador."
+  },
+  {
+    "id": "roncador",
+    "cat": "pez",
+    "order": "Perciformes",
+    "name": "Roncador",
+    "sci": "Pomadasys incisus",
+    "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico",
+      "canarias"
+    ],
+    "code": "PEZ-75",
+    "size": "0.5 m",
+    "habitat": "Fondos rocosos y de arena costeros",
+    "depth": "0–50 m",
+    "speed": "Moderada",
+    "diet": "Invertebrados bentónicos",
+    "rarity": 2,
+    "blurb": "Forma bancos numerosos que pueden mantenerse en el mismo punto durante años, convirtiéndose en un atractivo propio para el buceo. Debe su nombre al sonido similar a un ronquido que emite al ser capturado."
+  },
+  {
+    "id": "nudibranquiopinto",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Nudibranquio pinto",
+    "sci": "Felimare picta",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-01",
+    "size": "0.19 m",
+    "habitat": "Fondos rocosos en penumbra",
+    "depth": "0–50 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas del género Sarcotragus",
+    "rarity": 2,
+    "blurb": "Uno de los nudibranquios más comunes y vistosos de Canarias: cuerpo oscuro cubierto por una densa red de líneas y motas amarillas, con rinóforos y branquia de puntas azules. Se desplaza raspando esponjas con su rádula."
   }
 ]
