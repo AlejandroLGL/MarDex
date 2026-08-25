@@ -2019,6 +2019,25 @@
     "blurb": "También llamada morena picopato, por su mandíbula curvada que le impide cerrar la boca del todo. Endémica de Macaronesia, de colores rojizos con manchas amarillas."
   },
   {
+    "id": "morenaleopardo",
+    "cat": "pez",
+    "order": "Anguilliformes",
+    "name": "Morena leopardo",
+    "sci": "Gymnothorax favagineus",
+    "region": "Indo-Pacífico",
+    "zones": [
+      "indopacifico"
+    ],
+    "code": "PEZ-76",
+    "size": "3 m",
+    "habitat": "Arrecifes de coral y cuevas rocosas",
+    "depth": "1–50 m",
+    "speed": "Lenta",
+    "diet": "Peces, pulpos y crustáceos",
+    "rarity": 3,
+    "blurb": "También llamada morena de puntos negros, por el intrincado dibujo de manchas oscuras sobre fondo claro que cubre todo su cuerpo. Una de las morenas de mayor tamaño, puede superar los 3 metros de longitud."
+  },
+  {
     "id": "reyezuelo",
     "cat": "pez",
     "order": "Perciformes",
@@ -2115,6 +2134,25 @@
     "diet": "Invertebrados bentónicos y algas",
     "rarity": 2,
     "blurb": "El pez globo más pequeño de las aguas canarias, con un patrón de puntos azules característico. A diferencia de otros tetraodóntidos, nada de forma ágil y activa."
+  },
+  {
+    "id": "tamborilespinoso",
+    "cat": "pez",
+    "order": "Tetraodontiformes",
+    "name": "Tamboril espinoso",
+    "sci": "Chilomycterus reticulatus",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "PEZ-77",
+    "size": "0.55 m",
+    "habitat": "Fondos rocosos y de arena",
+    "depth": "0–30 m",
+    "speed": "Lenta",
+    "diet": "Moluscos, crustáceos y erizos",
+    "rarity": 4,
+    "blurb": "Mucho mayor que el tamboril común, con el cuerpo cubierto de espinas cortas fijas (no erizables) y un patrón de manchas negras sobre fondo gris claro. Especie protegida en Canarias."
   },
   {
     "id": "chavito",
@@ -2965,5 +3003,487 @@
     "diet": "Algas y carroña",
     "rarity": 1,
     "blurb": "De colores vivos rojizos y azulados, es extraordinariamente ágil trepando por las rocas de la orilla, escapando de un salto en cuanto detecta movimiento."
+  },
+  {
+    "id": "tortugaboba",
+    "cat": "reptil",
+    "order": "Testudines",
+    "name": "Tortuga boba",
+    "sci": "Caretta caretta",
+    "region": "Global",
+    "zones": [
+      "mediterraneo",
+      "cantabrico",
+      "canarias",
+      "caribe",
+      "indopacifico"
+    ],
+    "code": "REP-01",
+    "size": "0.9 m",
+    "habitat": "Aguas costeras y pelágicas",
+    "depth": "0–50 m",
+    "speed": "Moderada",
+    "diet": "Medusas, moluscos y crustáceos",
+    "rarity": 3,
+    "blurb": "La tortuga marina más común en el Mediterráneo, donde también anida. Reconocible por su gran cabeza y su caparazón acorazonado de tono rojizo-pardo; puede recorrer miles de kilómetros entre sus zonas de alimentación y de puesta."
+  },
+  {
+    "id": "cangrejoaranacanarias",
+    "cat": "crustaceo",
+    "order": "Decapoda",
+    "name": "Cangrejo araña",
+    "sci": "Stenorhynchus lanceolatus",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "CRU-13",
+    "size": "0.2 m",
+    "habitat": "Fondos rocosos, a menudo junto a erizos diadema",
+    "depth": "0–100 m",
+    "speed": "Lenta",
+    "diet": "Algas y pequeños invertebrados",
+    "rarity": 2,
+    "blurb": "Cuerpo triangular pequeño con dos largas pinzas y ocho patas finas que, extendidas, pueden alcanzar los 20 cm. De comportamiento tranquilo, no suele esconderse ante la presencia de un buceador."
+  },
+  {
+    "id": "maranuela",
+    "cat": "crustaceo",
+    "order": "Decapoda",
+    "name": "Marañuela",
+    "sci": "Percnon gibbesi",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "CRU-14",
+    "size": "0.04 m",
+    "habitat": "Fondos rocosos someros con algas, junto a erizos",
+    "depth": "0–4 m",
+    "speed": "Muy rápida",
+    "diet": "Algas filamentosas y calcáreas",
+    "rarity": 2,
+    "blurb": "También llamada cangrejo araña, aunque no está emparentada con él: cuerpo plano y ovalado de tonos pardo-rojizos con líneas azuladas y verdes fosforescentes. Ante cualquier amenaza escapa en zigzag entre las púas de los erizos de mar."
+  },
+  {
+    "id": "cigarramar",
+    "cat": "crustaceo",
+    "order": "Decapoda",
+    "name": "Cigarra de mar",
+    "sci": "Scyllarides latus",
+    "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "canarias"
+    ],
+    "code": "CRU-15",
+    "size": "0.45 m",
+    "habitat": "Fondos rocosos, cuevas y grietas",
+    "depth": "4–100 m",
+    "speed": "Lenta",
+    "diet": "Moluscos y erizos de mar",
+    "rarity": 4,
+    "blurb": "También llamada langosta canaria. Sin las largas antenas de la langosta común, tiene en su lugar dos placas aplanadas a modo de antenas cortas. De hábitos nocturnos, pasa el día escondida en cuevas y grietas."
+  },
+  {
+    "id": "roncador",
+    "cat": "pez",
+    "order": "Perciformes",
+    "name": "Roncador",
+    "sci": "Pomadasys incisus",
+    "region": "Mediterráneo",
+    "zones": [
+      "mediterraneo",
+      "cantabrico",
+      "canarias"
+    ],
+    "code": "PEZ-75",
+    "size": "0.5 m",
+    "habitat": "Fondos rocosos y de arena costeros",
+    "depth": "0–50 m",
+    "speed": "Moderada",
+    "diet": "Invertebrados bentónicos",
+    "rarity": 2,
+    "blurb": "Forma bancos numerosos que pueden mantenerse en el mismo punto durante años, convirtiéndose en un atractivo propio para el buceo. Debe su nombre al sonido similar a un ronquido que emite al ser capturado."
+  },
+  {
+    "id": "nudibranquiopinto",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Nudibranquio pinto",
+    "sci": "Felimare picta",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-01",
+    "size": "0.19 m",
+    "habitat": "Fondos rocosos en penumbra",
+    "depth": "0–50 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas del género Sarcotragus",
+    "rarity": 2,
+    "blurb": "Uno de los nudibranquios más comunes y vistosos de Canarias: cuerpo oscuro cubierto por una densa red de líneas y motas amarillas, con rinóforos y branquia de puntas azules. Se desplaza raspando esponjas con su rádula."
+  },
+  {
+    "id": "bermudella",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Bermudella",
+    "sci": "Bermudella polycerelloides",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-02",
+    "size": "0.015 m",
+    "habitat": "Fondos rocosos someros",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Briozoos",
+    "rarity": 4,
+    "blurb": "Pequeño nudibranquio descrito originalmente en Canarias. Como el resto de Polyceridae, se alimenta raspando colonias de briozoos incrustantes."
+  },
+  {
+    "id": "crimora",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Crimora",
+    "sci": "Crimora papillata",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-03",
+    "size": "0.03 m",
+    "habitat": "Fondos rocosos someros",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Briozoos como Flustra foliacea y Membranipora membranacea",
+    "rarity": 3,
+    "blurb": "Cuerpo blanquecino cubierto de papilas ramificadas que le sirven de camuflaje entre las colonias de briozoos de las que se alimenta."
+  },
+  {
+    "id": "kaloplocamus",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Nudibranquio de flecos",
+    "sci": "Kaloplocamus ramosus",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-04",
+    "size": "0.03 m",
+    "habitat": "Fondos rocosos y cuevas",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Briozoos",
+    "rarity": 3,
+    "blurb": "Conocido como \"tasselled nudibranch\" por los mechones ramificados que cubren su dorso, entre los que puede esconder también sus branquias."
+  },
+  {
+    "id": "tambjaceutae",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Tambja de Ceuta",
+    "sci": "Tambja ceutae",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-05",
+    "size": "0.04 m",
+    "habitat": "Fondos rocosos y cuevas",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Briozoos",
+    "rarity": 3,
+    "blurb": "Descrito originalmente en Ceuta, en el estrecho de Gibraltar. De color verdoso a azulado con manchas amarillas, típico de los Polyceridae que se alimentan de briozoos."
+  },
+  {
+    "id": "felimaretricolor",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Nudibranquio tricolor",
+    "sci": "Felimare tricolor",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-06",
+    "size": "0.05 m",
+    "habitat": "Fondos rocosos",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas",
+    "rarity": 3,
+    "blurb": "Cuerpo azul intenso bordeado por una línea amarillo-anaranjada en el manto, uno de los patrones más vistosos entre los Felimare de Canarias."
+  },
+  {
+    "id": "felimareverdosa",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Felimare verdosa",
+    "sci": "Felimare bilineata",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-07",
+    "size": "0.04 m",
+    "habitat": "Fondos rocosos",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas",
+    "rarity": 3,
+    "blurb": "Forma de color verdoso azulado de Felimare bilineata, con dos líneas longitudinales que recorren el dorso a lo largo del cuerpo."
+  },
+  {
+    "id": "felimidapurpurea",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Felimida púrpura",
+    "sci": "Felimida purpurea",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-08",
+    "size": "0.04 m",
+    "habitat": "Fondos rocosos",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas",
+    "rarity": 3,
+    "blurb": "Manto ondulado de color rosado a púrpura pálido, con el borde plisado característico del género Felimida."
+  },
+  {
+    "id": "rostangaroja",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Rostanga roja",
+    "sci": "Rostanga rubra",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-09",
+    "size": "0.02 m",
+    "habitat": "Rocas cubiertas de esponjas rojas",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas rojas como Ophlitaspongia seriata",
+    "rarity": 3,
+    "blurb": "De un rojo anaranjado intenso que le sirve de camuflaje perfecto sobre las esponjas rojas incrustantes de las que se alimenta y en las que pone sus huevos."
+  },
+  {
+    "id": "gargamella",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Gargamella",
+    "sci": "Gargamella perezi",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-10",
+    "size": "0.03 m",
+    "habitat": "Fondos rocosos",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas",
+    "rarity": 4,
+    "blurb": "Dorido de cuerpo tuberculado y colores apagados, poco frecuente, que pasa desapercibido sobre el fondo rocoso donde se alimenta de esponjas."
+  },
+  {
+    "id": "taringa",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Taringa",
+    "sci": "Taringa ascitica",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-11",
+    "size": "0.03 m",
+    "habitat": "Fondos rocosos",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas",
+    "rarity": 4,
+    "blurb": "Dorido de superficie granulosa y coloración críptica, propio de fondos rocosos donde se confunde fácilmente con el sustrato."
+  },
+  {
+    "id": "dendrodoris",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Dendrodoris",
+    "sci": "Dendrodoris grandiflora",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-12",
+    "size": "0.08 m",
+    "habitat": "Fondos rocosos y de coralígeno",
+    "depth": "0–50 m",
+    "speed": "Muy lenta",
+    "diet": "Esponjas",
+    "rarity": 3,
+    "blurb": "Uno de los nudibranquios de mayor tamaño del catálogo, de cuerpo blando y sin branquias visibles a simple vista; respira a través de toda la piel."
+  },
+  {
+    "id": "marionia",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Marionia",
+    "sci": "Marionia blainvillea",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-13",
+    "size": "0.06 m",
+    "habitat": "Fondos rocosos y de coralígeno",
+    "depth": "0–50 m",
+    "speed": "Muy lenta",
+    "diet": "Gorgonias y otros octocorales",
+    "rarity": 3,
+    "blurb": "Cuerpo alargado cubierto de papilas ramificadas, camuflado entre las gorgonias y corales blandos de los que se alimenta."
+  },
+  {
+    "id": "hancockia",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Hancockia",
+    "sci": "Hancockia uncinata",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-14",
+    "size": "0.02 m",
+    "habitat": "Fondos rocosos con hidrozoos",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Hidrozoos como Clytia hemisphaerica",
+    "rarity": 4,
+    "blurb": "Pequeño y poco frecuente, con papilas ramificadas en forma de abanico. Extrae los nematocistos urticantes de los hidrozoos de los que se alimenta para su propia defensa."
+  },
+  {
+    "id": "scyllaea",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Nudibranquio del sargazo",
+    "sci": "Scyllaea pelagica",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-15",
+    "size": "0.05 m",
+    "habitat": "Sargazo flotante",
+    "depth": "0–5 m",
+    "speed": "Muy lenta",
+    "diet": "Hidrozoos que crecen sobre el sargazo",
+    "rarity": 4,
+    "blurb": "Especie pelágica que vive sobre masas de sargazo a la deriva, con cerata en forma de aletas que imitan perfectamente las hojas del alga."
+  },
+  {
+    "id": "doto",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Doto",
+    "sci": "Doto escatllari",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-16",
+    "size": "0.01 m",
+    "habitat": "Fondos rocosos con hidrozoos",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Hidrozoos de la familia Sertulariidae",
+    "rarity": 4,
+    "blurb": "Especie descrita en Canarias, diminuta y de cuerpo translúcido con cerata tuberculadas donde se transparenta la glándula digestiva."
+  },
+  {
+    "id": "flabellinaafinis",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Flabellina violeta",
+    "sci": "Flabellina affinis",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-17",
+    "size": "0.03 m",
+    "habitat": "Fondos rocosos con hidrozoos",
+    "depth": "0–40 m",
+    "speed": "Muy lenta",
+    "diet": "Hidrozoos",
+    "rarity": 3,
+    "blurb": "De un violeta intenso uniforme, con cerata alargadas dispuestas en penachos a lo largo del dorso. Uno de los eólidos más reconocibles del Atlántico oriental."
+  },
+  {
+    "id": "dicata",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Dicata",
+    "sci": "Dicata odhneri",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-18",
+    "size": "0.01 m",
+    "habitat": "Fondos rocosos",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Desconocida, probablemente hidrozoos",
+    "rarity": 4,
+    "blurb": "Pequeño eólido blanco translúcido con las puntas de rinóforos y tentáculos orales amarillas. Muy raro de encontrar; se desconocen bien sus hábitos."
+  },
+  {
+    "id": "limenandra",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Limenandra",
+    "sci": "Limenandra nodosa",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-19",
+    "size": "0.02 m",
+    "habitat": "Fondos rocosos",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Anémonas e hidrozoos",
+    "rarity": 4,
+    "blurb": "Eólido de cerata cortas y nudosas dispuestas en grupos compactos, típico de la familia Aeolidiidae, depredadora de cnidarios urticantes."
+  },
+  {
+    "id": "trinchesia",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Trinchesia de Génova",
+    "sci": "Trinchesia genovae",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-20",
+    "size": "0.006 m",
+    "habitat": "Fondos rocosos con hidrozoos",
+    "depth": "0–30 m",
+    "speed": "Muy lenta",
+    "diet": "Hidrozoos",
+    "rarity": 4,
+    "blurb": "Uno de los nudibranquios más diminutos del catálogo, de apenas medio centímetro. Descrito en Génova, se alimenta de pequeñas colonias de hidrozoos."
   }
 ]
