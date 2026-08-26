@@ -3485,5 +3485,24 @@
     "diet": "Hidrozoos",
     "rarity": 4,
     "blurb": "Uno de los nudibranquios más diminutos del catálogo, de apenas medio centímetro. Descrito en Génova, se alimenta de pequeñas colonias de hidrozoos."
+  },
+  {
+    "id": "glaucus",
+    "cat": "molusco",
+    "order": "Nudibranchia",
+    "name": "Dragón azul",
+    "sci": "Glaucus atlanticus",
+    "region": "Canarias",
+    "zones": [
+      "canarias"
+    ],
+    "code": "MOL-21",
+    "size": "30 mm",
+    "habitat": "Superficie del océano abierto",
+    "depth": "0–1 m",
+    "speed": "Muy lenta",
+    "diet": "Carabela portuguesa (Physalia physalis) y otros sifonóforos",
+    "rarity": 5,
+    "blurb": "Flota bocabajo en la superficie gracias a una burbuja de aire que traga, dejándose llevar por el viento y las corrientes. Almacena los nematocistos urticantes de sus presas para su propia defensa, por lo que su picadura puede ser más dolorosa que la de la propia carabela."
   }
 ]
