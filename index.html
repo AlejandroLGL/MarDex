@@ -7082,7 +7082,17 @@ async function _alEnterAccount(user){
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('[SW] Registrado:', reg.scope))
+      .then(reg => {
+        console.log('[SW] Registrado:', reg.scope);
+        // Abrir la PWA desde el icono (modo standalone) no siempre dispara
+        // la comprobación automática de una versión nueva del Service Worker,
+        // sobre todo en iOS. Forzamos esa comprobación cada vez que la app
+        // vuelve a primer plano, para no depender de que el usuario borre
+        // y reinstale la PWA cuando hay contenido nuevo (p.ej. fotos).
+        document.addEventListener('visibilitychange', ()=>{
+          if(document.visibilityState === 'visible') reg.update();
+        });
+      })
       .catch(err => console.warn('[SW] Error al registrar:', err));
   });
 

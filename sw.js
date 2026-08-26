@@ -80,7 +80,10 @@ async function cacheFirstStrategy(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
   try {
-    const response = await fetch(request);
+    // cache:'reload' ignora la caché HTTP del dispositivo para esta petición,
+    // así una foto que antes daba 404 (porque aún no existía) no se queda
+    // pegada indefinidamente aunque ya esté disponible en el servidor.
+    const response = await fetch(request, { cache: 'reload' });
     if (response.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, response.clone());
