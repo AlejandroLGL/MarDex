@@ -719,6 +719,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .side-btn.fav-active{ background:rgba(255,116,103,0.14); color:var(--coral); }
 
   .progress-block{ margin-top:20px; padding-top:18px; border-top:1px solid var(--sidebar-line); }
+
+  .filters-toggle-btn{ display:none; }
   .progress-item{ margin-bottom:16px; }
   .progress-item:last-child{ margin-bottom:0; }
   .progress-label{ display:flex; justify-content:space-between; font-size:11px; color:rgba(255,255,255,0.7); font-weight:600; margin-bottom:6px; }
@@ -838,7 +840,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     30%{ opacity:1; transform:translateY(-2.5px); }
   }
   .search-wrap input{
-    width:100%; padding:13px 18px 13px 42px; border-radius:999px;
+    width:100%; padding:13px 38px 13px 42px; border-radius:999px;
     border:1.5px solid rgba(0,128,200,0.35);
     background:rgba(255,255,255,0.88);
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
@@ -847,6 +849,15 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .search-wrap input::placeholder{ color:var(--faint); }
   .search-wrap input:focus{ outline:none; border-color:var(--blue); background:rgba(255,255,255,0.96); box-shadow:0 0 0 3px rgba(0,128,200,0.2), 0 4px 20px rgba(7,59,92,0.12); }
+  .search-clear-btn{
+    position:absolute; right:5px; top:50%; transform:translateY(-50%);
+    width:26px; height:26px; border-radius:50%; border:none; background:transparent;
+    color:var(--faint); display:none; align-items:center; justify-content:center;
+    cursor:pointer; transition:background .15s, color .15s;
+  }
+  .search-clear-btn.show{ display:flex; }
+  .search-clear-btn:hover{ background:rgba(0,128,200,0.12); color:var(--blue); }
+  .search-clear-btn .icon{ width:12px; height:12px; }
   .chip-row{ display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
   .chip{
     padding:7px 16px; border-radius:999px; border:1px solid var(--line); background:var(--card);
@@ -865,6 +876,18 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     .sidebar{ width:100%; height:auto; position:static; padding:16px 18px; }
     .filter-nav{ flex-direction:row; flex-wrap:wrap; }
     .side-btn{ width:auto; }
+
+    .filters-toggle-btn{
+      display:flex; align-items:center; justify-content:space-between; width:100%;
+      margin-top:8px; padding:12px 4px; border:none; border-top:1px solid var(--sidebar-line);
+      background:transparent; cursor:pointer; font-family:var(--sans);
+      font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.1px;
+      color:rgba(255,255,255,0.55);
+    }
+    .filters-toggle-btn .chev{ color:rgba(255,255,255,0.3); transition:transform .15s ease; }
+    .filters-toggle-btn.open .chev{ transform:rotate(180deg); }
+    .filters-collapsible{ display:none; }
+    .filters-collapsible.open{ display:block; }
   }
 
   /* view toggle + sort controls */
@@ -1676,28 +1699,35 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
       </div>
     </div>
 
-    <details class="side-section" open>
-      <summary>Categoría <span class="chev" id="catChevIcon"></span></summary>
-      <div class="filter-nav" id="catNav"></div>
-      <button class="side-btn" id="favBtn" style="margin-top:2px;"></button>
-    </details>
+    <button type="button" class="filters-toggle-btn" id="filtersToggleBtn">
+      <span>Filtros</span>
+      <span class="chev" id="filtersToggleChev"></span>
+    </button>
 
-    <details class="side-section">
-      <summary>Orden <span class="chev" id="orderChevIcon"></span><span class="count-tag" id="orderCountTag"></span></summary>
-      <div class="filter-nav" id="orderNav"></div>
-    </details>
+    <div class="filters-collapsible" id="filtersCollapsible">
+      <details class="side-section" open>
+        <summary>Categoría <span class="chev" id="catChevIcon"></span></summary>
+        <div class="filter-nav" id="catNav"></div>
+        <button class="side-btn" id="favBtn" style="margin-top:2px;"></button>
+      </details>
 
-    <details class="side-section">
-      <summary>Estado <span class="chev" id="lockChevIcon"></span><span class="count-tag" id="lockCountTag"></span></summary>
-      <div class="filter-nav" id="lockNav"></div>
-    </details>
+      <details class="side-section">
+        <summary>Orden <span class="chev" id="orderChevIcon"></span><span class="count-tag" id="orderCountTag"></span></summary>
+        <div class="filter-nav" id="orderNav"></div>
+      </details>
 
-    <details class="side-section">
-      <summary>Entorno <span class="chev" id="envChevIcon"></span><span class="count-tag" id="envCountTag"></span></summary>
-      <div class="filter-nav" id="envNav"></div>
-    </details>
+      <details class="side-section">
+        <summary>Estado <span class="chev" id="lockChevIcon"></span><span class="count-tag" id="lockCountTag"></span></summary>
+        <div class="filter-nav" id="lockNav"></div>
+      </details>
 
-    <div class="progress-block" id="progressBlock"></div>
+      <details class="side-section">
+        <summary>Entorno <span class="chev" id="envChevIcon"></span><span class="count-tag" id="envCountTag"></span></summary>
+        <div class="filter-nav" id="envNav"></div>
+      </details>
+
+      <div class="progress-block" id="progressBlock"></div>
+    </div>
   </aside>
 
   <div class="main-col">
@@ -1708,6 +1738,9 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
         <div class="search-wrap">
           <span class="icon" id="searchIcon"></span>
           <input type="text" id="search" placeholder="Buscar especie, familia o hábitat...">
+          <button type="button" class="search-clear-btn" id="searchClearBtn" title="Borrar búsqueda" aria-label="Borrar búsqueda">
+            <span class="icon" id="searchClearIcon"></span>
+          </button>
         </div>
         <button type="button" class="identify-btn" id="identifyBtn" title="Identificar especie por foto">
           <span class="icon" id="identifyIcon"></span>
@@ -3934,6 +3967,7 @@ function ordersFor(cats){
 
 function renderCatNav(){
   document.getElementById('searchIcon').innerHTML = ICONS.search;
+  document.getElementById('searchClearIcon').innerHTML = ICONS.close;
   document.getElementById('identifyIcon').innerHTML = ICONS.camera;
   document.getElementById('catChevIcon').innerHTML = ICONS.chevronDown;
   const nav = document.getElementById('catNav');
@@ -4790,7 +4824,22 @@ window.addEventListener('popstate', (e)=>{
 });
 document.getElementById('search').addEventListener('input', (e)=>{
   searchTerm = e.target.value;
+  document.getElementById('searchClearBtn').classList.toggle('show', searchTerm.length > 0);
   renderGrid();
+});
+document.getElementById('searchClearBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('search');
+  input.value = '';
+  searchTerm = '';
+  document.getElementById('searchClearBtn').classList.remove('show');
+  input.focus();
+  renderGrid();
+});
+
+document.getElementById('filtersToggleChev').innerHTML = ICONS.chevronDown;
+document.getElementById('filtersToggleBtn').addEventListener('click', ()=>{
+  document.getElementById('filtersToggleBtn').classList.toggle('open');
+  document.getElementById('filtersCollapsible').classList.toggle('open');
 });
 
 
