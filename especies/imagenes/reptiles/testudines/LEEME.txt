@@ -1,4 +1,5 @@
 Coloca aquí las fotos de Testudines (reptiles), nombradas como {id}.jpg
 
 Especies de este orden:
-- tortugaboba.jpg  (Caretta caretta — Tortuga boba)
+- tortugaboba.jpg  ✓ presente (Caretta caretta — Tortuga boba)
+- tortugaverde.jpg  ✓ presente (Chelonia mydas — Tortuga verde)
