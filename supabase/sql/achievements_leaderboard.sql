@@ -59,12 +59,12 @@ as $$
     from public.sightings s
     group by s.user_id
   ) agg on agg.user_id = p.id
-  -- Solo se listan usuarios con privacidad "pública", más siempre tu propia
-  -- fila (para que puedas ver dónde quedarías si activaras la visibilidad
-  -- pública). Si prefieres que "amigos" también cuente como visible en el
-  -- ranking global, cambia la condición por: p.privacy in ('publico','amigos')
-  where p.privacy = 'publico' or p.id = auth.uid()
-  order by species_count desc, sightings_count desc;
+  -- Se listan todos los usuarios salvo los que hayan puesto su privacidad en
+  -- "privado" explícitamente (más siempre tu propia fila, para que veas tu
+  -- posición aunque tú mismo estés en privado).
+  where coalesce(p.privacy,'amigos') != 'privado' or p.id = auth.uid()
+  order by species_count desc, sightings_count desc
+  limit 50;
 $$;
 
 revoke all on function public.get_leaderboard() from public;
