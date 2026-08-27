@@ -2027,10 +2027,6 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
     <span class="bnav-label">Amigos</span>
   </button>
-  <button class="bnav-btn" data-bnav="achievements">
-    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg></span>
-    <span class="bnav-label">Logros</span>
-  </button>
   <button class="bnav-btn" data-bnav="saved">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.7-4.35-9.3-8.2C.9 9.7 1.7 6 5 4.7 7.2 3.8 9.4 4.6 12 7c2.6-2.4 4.8-3.2 7-2.3 3.3 1.3 4.1 5 1.3 8.8C18.7 16.65 12 21 12 21z"/></svg></span>
     <span class="bnav-label">Guardados</span>
@@ -5569,11 +5565,6 @@ function initBottomNav(){
         openZonesPanel();
         return;
       }
-      if(tab==='achievements'){
-        btns[0].classList.add('active');
-        openAchievementsPanel();
-        return;
-      }
       if(tab==='admin'){
         btns[0].classList.add('active');
         openAdminPanel();
@@ -5820,7 +5811,6 @@ function initMobileFAB(){
     { bnav:'tree',     label:'Clave',     svg:'<circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="M7.97 10.65 15.03 7 M7.97 13.35 15.03 17"/><line x1="6" y1="3" x2="6" y2="10"/><line x1="6" y1="14" x2="6" y2="21"/>' },
     { bnav:'profile',  label:'Perfil',    svg:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
     { bnav:'friends',  label:'Amigos',    svg:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
-    { bnav:'achievements', label:'Logros', svg:'<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>' },
     { bnav:'admin',    label:'Admin',     svg:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>', adminOnly:true },
   ];
 
@@ -5919,7 +5909,6 @@ function initMobileFAB(){
     if(tab==='admin')    { openAdminPanel(); return; }
     if(tab==='logbook')  { openLogbookPanel(); return; }
     if(tab==='zones')    { openZonesPanel(); return; }
-    if(tab==='achievements') { openAchievementsPanel(); return; }
     if(tab==='explore')  { showFavOnly=false; currentLock='todos'; renderLockNav(); renderCatNav(); renderGrid(); }
     else if(tab==='sightings'){ showFavOnly=false; currentLock='desbloqueado'; renderLockNav(); renderGrid(); }
     else if(tab==='saved')   { showFavOnly=true; renderCatNav(); renderGrid(); }
