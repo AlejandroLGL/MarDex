@@ -1256,6 +1256,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .field textarea{ resize:vertical; min-height:64px; }
   .field-row2{ display:flex; gap:8px; }
   .field-row2 > .field{ flex:1; min-width:0; }
+  .dive-context-note{
+    display:flex; align-items:center; gap:8px; padding:10px 12px; margin-bottom:14px;
+    background:var(--blue-soft); color:var(--blue); border-radius:var(--r-sm); font-size:12px; font-weight:600;
+  }
   .field-section-title{
     font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;
     letter-spacing:.05em; margin:22px 0 10px; padding-top:14px; border-top:1px solid var(--line);
@@ -1940,6 +1944,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   </div>
 </div>
 
+<div class="admin-overlay" id="diveSpeciesPickerOverlay">
+  <div class="admin-sheet" id="diveSpeciesPickerSheet">
+    <!-- populated by renderDiveSpeciesPicker() -->
+  </div>
+</div>
+
 <div class="tree-overlay" id="treeOverlay">
   <div class="tree-sheet">
     <div class="tree-header">
@@ -2410,6 +2420,10 @@ let editingDive = null;
 let pendingDiveCoords = null;
 let diveLeafletMapInstance = null;
 let diveLeafletMarker = null;
+// Cuando se añade una especie vista desde una inmersión del Logbook, este
+// contexto fija ubicación/fecha en el formulario de avistamiento (ya vienen
+// de la inmersión, no se piden dos veces) y enlaza el avistamiento a ella.
+let activeDiveContext = null;
 let saveInFlight = false;
 let expandedSightings = new Set();
 let currentProfile = null;
@@ -2569,7 +2583,8 @@ async function loadState(){
       environment: s.environment||'libre',
       photo: s.photo||null,
       sizeIdx: s.size_observed!=null ? s.size_observed : null,
-      depthObserved: s.depth_observed!=null ? s.depth_observed : null
+      depthObserved: s.depth_observed!=null ? s.depth_observed : null,
+      diveId: s.dive_id || null
     });
   });
   (favs||[]).forEach(f=>{ state.favorites[f.species_id]=true; });
@@ -4383,10 +4398,36 @@ function closeModal(){
   pendingCoords = null;
   leafletMapInstance = null;
   leafletMarker = null;
+  const returnToDive = !!activeDiveContext;
+  activeDiveContext = null;
   renderGrid();
+  if(returnToDive){
+    // Se abrió desde "Añadir especie vista" en el Logbook: al cerrar,
+    // volvemos al detalle de esa inmersión (ya actualizado con la nueva
+    // especie vinculada) en vez de dejar al usuario en Explorar.
+    document.getElementById('logbookOverlay').classList.add('open');
+    renderLogbookPanel();
+  }
   if(history.state && history.state.modal){
     history.back();
   }
+}
+
+// Abre la ficha de una especie directamente en modo "añadir avistamiento",
+// usada por el buscador de especies del Logbook (a diferencia de openModal,
+// no importa si la especie ya tenía avistamientos previos: aquí siempre se
+// quiere registrar uno nuevo).
+function openModalForDiveSighting(id){
+  document.getElementById('logbookOverlay').classList.remove('open');
+  openSpeciesId = id;
+  expandedSightings = new Set();
+  window._closeFabMenu?.();
+  document.getElementById('mobFabBtn')?.classList.add('modal-mode');
+  document.getElementById('mobFabWrap')?.classList.add('modal-mode');
+  const s = SPECIES.find(x=>x.id===id);
+  const sightings = sightingsFor(id);
+  renderModal(s, sightings, true);
+  document.getElementById('overlay').classList.add('open');
 }
 
 // ── Lightbox: amplía la foto de la ficha a pantalla completa ───────────
@@ -4597,25 +4638,27 @@ function formTemplate(existing){
   const title = existing ? escapeHtml(existing.title||'') : '';
   const sizeIdx = existing && existing.sizeIdx!=null ? existing.sizeIdx : 3;
   const depthVal = existing && existing.depthObserved!=null ? existing.depthObserved : '';
-  const location = existing ? escapeHtml(existing.location||'') : '';
+  const diveLocked = !!activeDiveContext && !existing;
+  const location = existing ? escapeHtml(existing.location||'') : (diveLocked ? escapeHtml(activeDiveContext.location||'') : '');
   const comment = existing ? escapeHtml(existing.comment||'') : '';
-  const dateVal = existing && existing.dateISO ? existing.dateISO : todayISO();
+  const dateVal = existing && existing.dateISO ? existing.dateISO : (diveLocked ? activeDiveContext.date : todayISO());
   const libreSel = !existing || existing.environment==='libre';
   const photoSrc = existing ? existing.photo : null;
   return `
     <div class="new-sighting">
+      ${diveLocked ? `<div class="dive-context-note">${icon('anchor','icon-sm')} Se registrará en tu inmersión de ${new Date(dateVal+'T00:00:00').toLocaleDateString('es-ES')}${activeDiveContext.location?' en '+escapeHtml(activeDiveContext.location):''}</div>` : ''}
       <div class="field"><label>Título</label><input type="text" id="f-title" value="${title}" placeholder="Ej: Encuentro en la pared azul"></div>
       <div class="field-row2">
         <div class="field">
           <label>Ubicación</label>
           <div class="loc-input-wrap">
             ${icon('mapPin','icon-sm')}
-            <input type="text" id="f-location" value="${location}" placeholder="Toca aquí o escribe" autocomplete="off">
+            <input type="text" id="f-location" value="${location}" placeholder="Toca aquí o escribe" autocomplete="off" ${diveLocked?'disabled':''}>
           </div>
         </div>
         <div class="field">
           <label>Fecha</label>
-          <input type="date" id="f-date" value="${dateVal}">
+          <input type="date" id="f-date" value="${dateVal}" ${diveLocked?'disabled':''}>
         </div>
       </div>
       <div id="inlineMapWrap">
@@ -4674,7 +4717,9 @@ async function reverseGeocode(lat, lng){
 function wireForm(s, sightings, editingSighting){
   envChoice = editingSighting ? editingSighting.environment : 'libre';
   pendingSightingPhoto = editingSighting ? editingSighting.photo : null;
-  pendingCoords = editingSighting ? editingSighting.coords : null;
+  pendingCoords = editingSighting
+    ? editingSighting.coords
+    : (activeDiveContext && activeDiveContext.lat!=null ? { lat:activeDiveContext.lat, lng:activeDiveContext.lng } : null);
   leafletMapInstance = null;
   leafletMarker = null;
 
@@ -4880,16 +4925,18 @@ function wireForm(s, sightings, editingSighting){
       }).eq('id', editingSighting.id);
     } else {
       const photo = pendingSightingPhoto || '';
+      const diveId = activeDiveContext ? activeDiveContext.id : null;
       const {data:ins,error} = await _sb.from('sightings').insert({
         species_id:s.id, title, location_text:location, comment,
         lat: pendingCoords?.lat??null, lng: pendingCoords?.lng??null,
-        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx, depth_observed: depthObserved
+        date: dateISO, environment: envChoice, photo, size_observed: sizeIdx, depth_observed: depthObserved,
+        dive_id: diveId
       }).select().single();
       if(error){ console.error('Error al guardar avistamiento:', error); showToast('Error al guardar: ' + error.message, true); return; }
       const sighting = {
         id:ins.id, title, location, comment,
         environment:envChoice, photo: photo||null,
-        coords:pendingCoords, dateISO, date:displayDate, sizeIdx, depthObserved
+        coords:pendingCoords, dateISO, date:displayDate, sizeIdx, depthObserved, diveId
       };
       const isFirstSighting = sightings.length === 0;
       newList = sightings.concat([sighting]);
@@ -6090,6 +6137,11 @@ function renderDiveDetail(){
     </div>
     ${d.notes ? `<div class="pp-section"><div class="pp-section-title">Observaciones</div><div style="font-size:13px;color:var(--ink);">${escapeHtml(d.notes)}</div></div>` : ''}
     <div class="pp-section">
+      <div class="pp-section-title">Especies vistas</div>
+      <div class="zones-order-grid" id="diveSpeciesGrid"></div>
+      <button type="button" class="btn secondary" id="addDiveSpeciesBtn" style="margin-top:12px;width:100%;">${icon('plus','icon-sm')} Añadir especie vista</button>
+    </div>
+    <div class="pp-section">
       <div class="pp-section-title">Perfil de profundidad</div>
       <div class="pp-placeholder">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -6100,6 +6152,110 @@ function renderDiveDetail(){
 
   document.getElementById('dvBackBtn').onclick = ()=>{ logbookView='list'; editingDive=null; renderLogbookPanel(); };
   document.getElementById('dvEditBtn').onclick = ()=>{ logbookView='form'; renderLogbookPanel(); };
+  document.getElementById('addDiveSpeciesBtn').onclick = ()=>startAddDiveSighting(d);
+  renderDiveSpeciesGrid(d);
+}
+
+// Especies vistas: cualquier avistamiento cuyo dive_id apunte a esta
+// inmersión, sin importar bajo qué especie esté guardado en state.sightings.
+function renderDiveSpeciesGrid(dive){
+  const grid = document.getElementById('diveSpeciesGrid');
+  if(!grid) return;
+  const linked = [];
+  Object.entries(state.sightings).forEach(([speciesId, arr])=>{
+    if((arr||[]).some(sg=>sg.diveId===dive.id)) linked.push(speciesId);
+  });
+  if(!linked.length){
+    grid.innerHTML = `<div class="zones-empty">Aún no has añadido ninguna especie vista en esta inmersión.</div>`;
+    return;
+  }
+  grid.innerHTML = linked.map(id=>{
+    const sp = SPECIES.find(s=>s.id===id);
+    if(!sp) return '';
+    const themeClass = CARD_THEME_CLASS[sp.cat] || '';
+    return `<div class="card ${themeClass} zone-mini-card" data-id="${sp.id}">
+      <div class="photo-box zone-mini-photo">
+        ${placeholderMarkup(sp.cat)}
+        <img src="${speciesImgPath(sp)}" onerror="this.remove()">
+      </div>
+      <div class="zone-mini-name">${escapeHtml(sp.name)}</div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('[data-id]').forEach(card=>{
+    card.onclick = ()=>{ closeLogbookPanel(); openModal(card.dataset.id); };
+  });
+}
+
+function startAddDiveSighting(dive){
+  activeDiveContext = {
+    id: dive.id,
+    location: dive.location_text || '',
+    lat: dive.lat, lng: dive.lng,
+    date: dive.date
+  };
+  openDiveSpeciesPicker();
+}
+
+function openDiveSpeciesPicker(){
+  document.getElementById('diveSpeciesPickerOverlay').classList.add('open');
+  renderDiveSpeciesPicker();
+}
+function closeDiveSpeciesPicker(){
+  document.getElementById('diveSpeciesPickerOverlay').classList.remove('open');
+  activeDiveContext = null;
+}
+document.getElementById('diveSpeciesPickerOverlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('diveSpeciesPickerOverlay')) closeDiveSpeciesPicker();
+});
+
+function renderDiveSpeciesPicker(){
+  const sheet = document.getElementById('diveSpeciesPickerSheet');
+  sheet.innerHTML = `
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">Añadir especie vista</div>
+        <div class="admin-subtitle">Busca la especie que viste en esta inmersión</div>
+      </div>
+      <button class="admin-close" id="diveSpeciesPickerCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="search-wrap" style="position:relative;margin-bottom:16px;">
+      <span class="icon" id="diveSpeciesSearchIcon"></span>
+      <input type="text" id="diveSpeciesSearchInput" placeholder="Buscar especie o nombre científico..." autocomplete="off">
+    </div>
+    <div class="zones-order-grid" id="diveSpeciesResults"></div>
+  `;
+  document.getElementById('diveSpeciesSearchIcon').innerHTML = ICONS.search;
+  document.getElementById('diveSpeciesPickerCloseBtn').onclick = closeDiveSpeciesPicker;
+
+  const input = document.getElementById('diveSpeciesSearchInput');
+  const resultsEl = document.getElementById('diveSpeciesResults');
+  function renderResults(q){
+    const query = q.trim().toLowerCase();
+    if(query.length < 2){
+      resultsEl.innerHTML = `<div class="zones-empty">Escribe al menos 2 letras para buscar</div>`;
+      return;
+    }
+    const list = SPECIES.filter(s=>s.name.toLowerCase().includes(query) || s.sci.toLowerCase().includes(query)).slice(0,30);
+    if(!list.length){ resultsEl.innerHTML = `<div class="zones-empty">Sin resultados para "${escapeHtml(q)}"</div>`; return; }
+    resultsEl.innerHTML = list.map(sp=>{
+      const themeClass = CARD_THEME_CLASS[sp.cat] || '';
+      return `<div class="card ${themeClass} zone-mini-card" data-id="${sp.id}">
+        <div class="photo-box zone-mini-photo">
+          ${placeholderMarkup(sp.cat)}
+          <img src="${speciesImgPath(sp)}" onerror="this.remove()">
+        </div>
+        <div class="zone-mini-name">${escapeHtml(sp.name)}</div>
+      </div>`;
+    }).join('');
+    resultsEl.querySelectorAll('[data-id]').forEach(card=>{
+      card.onclick = ()=>{
+        document.getElementById('diveSpeciesPickerOverlay').classList.remove('open');
+        openModalForDiveSighting(card.dataset.id);
+      };
+    });
+  }
+  renderResults('');
+  input.addEventListener('input', ()=>renderResults(input.value));
 }
 
 function renderDiveForm(){
