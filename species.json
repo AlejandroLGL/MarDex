@@ -3028,6 +3028,27 @@
     "blurb": "La tortuga marina más común en el Mediterráneo, donde también anida. Reconocible por su gran cabeza y su caparazón acorazonado de tono rojizo-pardo; puede recorrer miles de kilómetros entre sus zonas de alimentación y de puesta."
   },
   {
+    "id": "tortugaverde",
+    "cat": "reptil",
+    "order": "Testudines",
+    "name": "Tortuga verde",
+    "sci": "Chelonia mydas",
+    "region": "Global",
+    "zones": [
+      "canarias",
+      "caribe",
+      "indopacifico"
+    ],
+    "code": "REP-02",
+    "size": "1 m",
+    "habitat": "Praderas marinas, arrecifes y aguas costeras someras",
+    "depth": "0–40 m",
+    "speed": "Moderada",
+    "diet": "Algas y fanerógamas marinas",
+    "rarity": 3,
+    "blurb": "Se diferencia de la tortuga boba por su cabeza más pequeña y una sola pareja de escamas prefrontales. El adulto es casi exclusivamente herbívoro, alimentándose de fanerógamas marinas y algas, dieta que da nombre a la especie por el tono verdoso de su grasa corporal."
+  },
+  {
     "id": "cangrejoaranacanarias",
     "cat": "crustaceo",
     "order": "Decapoda",
