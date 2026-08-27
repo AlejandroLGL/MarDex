@@ -1283,6 +1283,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .dive-card-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
   .dive-card-depth{ font-family:var(--mono); font-weight:700; color:var(--blue); font-size:15px; white-space:nowrap; flex-shrink:0; }
   .dive-consumption{ font-size:12px; font-weight:600; color:var(--blue); margin:-4px 0 4px; min-height:16px; }
+  .dive-card-edit{
+    width:32px; height:32px; border-radius:50%; border:none; background:rgba(0,162,255,0.1);
+    color:var(--blue); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:background .15s;
+  }
+  .dive-card-edit:hover{ background:rgba(0,162,255,0.22); }
+  .dive-card-edit svg{ width:15px; height:15px; }
   .loc-input-wrap{ position:relative; }
   .loc-input-wrap .icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); }
   .loc-input-wrap input{ padding-left:36px !important; }
@@ -1303,8 +1310,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .loc-autocomplete-main{ font-size:13px; font-weight:500; color:var(--dark); line-height:1.2; }
   .loc-autocomplete-sub{ font-size:11px; color:var(--muted); margin-top:2px; }
   .loc-autocomplete-loading{ padding:12px 14px; font-size:12px; color:var(--muted); text-align:center; }
-  #inlineMapWrap{ display:none; margin-top:9px; }
-  #leafletMap{ height:220px; width:100%; border-radius:var(--r-sm); }
+  #inlineMapWrap, #diveInlineMapWrap{ display:none; margin-top:9px; }
+  #leafletMap, #diveLeafletMap{ height:220px; width:100%; border-radius:var(--r-sm); }
   .map-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:7px; }
   .geo-status{ font-size:11px; color:var(--muted); }
   .close-map-link{ font-size:11px; background:none; border:none; color:var(--blue); cursor:pointer; font-weight:700; }
@@ -1487,7 +1494,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
 
   /* ===== F1: Map expand button ===== */
-  #inlineMapWrap { position: relative; }
+  #inlineMapWrap, #diveInlineMapWrap { position: relative; }
   .map-expand-btn {
     position: absolute; top: 8px; right: 8px; z-index: 1000;
     width: 28px; height: 28px; border-radius: 7px; border: none;
@@ -1497,7 +1504,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .map-expand-btn:hover { background: rgba(255,255,255,0.92); }
   .map-expand-btn svg { width: 13px; height: 13px; }
-  #leafletMap { transition: height .3s ease; position: relative; z-index: 1; }
+  #leafletMap, #diveLeafletMap { transition: height .3s ease; position: relative; z-index: 1; }
 
   /* ===== F2: Global map overlay ===== */
   .global-map-overlay {
@@ -2428,6 +2435,11 @@ let diveLeafletMarker = null;
 // contexto fija ubicación/fecha en el formulario de avistamiento (ya vienen
 // de la inmersión, no se piden dos veces) y enlaza el avistamiento a ella.
 let activeDiveContext = null;
+// Especies elegidas mientras se crea una inmersión que todavía no existe en
+// la base de datos: se guardan aquí y se convierten en avistamientos reales
+// justo después de insertar la inmersión (ya con su dive_id).
+let pendingDiveSpecies = [];
+let diveSpeciesPickerMode = 'sighting'; // 'sighting' (inmersión ya guardada) | 'pending' (creándola)
 let saveInFlight = false;
 let expandedSightings = new Set();
 let currentProfile = null;
@@ -6067,7 +6079,7 @@ function renderLogbookList(){
     <button type="button" class="btn" id="newDiveBtn" style="margin-bottom:16px;">${icon('plus','icon-sm')} Nueva inmersión</button>
     <div class="dive-card-list" id="diveCardList"></div>
   `;
-  document.getElementById('newDiveBtn').onclick = ()=>{ editingDive = null; logbookView = 'form'; renderLogbookPanel(); };
+  document.getElementById('newDiveBtn').onclick = ()=>{ editingDive = null; pendingDiveSpecies = []; logbookView = 'form'; renderLogbookPanel(); };
 
   const listEl = document.getElementById('diveCardList');
   if(!dives.length){
@@ -6077,18 +6089,28 @@ function renderLogbookList(){
   listEl.innerHTML = dives.map(d=>{
     const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : '';
     const subParts = [d.site_name, d.dive_center].filter(Boolean);
-    return `<button type="button" class="dive-card" data-id="${d.id}">
+    return `<div class="dive-card" data-id="${d.id}">
       <div class="dive-card-main">
         <div class="dive-card-title">${d.dive_number!=null?'#'+d.dive_number+' · ':''}${escapeHtml(d.dive_name || d.site_name || dateLabel || 'Inmersión')}</div>
         <div class="dive-card-sub">${escapeHtml(dateLabel)}${subParts.length?' · '+escapeHtml(subParts.join(' · ')):''}</div>
       </div>
       ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : ''}
-    </button>`;
+      <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">${ICONS.pencil}</button>
+    </div>`;
   }).join('');
   listEl.querySelectorAll('.dive-card').forEach(card=>{
-    card.onclick = ()=>{
+    card.onclick = (e)=>{
+      if(e.target.closest('[data-edit]')) return;
       editingDive = dives.find(d=>d.id===card.dataset.id) || null;
       logbookView = 'detail';
+      renderLogbookPanel();
+    };
+  });
+  listEl.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      editingDive = dives.find(d=>d.id===btn.dataset.edit) || null;
+      logbookView = 'form';
       renderLogbookPanel();
     };
   });
@@ -6190,7 +6212,37 @@ function renderDiveSpeciesGrid(dive){
   });
 }
 
+// Rejilla de especies elegidas mientras se crea una inmersión todavía sin
+// guardar. Se pueden quitar tocándolas antes de guardar.
+function renderPendingSpeciesGrid(){
+  const grid = document.getElementById('dvPendingSpeciesGrid');
+  if(!grid) return;
+  if(!pendingDiveSpecies.length){
+    grid.innerHTML = `<div class="zones-empty">Añade las especies que viste; se registrarán al guardar la inmersión.</div>`;
+    return;
+  }
+  grid.innerHTML = pendingDiveSpecies.map(id=>{
+    const sp = SPECIES.find(s=>s.id===id);
+    if(!sp) return '';
+    const themeClass = CARD_THEME_CLASS[sp.cat] || '';
+    return `<div class="card ${themeClass} zone-mini-card" data-remove="${sp.id}" title="Tocar para quitar">
+      <div class="photo-box zone-mini-photo">
+        ${placeholderMarkup(sp.cat)}
+        <img src="${speciesImgPath(sp)}" onerror="this.remove()">
+      </div>
+      <div class="zone-mini-name">${escapeHtml(sp.name)}</div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('[data-remove]').forEach(card=>{
+    card.onclick = ()=>{
+      pendingDiveSpecies = pendingDiveSpecies.filter(x=>x!==card.dataset.remove);
+      renderPendingSpeciesGrid();
+    };
+  });
+}
+
 function startAddDiveSighting(dive){
+  diveSpeciesPickerMode = 'sighting';
   activeDiveContext = {
     id: dive.id,
     location: dive.location_text || '',
@@ -6253,6 +6305,14 @@ function renderDiveSpeciesPicker(){
     }).join('');
     resultsEl.querySelectorAll('[data-id]').forEach(card=>{
       card.onclick = ()=>{
+        if(diveSpeciesPickerMode === 'pending'){
+          // La inmersión todavía no existe: se apunta la especie y se
+          // registrará como avistamiento en cuanto se guarde.
+          if(!pendingDiveSpecies.includes(card.dataset.id)) pendingDiveSpecies.push(card.dataset.id);
+          document.getElementById('diveSpeciesPickerOverlay').classList.remove('open');
+          renderPendingSpeciesGrid();
+          return;
+        }
         document.getElementById('diveSpeciesPickerOverlay').classList.remove('open');
         openModalForDiveSighting(card.dataset.id);
       };
@@ -6352,6 +6412,12 @@ function renderDiveForm(){
       <div class="field-section-title">Observaciones</div>
       <div class="field"><textarea id="dv-notes" placeholder="Notas sobre la inmersión...">${escapeHtml(d.notes||'')}</textarea></div>
 
+      ${!editingDive ? `
+      <div class="field-section-title">Especies vistas</div>
+      <div class="zones-order-grid" id="dvPendingSpeciesGrid"></div>
+      <button type="button" class="btn secondary" id="dvAddPendingSpeciesBtn" style="width:100%;margin-bottom:12px;">${icon('plus','icon-sm')} Añadir especie vista</button>
+      ` : ''}
+
       <div class="row2">
         <button type="button" class="btn secondary" id="dvCancelBtn">Cancelar</button>
         <button type="button" class="btn" id="dvSaveBtn">${editingDive ? 'Guardar cambios' : 'Guardar'}</button>
@@ -6368,7 +6434,17 @@ function wireDiveForm(){
   diveLeafletMapInstance = null;
   diveLeafletMarker = null;
 
-  document.getElementById('dvCancelBtn').onclick = ()=>{ logbookView = editingDive ? 'detail' : 'list'; renderLogbookPanel(); };
+  document.getElementById('dvCancelBtn').onclick = ()=>{
+    if(!editingDive) pendingDiveSpecies = [];
+    logbookView = editingDive ? 'detail' : 'list';
+    renderLogbookPanel();
+  };
+
+  const addPendingBtn = document.getElementById('dvAddPendingSpeciesBtn');
+  if(addPendingBtn){
+    addPendingBtn.onclick = ()=>{ diveSpeciesPickerMode = 'pending'; openDiveSpeciesPicker(); };
+    renderPendingSpeciesGrid();
+  }
 
   const deleteBtn = document.getElementById('dvDeleteBtn');
   if(deleteBtn){
@@ -6607,12 +6683,43 @@ async function saveDive(){
   } else {
     const { data, error } = await _sb.from('dives').insert(payload).select().single();
     if(error){ showToast('Error al guardar: ' + error.message, true); return; }
-    dives = [{...payload, id:data.id}, ...dives];
-    editingDive = null;
-    logbookView = 'list';
+    const newDive = {...payload, id:data.id};
+    dives = [newDive, ...dives];
+    if(pendingDiveSpecies.length) await savePendingDiveSightings(newDive);
+    pendingDiveSpecies = [];
+    // Se abre el detalle de la inmersión recién creada: así se ven ya las
+    // especies registradas y se pueden retocar (foto, talla, profundidad).
+    editingDive = newDive;
+    logbookView = 'detail';
     showToast('Inmersión guardada');
   }
   renderLogbookPanel();
+}
+
+// Convierte las especies apuntadas durante la creación en avistamientos
+// reales, heredando ubicación y fecha de la inmersión recién guardada.
+async function savePendingDiveSightings(dive){
+  const beforeDepth = bestDepth();
+  const beforeEarnedIds = new Set(evaluateAllAchievements().filter(a=>a.type!=='species' && a.earned).map(a=>a.id));
+  const displayDate = new Date(dive.date+'T00:00:00').toLocaleDateString('es-ES');
+  for(const speciesId of pendingDiveSpecies){
+    const { data, error } = await _sb.from('sightings').insert({
+      species_id: speciesId, title:'', location_text: dive.location_text || '', comment:'',
+      lat: dive.lat ?? null, lng: dive.lng ?? null,
+      date: dive.date, environment:'libre', photo:'', size_observed:null, depth_observed:null,
+      dive_id: dive.id
+    }).select().single();
+    if(error){ showToast('Error al registrar '+speciesId+': '+error.message, true); continue; }
+    if(!state.sightings[speciesId]) state.sightings[speciesId] = [];
+    state.sightings[speciesId].push({
+      id: data.id, title:'', location: dive.location_text || '', comment:'',
+      coords: (dive.lat!=null && dive.lng!=null) ? {lat:dive.lat, lng:dive.lng} : null,
+      date: displayDate, dateISO: dive.date, environment:'libre',
+      photo:null, sizeIdx:null, depthObserved:null, diveId: dive.id
+    });
+  }
+  renderGrid();
+  queueAchievementToasts(beforeEarnedIds, beforeDepth);
 }
 
 // ══════════════════════════════════════════════════════════════════
