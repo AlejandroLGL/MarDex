@@ -4049,6 +4049,28 @@ function evaluateAllAchievements(sightingsMap){
   return getAchievementDefs().map(def=>Object.assign({}, def, evaluateAchievement(def, sightingsMap)));
 }
 
+// Comparación "antes/después" de un guardado de avistamiento para detectar
+// logros recién conseguidos. Los logros de especie ya tienen su propio toast
+// de "desbloqueado", así que aquí solo se avisa de hitos/categorías y de
+// récords de profundidad (que, a diferencia del resto, pueden volver a
+// dispararse cada vez que se supera el récord anterior, no solo una vez).
+function achievementDiffMessages(beforeEarnedIds, beforeDepth, afterAll, afterDepth){
+  const msgs = [];
+  if(afterDepth != null && (beforeDepth == null || afterDepth > beforeDepth)){
+    msgs.push(`¡Nuevo récord de profundidad: ${afterDepth} m!`);
+  }
+  const newlyEarned = afterAll.filter(a=>a.type!=='species' && a.type!=='depth' && a.earned && !beforeEarnedIds.has(a.id));
+  if(newlyEarned.length === 1) msgs.push(`¡Logro conseguido: ${newlyEarned[0].title}!`);
+  else if(newlyEarned.length > 1) msgs.push(`¡${newlyEarned.length} logros nuevos conseguidos!`);
+  return msgs;
+}
+function queueAchievementToasts(beforeEarnedIds, beforeDepth){
+  const afterAll = evaluateAllAchievements();
+  const afterDepth = bestDepth();
+  const msgs = achievementDiffMessages(beforeEarnedIds, beforeDepth, afterAll, afterDepth);
+  msgs.forEach((msg,i)=>{ setTimeout(()=>showToast(msg), 1800 + i*2400); });
+}
+
 function showToast(msg, isError){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -4808,6 +4830,8 @@ function wireForm(s, sightings, editingSighting){
     const sizeIdx = Number(document.getElementById('f-size').value);
     const depthRaw = document.getElementById('f-depth').value;
     const depthObserved = depthRaw==='' ? null : Number(depthRaw);
+    const beforeDepth = bestDepth();
+    const beforeEarnedIds = new Set(evaluateAllAchievements().filter(a=>a.type!=='species' && a.earned).map(a=>a.id));
     let newList;
     if(editingSighting){
       const photo = pendingSightingPhoto !== null ? pendingSightingPhoto : (editingSighting.photo || '');
@@ -4820,6 +4844,7 @@ function wireForm(s, sightings, editingSighting){
       state.sightings[s.id] = newList;
       renderModal(s, newList, false);
       showToast('Avistamiento actualizado');
+      queueAchievementToasts(beforeEarnedIds, beforeDepth);
       await _sb.from('sightings').update({
         title, location_text:location, comment,
         lat: (pendingCoords||editingSighting.coords)?.lat??null,
@@ -4846,6 +4871,7 @@ function wireForm(s, sightings, editingSighting){
         // Animación de desbloqueo: mostrar la tarjeta desbloqueándose y cerrar el modal
         renderGrid();
         showToast('¡'+s.name+' desbloqueado!');
+        queueAchievementToasts(beforeEarnedIds, beforeDepth);
         setTimeout(()=>{
           const card = document.querySelector(`.card[data-id="${s.id}"]`);
           if(card) card.classList.add('unlocking');
@@ -4854,6 +4880,7 @@ function wireForm(s, sightings, editingSighting){
       } else {
         renderModal(s, newList, false);
         showToast('Avistamiento guardado');
+        queueAchievementToasts(beforeEarnedIds, beforeDepth);
       }
     }
   };
