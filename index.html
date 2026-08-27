@@ -1290,6 +1290,28 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .dive-card-edit:hover{ background:rgba(0,162,255,0.22); }
   .dive-card-edit svg{ width:15px; height:15px; }
+  .dive-card-delete{
+    width:32px; height:32px; border-radius:50%; border:none; background:rgba(255,95,83,0.12);
+    color:var(--coral); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:background .15s;
+  }
+  .dive-card-delete:hover{ background:rgba(255,95,83,0.26); }
+  .dive-card-delete svg{ width:15px; height:15px; }
+  .dive-main-photo{
+    width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:var(--r-md);
+    margin-bottom:16px; display:block; cursor:zoom-in;
+  }
+  .dive-photo-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px; margin-top:10px; }
+  .dive-photo-thumb{ position:relative; aspect-ratio:1; }
+  .dive-photo-thumb img{ width:100%; height:100%; object-fit:cover; border-radius:var(--r-sm); display:block; cursor:zoom-in; }
+  .dive-photo-remove{
+    position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%;
+    border:none; background:rgba(8,18,34,0.72); color:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .dive-photo-remove svg{ width:11px; height:11px; }
+  /* El mensaje de vacío ocupa toda la fila, no una sola columna de la rejilla */
+  .zones-order-grid > .zones-empty{ grid-column:1 / -1; }
   .loc-input-wrap{ position:relative; }
   .loc-input-wrap .icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); }
   .loc-input-wrap input{ padding-left:36px !important; }
@@ -2440,6 +2462,8 @@ let activeDiveContext = null;
 // justo después de insertar la inmersión (ya con su dive_id).
 let pendingDiveSpecies = [];
 let diveSpeciesPickerMode = 'sighting'; // 'sighting' (inmersión ya guardada) | 'pending' (creándola)
+let pendingDiveMainPhoto = null;   // data URL de la foto principal
+let pendingDiveNotesPhotos = [];   // data URLs de las fotos de observaciones
 let saveInFlight = false;
 let expandedSightings = new Set();
 let currentProfile = null;
@@ -6096,11 +6120,12 @@ function renderLogbookList(){
       </div>
       ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : ''}
       <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">${ICONS.pencil}</button>
+      <button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>
     </div>`;
   }).join('');
   listEl.querySelectorAll('.dive-card').forEach(card=>{
     card.onclick = (e)=>{
-      if(e.target.closest('[data-edit]')) return;
+      if(e.target.closest('[data-edit]') || e.target.closest('[data-delete]')) return;
       editingDive = dives.find(d=>d.id===card.dataset.id) || null;
       logbookView = 'detail';
       renderLogbookPanel();
@@ -6114,6 +6139,23 @@ function renderLogbookList(){
       renderLogbookPanel();
     };
   });
+  listEl.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); deleteDive(btn.dataset.delete); };
+  });
+}
+
+// Borrado de inmersión, compartido por la lista y por el detalle.
+async function deleteDive(diveId){
+  const ok = await askConfirm('¿Eliminar esta inmersión? Los avistamientos que registraste desde ella no se borrarán, pero dejarán de estar vinculados a ella.');
+  if(!ok) return;
+  const { error } = await _sb.from('dives').delete().eq('id', diveId);
+  if(error){ showToast('Error al eliminar: ' + error.message, true); return; }
+  dives = dives.filter(x=>x.id!==diveId);
+  Object.values(state.sightings).forEach(arr=>(arr||[]).forEach(sg=>{ if(sg.diveId===diveId) sg.diveId = null; }));
+  editingDive = null;
+  logbookView = 'list';
+  renderLogbookPanel();
+  showToast('Inmersión eliminada');
 }
 
 function renderDiveDetail(){
@@ -6153,15 +6195,23 @@ function renderDiveDetail(){
     ['Parada de descompresión', d.deco_stop_m!=null ? d.deco_stop_m+' m' : null],
   ].filter(([,v])=>v!=null && v!=='');
 
+  const notesPhotos = Array.isArray(d.notes_photos) ? d.notes_photos : [];
+
   body.innerHTML = `
-    <div class="row2" style="margin-bottom:16px;">
+    <div class="row2" style="margin-bottom:10px;">
       <button type="button" class="btn secondary" id="dvBackBtn">‹ Volver</button>
       <button type="button" class="btn" id="dvEditBtn">Editar</button>
     </div>
+    <button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>
+    ${d.main_photo ? `<img class="dive-main-photo" id="dvMainPhotoView" src="${d.main_photo}" alt="">` : ''}
     <div class="pp-section" style="border-top:none;padding-top:0;margin-top:0;">
       ${rows.map(([label,value])=>`<div class="pp-row"><span class="pp-row-label">${escapeHtml(label)}</span><span class="pp-row-value">${escapeHtml(String(value))}</span></div>`).join('')}
     </div>
-    ${d.notes ? `<div class="pp-section"><div class="pp-section-title">Observaciones</div><div style="font-size:13px;color:var(--ink);">${escapeHtml(d.notes)}</div></div>` : ''}
+    ${(d.notes || notesPhotos.length) ? `<div class="pp-section">
+      <div class="pp-section-title">Observaciones</div>
+      ${d.notes ? `<div style="font-size:13px;color:var(--ink);">${escapeHtml(d.notes)}</div>` : ''}
+      ${notesPhotos.length ? `<div class="dive-photo-grid">${notesPhotos.map(src=>`<div class="dive-photo-thumb"><img src="${src}" alt="" data-zoom></div>`).join('')}</div>` : ''}
+    </div>` : ''}
     <div class="pp-section">
       <div class="pp-section-title">Especies vistas</div>
       <div class="zones-order-grid" id="diveSpeciesGrid"></div>
@@ -6178,7 +6228,12 @@ function renderDiveDetail(){
 
   document.getElementById('dvBackBtn').onclick = ()=>{ logbookView='list'; editingDive=null; renderLogbookPanel(); };
   document.getElementById('dvEditBtn').onclick = ()=>{ logbookView='form'; renderLogbookPanel(); };
+  document.getElementById('dvDetailDeleteBtn').onclick = ()=>deleteDive(d.id);
   document.getElementById('addDiveSpeciesBtn').onclick = ()=>startAddDiveSighting(d);
+  document.getElementById('dvMainPhotoView')?.addEventListener('click', e=>openLightbox(e.target.src));
+  body.querySelectorAll('[data-zoom]').forEach(img=>{
+    img.addEventListener('click', ()=>openLightbox(img.src));
+  });
   renderDiveSpeciesGrid(d);
 }
 
@@ -6209,6 +6264,80 @@ function renderDiveSpeciesGrid(dive){
   }).join('');
   grid.querySelectorAll('[data-id]').forEach(card=>{
     card.onclick = ()=>{ closeLogbookPanel(); openModal(card.dataset.id); };
+  });
+}
+
+// Fotos de la inmersión: una principal y varias en observaciones. Se guardan
+// como data URL redimensionadas, igual que las fotos de los avistamientos.
+const DIVE_NOTES_PHOTOS_MAX = 8;
+function wireDivePhotoPickers(){
+  pendingDiveMainPhoto = editingDive ? (editingDive.main_photo || null) : null;
+  pendingDiveNotesPhotos = editingDive && Array.isArray(editingDive.notes_photos)
+    ? editingDive.notes_photos.slice() : [];
+
+  const mainBtn = document.getElementById('dvPickMainPhoto');
+  const mainPreview = document.getElementById('dvMainPhotoPreview');
+  const removeMainBtn = document.getElementById('dvRemoveMainPhoto');
+  mainBtn.onclick = ()=>{
+    const input = document.createElement('input');
+    input.type='file'; input.accept='image/*';
+    input.onchange = (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      resizeImageFile(file, 900).then(dataUrl=>{
+        pendingDiveMainPhoto = dataUrl;
+        mainPreview.src = dataUrl;
+        mainPreview.style.display = 'block';
+        removeMainBtn.style.display = 'block';
+        mainBtn.innerHTML = `${icon('camera','icon-sm')} Cambiar foto principal`;
+      });
+    };
+    input.click();
+  };
+  removeMainBtn.onclick = ()=>{
+    pendingDiveMainPhoto = null;
+    mainPreview.src = '';
+    mainPreview.style.display = 'none';
+    removeMainBtn.style.display = 'none';
+    mainBtn.innerHTML = `${icon('camera','icon-sm')} Añadir foto principal`;
+  };
+
+  document.getElementById('dvAddNotesPhoto').onclick = ()=>{
+    if(pendingDiveNotesPhotos.length >= DIVE_NOTES_PHOTOS_MAX){
+      showToast(`Máximo ${DIVE_NOTES_PHOTOS_MAX} fotos en observaciones`, true);
+      return;
+    }
+    const input = document.createElement('input');
+    input.type='file'; input.accept='image/*'; input.multiple = true;
+    input.onchange = async (e)=>{
+      const files = Array.from(e.target.files || []);
+      const room = DIVE_NOTES_PHOTOS_MAX - pendingDiveNotesPhotos.length;
+      if(files.length > room) showToast(`Solo caben ${room} foto${room!==1?'s':''} más`, true);
+      for(const file of files.slice(0, room)){
+        pendingDiveNotesPhotos.push(await resizeImageFile(file, 700));
+      }
+      renderDiveNotesPhotoGrid();
+    };
+    input.click();
+  };
+  renderDiveNotesPhotoGrid();
+}
+
+function renderDiveNotesPhotoGrid(){
+  const grid = document.getElementById('dvNotesPhotoGrid');
+  if(!grid) return;
+  grid.innerHTML = pendingDiveNotesPhotos.map((src,i)=>`
+    <div class="dive-photo-thumb">
+      <img src="${src}" alt="">
+      <button type="button" class="dive-photo-remove" data-idx="${i}" title="Quitar foto" aria-label="Quitar foto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </button>
+    </div>`).join('');
+  grid.querySelectorAll('[data-idx]').forEach(btn=>{
+    btn.onclick = ()=>{
+      pendingDiveNotesPhotos.splice(Number(btn.dataset.idx), 1);
+      renderDiveNotesPhotoGrid();
+    };
   });
 }
 
@@ -6409,8 +6538,19 @@ function renderDiveForm(){
         <div class="field"><label>Parada de descompresión (m)</label><input type="number" id="dv-deco-stop" value="${d.deco_stop_m ?? ''}"></div>
       </div>
 
+      <div class="field-section-title">Foto principal</div>
+      <div class="field">
+        <button type="button" class="btn secondary" id="dvPickMainPhoto" style="width:100%;">${icon('camera','icon-sm')} ${d.main_photo ? 'Cambiar foto principal' : 'Añadir foto principal'}</button>
+        <img class="photo-preview" id="dvMainPhotoPreview" src="${d.main_photo||''}" style="${d.main_photo?'display:block;':''}">
+        <button type="button" class="close-map-link" id="dvRemoveMainPhoto" style="margin-top:6px;display:${d.main_photo?'block':'none'};">Quitar foto principal</button>
+      </div>
+
       <div class="field-section-title">Observaciones</div>
       <div class="field"><textarea id="dv-notes" placeholder="Notas sobre la inmersión...">${escapeHtml(d.notes||'')}</textarea></div>
+      <div class="field">
+        <button type="button" class="btn secondary" id="dvAddNotesPhoto" style="width:100%;">${icon('camera','icon-sm')} Añadir fotos a observaciones</button>
+        <div class="dive-photo-grid" id="dvNotesPhotoGrid"></div>
+      </div>
 
       ${!editingDive ? `
       <div class="field-section-title">Especies vistas</div>
@@ -6446,18 +6586,10 @@ function wireDiveForm(){
     renderPendingSpeciesGrid();
   }
 
+  wireDivePhotoPickers();
+
   const deleteBtn = document.getElementById('dvDeleteBtn');
-  if(deleteBtn){
-    deleteBtn.onclick = async ()=>{
-      const ok = await askConfirm('¿Eliminar esta inmersión? Los avistamientos que registraste desde ella no se borrarán, pero dejarán de estar vinculados a ella.');
-      if(!ok) return;
-      await _sb.from('dives').delete().eq('id', editingDive.id);
-      dives = dives.filter(x=>x.id!==editingDive.id);
-      editingDive = null; logbookView = 'list';
-      renderLogbookPanel();
-      showToast('Inmersión eliminada');
-    };
-  }
+  if(deleteBtn) deleteBtn.onclick = ()=>deleteDive(editingDive.id);
 
   // Tiempo total: se autocalcula de entrada/salida pero se puede sobrescribir a mano.
   const entryTimeInput = document.getElementById('dv-entry-time');
@@ -6671,6 +6803,8 @@ async function saveDive(){
     safety_stop_m: document.getElementById('dv-safety-stop').value === '' ? null : Number(document.getElementById('dv-safety-stop').value),
     deco_stop_m: document.getElementById('dv-deco-stop').value === '' ? null : Number(document.getElementById('dv-deco-stop').value),
     notes: document.getElementById('dv-notes').value.trim() || null,
+    main_photo: pendingDiveMainPhoto,
+    notes_photos: pendingDiveNotesPhotos,
   };
 
   if(editingDive){
