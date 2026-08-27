@@ -2101,6 +2101,11 @@ const MOLUSCO_SILHOUETTE = `<svg viewBox="0 0 100 60" fill="currentColor"><path 
 
 // Carpeta de imágenes y silueta de placeholder según la categoría de la especie.
 const CAT_DEFS = [['tiburon','Tiburones'],['raya','Rayas'],['pez','Peces óseos'],['medusa','Medusas'],['crustaceo','Crustáceos'],['reptil','Reptiles'],['molusco','Moluscos']];
+// Sistema de logros: hitos numéricos globales y por categoría, y las dos
+// pistas de entorno (en libertad / en acuario) que se tratan como progresos
+// completamente independientes en todos los tipos de logro.
+const ACH_THRESHOLDS = [10, 30, 50, 100, 150, 200];
+const ACH_ENVS = [['libre','En libertad'], ['acuario','Acuario']];
 const CAT_FOLDERS = { raya:'rayas', pez:'peces', medusa:'medusas', crustaceo:'crustaceos', tiburon:'tiburones', reptil:'reptiles', molusco:'moluscos' };
 // Nombres de clase CSS de tema por categoría — 'ray'/'fish' son los nombres
 // históricos (de cuando solo existían tiburón/raya/pez); medusa/crustaceo/reptil
@@ -3882,6 +3887,121 @@ async function renderProfilePage(){
 function sightingsFor(id){ return state.sightings[id] || []; }
 function isUnlocked(id){ return sightingsFor(id).length > 0; }
 function environmentsFor(id){ return Array.from(new Set(sightingsFor(id).map(s=>s.environment))); }
+
+// ── Sistema de logros (achievements) ────────────────────────────────────
+// Los logros se generan en tiempo de ejecución a partir de SPECIES/CAT_DEFS
+// + ACH_THRESHOLDS — no se hardcodean cientos de objetos a mano. Todas las
+// funciones de conteo aceptan un `sightingsMap` opcional (por defecto los
+// avistamientos del usuario actual) para poder reevaluar los mismos logros
+// contra los datos de un amigo en el ranking, sin duplicar la lógica.
+function isUnlockedEnv(id, env){ return sightingsFor(id).some(sg=>sg.environment===env); }
+function unlockedCountForEnv(env, sightingsMap){
+  const map = sightingsMap || state.sightings;
+  return SPECIES.filter(s=>(map[s.id]||[]).some(sg=>sg.environment===env)).length;
+}
+function unlockedCountForCatEnv(cat, env, sightingsMap){
+  const map = sightingsMap || state.sightings;
+  return SPECIES.filter(s=>s.cat===cat && (map[s.id]||[]).some(sg=>sg.environment===env)).length;
+}
+function bestDepth(sightingsMap){
+  const map = sightingsMap || state.sightings;
+  let max = null;
+  Object.values(map).forEach(arr=>(arr||[]).forEach(sg=>{
+    if(sg.depthObserved!=null && (max===null || sg.depthObserved>max)) max = sg.depthObserved;
+  }));
+  return max;
+}
+
+let _achDefsCache = null;
+function getAchievementDefs(){
+  if(_achDefsCache) return _achDefsCache;
+  const defs = [];
+
+  SPECIES.forEach(s=>{
+    ACH_ENVS.forEach(([env, envLabel])=>{
+      defs.push({
+        id:`species:${env}:${s.id}`, type:'species', env, cat:s.cat, speciesId:s.id, threshold:null,
+        title:s.name,
+        description:`Regístrala ${env==='libre'?'en libertad':'en acuario'}`,
+        themeClass:CARD_THEME_CLASS[s.cat] || ''
+      });
+    });
+  });
+
+  ACH_ENVS.forEach(([env, envLabel])=>{
+    ACH_THRESHOLDS.forEach(t=>{
+      defs.push({
+        id:`count:${env}:${t}`, type:'count', env, cat:null, speciesId:null, threshold:t,
+        title:`${t} especies · ${envLabel}`,
+        description:`Desbloquea ${t} especies distintas ${env==='libre'?'en libertad':'en acuario'}`,
+        themeClass:''
+      });
+    });
+  });
+
+  CAT_DEFS.forEach(([cat, catLabel])=>{
+    const total = SPECIES.filter(s=>s.cat===cat).length;
+    ACH_ENVS.forEach(([env, envLabel])=>{
+      ACH_THRESHOLDS.filter(t=>t<total).forEach(t=>{
+        defs.push({
+          id:`catcount:${env}:${cat}:${t}`, type:'catcount', env, cat, speciesId:null, threshold:t,
+          title:`${t} ${catLabel} · ${envLabel}`,
+          description:`Desbloquea ${t} especies de ${catLabel} ${env==='libre'?'en libertad':'en acuario'}`,
+          themeClass:CARD_THEME_CLASS[cat] || ''
+        });
+      });
+    });
+  });
+
+  CAT_DEFS.forEach(([cat, catLabel])=>{
+    const total = SPECIES.filter(s=>s.cat===cat).length;
+    if(!total) return;
+    ACH_ENVS.forEach(([env, envLabel])=>{
+      defs.push({
+        id:`catcomplete:${env}:${cat}`, type:'catcomplete', env, cat, speciesId:null, threshold:total,
+        title:`${catLabel} completo · ${envLabel}`,
+        description:`Registra las ${total} especies de ${catLabel} ${env==='libre'?'en libertad':'en acuario'}`,
+        themeClass:CARD_THEME_CLASS[cat] || ''
+      });
+    });
+  });
+
+  defs.push({
+    id:'depth:record', type:'depth', env:null, cat:null, speciesId:null, threshold:null,
+    title:'Récord de profundidad',
+    description:'Supera tu profundidad máxima registrada',
+    themeClass:''
+  });
+
+  _achDefsCache = defs;
+  return defs;
+}
+
+function evaluateAchievement(def, sightingsMap){
+  const map = sightingsMap || state.sightings;
+  switch(def.type){
+    case 'species': {
+      const earned = (map[def.speciesId]||[]).some(sg=>sg.environment===def.env);
+      return { earned, current: earned?1:0, target:1 };
+    }
+    case 'count': {
+      const current = unlockedCountForEnv(def.env, map);
+      return { earned: current>=def.threshold, current, target: def.threshold };
+    }
+    case 'catcount':
+    case 'catcomplete': {
+      const current = unlockedCountForCatEnv(def.cat, def.env, map);
+      return { earned: current>=def.threshold, current, target: def.threshold };
+    }
+    case 'depth': {
+      const current = bestDepth(map);
+      return { earned: current!=null, current: current||0, target:null };
+    }
+  }
+}
+function evaluateAllAchievements(sightingsMap){
+  return getAchievementDefs().map(def=>Object.assign({}, def, evaluateAchievement(def, sightingsMap)));
+}
 
 function showToast(msg, isError){
   const t = document.getElementById('toast');
