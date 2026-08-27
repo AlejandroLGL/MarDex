@@ -5986,14 +5986,19 @@ async function loadDives(){
 
 function renderLogbookPanel(){
   const sheet = document.getElementById('logbookSheet');
-  const title = logbookView==='form' ? (editingDive ? 'Editar inmersión' : 'Nueva inmersión') : 'Logbook';
-  const subtitle = logbookView==='form'
-    ? 'Rellena los datos de tu inmersión'
-    : `${dives.length} inmersión${dives.length!==1?'es':''} registrada${dives.length!==1?'s':''}`;
+  let title = 'Logbook', subtitle = `${dives.length} inmersión${dives.length!==1?'es':''} registrada${dives.length!==1?'s':''}`;
+  if(logbookView==='form'){
+    title = editingDive ? 'Editar inmersión' : 'Nueva inmersión';
+    subtitle = 'Rellena los datos de tu inmersión';
+  } else if(logbookView==='detail'){
+    const d = editingDive || {};
+    title = d.dive_name || d.site_name || 'Inmersión';
+    subtitle = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : '';
+  }
   sheet.innerHTML = `<div class="admin-header">
     <div>
-      <div class="admin-title">${title}</div>
-      <div class="admin-subtitle">${subtitle}</div>
+      <div class="admin-title">${escapeHtml(title)}</div>
+      <div class="admin-subtitle">${escapeHtml(subtitle)}</div>
     </div>
     <button class="admin-close" id="logbookCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
@@ -6001,6 +6006,7 @@ function renderLogbookPanel(){
   document.getElementById('logbookCloseBtn').onclick = closeLogbookPanel;
 
   if(logbookView==='form') renderDiveForm();
+  else if(logbookView==='detail') renderDiveDetail();
   else renderLogbookList();
 }
 
@@ -6031,10 +6037,69 @@ function renderLogbookList(){
   listEl.querySelectorAll('.dive-card').forEach(card=>{
     card.onclick = ()=>{
       editingDive = dives.find(d=>d.id===card.dataset.id) || null;
-      logbookView = 'form';
+      logbookView = 'detail';
       renderLogbookPanel();
     };
   });
+}
+
+function renderDiveDetail(){
+  const body = document.getElementById('logbookBody');
+  const d = editingDive || {};
+  const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : null;
+  const consumption = (d.entry_pressure!=null && d.exit_pressure!=null) ? (d.entry_pressure-d.exit_pressure)+' bar' : null;
+
+  const rows = [
+    ['Número de inmersión', d.dive_number],
+    ['Fecha', dateLabel],
+    ['Hora de entrada', d.entry_time ? d.entry_time.slice(0,5) : null],
+    ['Hora de salida', d.exit_time ? d.exit_time.slice(0,5) : null],
+    ['Tiempo total', d.duration_min!=null ? d.duration_min+' min' : null],
+    ['Nombre del sitio', d.site_name],
+    ['Nombre de la inmersión', d.dive_name],
+    ['Ubicación', d.location_text],
+    ['Tipo de aproximación', d.approach_type],
+    ['Lecho marino', d.seabed_type],
+    ['Club de buceo', d.dive_club],
+    ['Centro de buceo', d.dive_center],
+    ['Compañero', d.buddy],
+    ['Tipo de traje', d.suit_type],
+    ['Tipo de aire', d.air_type],
+    ['Litros de la botella', d.tank_liters],
+    ['Material de la botella', d.tank_material],
+    ['Lastre', d.weight_kg!=null ? d.weight_kg+' kg' : null],
+    ['Presión de entrada', d.entry_pressure!=null ? d.entry_pressure+' bar' : null],
+    ['Presión de salida', d.exit_pressure!=null ? d.exit_pressure+' bar' : null],
+    ['Consumo total', consumption],
+    ['Temperatura del agua', d.water_temp!=null ? d.water_temp+' °C' : null],
+    ['Temperatura del aire', d.air_temp!=null ? d.air_temp+' °C' : null],
+    ['Corriente', d.current],
+    ['Visibilidad', d.visibility_m!=null ? d.visibility_m+' m' : null],
+    ['Profundidad máxima', d.max_depth_m!=null ? d.max_depth_m+' m' : null],
+    ['Parada de seguridad', d.safety_stop_m!=null ? d.safety_stop_m+' m' : null],
+    ['Parada de descompresión', d.deco_stop_m!=null ? d.deco_stop_m+' m' : null],
+  ].filter(([,v])=>v!=null && v!=='');
+
+  body.innerHTML = `
+    <div class="row2" style="margin-bottom:16px;">
+      <button type="button" class="btn secondary" id="dvBackBtn">‹ Volver</button>
+      <button type="button" class="btn" id="dvEditBtn">Editar</button>
+    </div>
+    <div class="pp-section" style="border-top:none;padding-top:0;margin-top:0;">
+      ${rows.map(([label,value])=>`<div class="pp-row"><span class="pp-row-label">${escapeHtml(label)}</span><span class="pp-row-value">${escapeHtml(String(value))}</span></div>`).join('')}
+    </div>
+    ${d.notes ? `<div class="pp-section"><div class="pp-section-title">Observaciones</div><div style="font-size:13px;color:var(--ink);">${escapeHtml(d.notes)}</div></div>` : ''}
+    <div class="pp-section">
+      <div class="pp-section-title">Perfil de profundidad</div>
+      <div class="pp-placeholder">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Próximamente — conecta tu ordenador de buceo para importar el perfil de esta inmersión (profundidad, temperatura y tiempo) y verlo en una gráfica.
+      </div>
+    </div>
+  `;
+
+  document.getElementById('dvBackBtn').onclick = ()=>{ logbookView='list'; editingDive=null; renderLogbookPanel(); };
+  document.getElementById('dvEditBtn').onclick = ()=>{ logbookView='form'; renderLogbookPanel(); };
 }
 
 function renderDiveForm(){
@@ -6143,7 +6208,7 @@ function wireDiveForm(){
   diveLeafletMapInstance = null;
   diveLeafletMarker = null;
 
-  document.getElementById('dvCancelBtn').onclick = ()=>{ logbookView='list'; editingDive=null; renderLogbookPanel(); };
+  document.getElementById('dvCancelBtn').onclick = ()=>{ logbookView = editingDive ? 'detail' : 'list'; renderLogbookPanel(); };
 
   const deleteBtn = document.getElementById('dvDeleteBtn');
   if(deleteBtn){
@@ -6376,15 +6441,17 @@ async function saveDive(){
     const { error } = await _sb.from('dives').update(payload).eq('id', editingDive.id);
     if(error){ showToast('Error al guardar: ' + error.message, true); return; }
     dives = dives.map(x=>x.id===editingDive.id ? {...x, ...payload} : x);
+    editingDive = dives.find(x=>x.id===editingDive.id) || null;
+    logbookView = 'detail';
     showToast('Inmersión actualizada');
   } else {
     const { data, error } = await _sb.from('dives').insert(payload).select().single();
     if(error){ showToast('Error al guardar: ' + error.message, true); return; }
     dives = [{...payload, id:data.id}, ...dives];
+    editingDive = null;
+    logbookView = 'list';
     showToast('Inmersión guardada');
   }
-  editingDive = null;
-  logbookView = 'list';
   renderLogbookPanel();
 }
 
