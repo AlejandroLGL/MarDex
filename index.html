@@ -1248,7 +1248,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .new-sighting{ margin-top:12px; border-top:1px solid var(--line); padding-top:16px; }
   .field{ margin-bottom:12px; }
   .field label{ display:block; font-size:11px; color:var(--muted); margin-bottom:5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; }
-  .field input[type=text], .field input[type=date], .field textarea{
+  .field input[type=text], .field input[type=date], .field input[type=number], .field input[type=time], .field textarea{
     width:100%; min-width:0; background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm);
     color:var(--ink); padding:10px 12px; font-size:13px; font-family:var(--sans);
   }
@@ -1256,6 +1256,25 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .field textarea{ resize:vertical; min-height:64px; }
   .field-row2{ display:flex; gap:8px; }
   .field-row2 > .field{ flex:1; min-width:0; }
+  .field-section-title{
+    font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.05em; margin:22px 0 10px; padding-top:14px; border-top:1px solid var(--line);
+  }
+  .field-section-title:first-of-type{ margin-top:0; padding-top:0; border-top:none; }
+
+  .dive-card-list{ display:flex; flex-direction:column; gap:10px; }
+  .dive-card{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--card); border-radius:var(--r-md); padding:14px 16px;
+    box-shadow:0 2px 8px rgba(5,46,74,0.07); cursor:pointer; transition:box-shadow .15s; border:none; width:100%; text-align:left;
+    font-family:var(--sans);
+  }
+  .dive-card:hover{ box-shadow:0 4px 14px rgba(5,46,74,0.12); }
+  .dive-card-main{ min-width:0; }
+  .dive-card-title{ font-weight:700; color:var(--ink); font-size:14px; }
+  .dive-card-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .dive-card-depth{ font-family:var(--mono); font-weight:700; color:var(--blue); font-size:15px; white-space:nowrap; flex-shrink:0; }
+  .dive-consumption{ font-size:12px; font-weight:600; color:var(--blue); margin:-4px 0 4px; min-height:16px; }
   .loc-input-wrap{ position:relative; }
   .loc-input-wrap .icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); }
   .loc-input-wrap input{ padding-left:36px !important; }
@@ -2385,6 +2404,12 @@ let envChoice = 'libre';
 let leafletMapInstance = null;
 let leafletMarker = null;
 let globalMapInstance = null;
+let logbookView = 'list'; // 'list' | 'form'
+let dives = [];
+let editingDive = null;
+let pendingDiveCoords = null;
+let diveLeafletMapInstance = null;
+let diveLeafletMarker = null;
 let saveInFlight = false;
 let expandedSightings = new Set();
 let currentProfile = null;
@@ -5940,7 +5965,9 @@ document.getElementById('adminOverlay').addEventListener('click', e=>{
 // poder marcar en ella las especies avistadas se implementan más adelante.
 function openLogbookPanel(){
   document.getElementById('logbookOverlay').classList.add('open');
-  renderLogbookPanel();
+  logbookView = 'list';
+  editingDive = null;
+  loadDives();
 }
 function closeLogbookPanel(){
   document.getElementById('logbookOverlay').classList.remove('open');
@@ -5949,20 +5976,416 @@ document.getElementById('logbookOverlay').addEventListener('click', e=>{
   if(e.target===document.getElementById('logbookOverlay')) closeLogbookPanel();
 });
 
+async function loadDives(){
+  const sheet = document.getElementById('logbookSheet');
+  sheet.innerHTML = `<div class="admin-header"><div><div class="admin-title">Logbook</div></div></div><div class="zones-empty">Cargando…</div>`;
+  const { data, error } = await _sb.from('dives').select('*').order('date', { ascending:false });
+  dives = error ? [] : (data || []);
+  renderLogbookPanel();
+}
+
 function renderLogbookPanel(){
   const sheet = document.getElementById('logbookSheet');
+  const title = logbookView==='form' ? (editingDive ? 'Editar inmersión' : 'Nueva inmersión') : 'Logbook';
+  const subtitle = logbookView==='form'
+    ? 'Rellena los datos de tu inmersión'
+    : `${dives.length} inmersión${dives.length!==1?'es':''} registrada${dives.length!==1?'s':''}`;
   sheet.innerHTML = `<div class="admin-header">
     <div>
-      <div class="admin-title">Logbook</div>
-      <div class="admin-subtitle">Importa el perfil de tu inmersión desde tu ordenador de buceo</div>
+      <div class="admin-title">${title}</div>
+      <div class="admin-subtitle">${subtitle}</div>
     </div>
     <button class="admin-close" id="logbookCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
-  <div class="pp-placeholder" style="margin-top:8px;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Próximamente — conecta tu ordenador de buceo para importar profundidad, temperatura, tiempo y nitrógeno en sangre, verlo en una gráfica de profundidad frente a tiempo, y marcar en ella las especies que has registrado durante la inmersión.
-  </div>`;
+  <div id="logbookBody"></div>`;
   document.getElementById('logbookCloseBtn').onclick = closeLogbookPanel;
+
+  if(logbookView==='form') renderDiveForm();
+  else renderLogbookList();
+}
+
+function renderLogbookList(){
+  const body = document.getElementById('logbookBody');
+  body.innerHTML = `
+    <button type="button" class="btn" id="newDiveBtn" style="margin-bottom:16px;">${icon('plus','icon-sm')} Nueva inmersión</button>
+    <div class="dive-card-list" id="diveCardList"></div>
+  `;
+  document.getElementById('newDiveBtn').onclick = ()=>{ editingDive = null; logbookView = 'form'; renderLogbookPanel(); };
+
+  const listEl = document.getElementById('diveCardList');
+  if(!dives.length){
+    listEl.innerHTML = `<div class="zones-empty">Aún no has registrado ninguna inmersión. ¡Empieza con la primera!</div>`;
+    return;
+  }
+  listEl.innerHTML = dives.map(d=>{
+    const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : '';
+    const subParts = [d.site_name, d.dive_center].filter(Boolean);
+    return `<button type="button" class="dive-card" data-id="${d.id}">
+      <div class="dive-card-main">
+        <div class="dive-card-title">${d.dive_number!=null?'#'+d.dive_number+' · ':''}${escapeHtml(d.dive_name || d.site_name || dateLabel || 'Inmersión')}</div>
+        <div class="dive-card-sub">${escapeHtml(dateLabel)}${subParts.length?' · '+escapeHtml(subParts.join(' · ')):''}</div>
+      </div>
+      ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : ''}
+    </button>`;
+  }).join('');
+  listEl.querySelectorAll('.dive-card').forEach(card=>{
+    card.onclick = ()=>{
+      editingDive = dives.find(d=>d.id===card.dataset.id) || null;
+      logbookView = 'form';
+      renderLogbookPanel();
+    };
+  });
+}
+
+function renderDiveForm(){
+  const body = document.getElementById('logbookBody');
+  const d = editingDive || {};
+  const nextDiveNumber = dives.reduce((max,x)=>Math.max(max, x.dive_number||0), 0) + 1;
+
+  body.innerHTML = `
+    <div class="new-sighting" style="margin-top:0;border-top:none;padding-top:0;">
+      <div class="field-section-title">Datos generales</div>
+      <div class="field-row2">
+        <div class="field"><label>Número de inmersión</label><input type="number" id="dv-number" value="${d.dive_number ?? nextDiveNumber}"></div>
+        <div class="field"><label>Fecha</label><input type="date" id="dv-date" value="${d.date || todayISO()}"></div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Hora de entrada</label><input type="time" id="dv-entry-time" value="${d.entry_time ? d.entry_time.slice(0,5) : ''}"></div>
+        <div class="field"><label>Hora de salida</label><input type="time" id="dv-exit-time" value="${d.exit_time ? d.exit_time.slice(0,5) : ''}"></div>
+      </div>
+      <div class="field"><label>Tiempo total (min)</label><input type="number" id="dv-duration" value="${d.duration_min ?? ''}" placeholder="Se calcula solo con hora de entrada y salida"></div>
+      <div class="field-row2">
+        <div class="field"><label>Nombre del sitio</label><input type="text" id="dv-site-name" value="${escapeHtml(d.site_name||'')}"></div>
+        <div class="field"><label>Nombre de la inmersión</label><input type="text" id="dv-dive-name" value="${escapeHtml(d.dive_name||'')}"></div>
+      </div>
+
+      <div class="field-section-title">Ubicación</div>
+      <div class="field">
+        <label>Ubicación</label>
+        <div class="loc-input-wrap">
+          ${icon('mapPin','icon-sm')}
+          <input type="text" id="dv-location" value="${escapeHtml(d.location_text||'')}" placeholder="Toca aquí o escribe" autocomplete="off">
+        </div>
+      </div>
+      <div id="diveInlineMapWrap">
+        <div id="diveLeafletMap"></div>
+        <button type="button" class="map-expand-btn" id="diveMapExpandBtn" title="Ampliar mapa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+        <div class="map-foot">
+          <span class="geo-status" id="diveGeoStatus"></span>
+          <button type="button" class="close-map-link" id="diveCloseMapBtn">Cerrar mapa</button>
+        </div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Tipo de aproximación</label><input type="text" id="dv-approach" list="dvApproachList" value="${escapeHtml(d.approach_type||'')}"><datalist id="dvApproachList"><option value="Costa"><option value="Barco"></datalist></div>
+        <div class="field"><label>Lecho marino</label><input type="text" id="dv-seabed" list="dvSeabedList" value="${escapeHtml(d.seabed_type||'')}"><datalist id="dvSeabedList"><option value="Arena"><option value="Roca"><option value="Posidonia"><option value="Grava"><option value="Fango"><option value="Mixto"></datalist></div>
+      </div>
+
+      <div class="field-section-title">Centro y compañía</div>
+      <div class="field-row2">
+        <div class="field"><label>Club de buceo</label><input type="text" id="dv-club" value="${escapeHtml(d.dive_club||'')}"></div>
+        <div class="field"><label>Centro de buceo</label><input type="text" id="dv-center" value="${escapeHtml(d.dive_center||'')}"></div>
+      </div>
+      <div class="field"><label>Compañero</label><input type="text" id="dv-buddy" value="${escapeHtml(d.buddy||'')}"></div>
+
+      <div class="field-section-title">Equipo</div>
+      <div class="field-row2">
+        <div class="field"><label>Tipo de traje</label><input type="text" id="dv-suit" list="dvSuitList" value="${escapeHtml(d.suit_type||'')}"><datalist id="dvSuitList"><option value="Húmedo"><option value="Semiseco"><option value="Seco"></datalist></div>
+        <div class="field"><label>Tipo de aire</label><input type="text" id="dv-air-type" list="dvAirTypeList" value="${escapeHtml(d.air_type||'')}"><datalist id="dvAirTypeList"><option value="Aire"><option value="Nitrox"><option value="Trimix"></datalist></div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Litros de la botella</label><input type="number" id="dv-tank-liters" value="${d.tank_liters ?? ''}"></div>
+        <div class="field"><label>Material de la botella</label><input type="text" id="dv-tank-material" list="dvTankMaterialList" value="${escapeHtml(d.tank_material||'')}"><datalist id="dvTankMaterialList"><option value="Acero"><option value="Aluminio"></datalist></div>
+      </div>
+      <div class="field"><label>Lastre (kg)</label><input type="number" id="dv-weight" value="${d.weight_kg ?? ''}"></div>
+
+      <div class="field-section-title">Presión de aire</div>
+      <div class="field-row2">
+        <div class="field"><label>Presión de entrada (bar)</label><input type="number" id="dv-entry-pressure" value="${d.entry_pressure ?? ''}"></div>
+        <div class="field"><label>Presión de salida (bar)</label><input type="number" id="dv-exit-pressure" value="${d.exit_pressure ?? ''}"></div>
+      </div>
+      <div class="dive-consumption" id="dvConsumptionLabel"></div>
+
+      <div class="field-section-title">Condiciones</div>
+      <div class="field-row2">
+        <div class="field"><label>Temperatura del agua (°C)</label><input type="number" id="dv-water-temp" value="${d.water_temp ?? ''}"></div>
+        <div class="field"><label>Temperatura del aire (°C)</label><input type="number" id="dv-air-temp" value="${d.air_temp ?? ''}"></div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Corriente</label><input type="text" id="dv-current" list="dvCurrentList" value="${escapeHtml(d.current||'')}"><datalist id="dvCurrentList"><option value="Nula"><option value="Suave"><option value="Moderada"><option value="Fuerte"></datalist></div>
+        <div class="field"><label>Visibilidad (m)</label><input type="number" id="dv-visibility" value="${d.visibility_m ?? ''}"></div>
+      </div>
+
+      <div class="field-section-title">Perfil</div>
+      <div class="field"><label>Profundidad máxima (m)</label><input type="number" id="dv-max-depth" value="${d.max_depth_m ?? ''}"></div>
+      <div class="field-row2">
+        <div class="field"><label>Parada de seguridad (m)</label><input type="number" id="dv-safety-stop" value="${d.safety_stop_m ?? ''}"></div>
+        <div class="field"><label>Parada de descompresión (m)</label><input type="number" id="dv-deco-stop" value="${d.deco_stop_m ?? ''}"></div>
+      </div>
+
+      <div class="field-section-title">Observaciones</div>
+      <div class="field"><textarea id="dv-notes" placeholder="Notas sobre la inmersión...">${escapeHtml(d.notes||'')}</textarea></div>
+
+      <div class="row2">
+        <button type="button" class="btn secondary" id="dvCancelBtn">Cancelar</button>
+        <button type="button" class="btn" id="dvSaveBtn">${editingDive ? 'Guardar cambios' : 'Guardar'}</button>
+      </div>
+      ${editingDive ? `<button type="button" class="pp-logout" id="dvDeleteBtn" style="margin-top:12px;">Eliminar inmersión</button>` : ''}
+    </div>
+  `;
+
+  wireDiveForm();
+}
+
+function wireDiveForm(){
+  pendingDiveCoords = (editingDive && editingDive.lat!=null && editingDive.lng!=null) ? { lat:editingDive.lat, lng:editingDive.lng } : null;
+  diveLeafletMapInstance = null;
+  diveLeafletMarker = null;
+
+  document.getElementById('dvCancelBtn').onclick = ()=>{ logbookView='list'; editingDive=null; renderLogbookPanel(); };
+
+  const deleteBtn = document.getElementById('dvDeleteBtn');
+  if(deleteBtn){
+    deleteBtn.onclick = async ()=>{
+      const ok = await askConfirm('¿Eliminar esta inmersión? Los avistamientos que registraste desde ella no se borrarán, pero dejarán de estar vinculados a ella.');
+      if(!ok) return;
+      await _sb.from('dives').delete().eq('id', editingDive.id);
+      dives = dives.filter(x=>x.id!==editingDive.id);
+      editingDive = null; logbookView = 'list';
+      renderLogbookPanel();
+      showToast('Inmersión eliminada');
+    };
+  }
+
+  // Tiempo total: se autocalcula de entrada/salida pero se puede sobrescribir a mano.
+  const entryTimeInput = document.getElementById('dv-entry-time');
+  const exitTimeInput = document.getElementById('dv-exit-time');
+  const durationInput = document.getElementById('dv-duration');
+  function recalcDuration(){
+    const a = entryTimeInput.value, b = exitTimeInput.value;
+    if(!a || !b) return;
+    const [ah,am] = a.split(':').map(Number), [bh,bm] = b.split(':').map(Number);
+    let mins = (bh*60+bm) - (ah*60+am);
+    if(mins < 0) mins += 24*60;
+    durationInput.value = mins;
+  }
+  entryTimeInput.addEventListener('change', recalcDuration);
+  exitTimeInput.addEventListener('change', recalcDuration);
+
+  // Consumo total: solo se muestra calculado, no se guarda como campo aparte.
+  const entryP = document.getElementById('dv-entry-pressure');
+  const exitP = document.getElementById('dv-exit-pressure');
+  const consumptionLabel = document.getElementById('dvConsumptionLabel');
+  function recalcConsumption(){
+    const a = parseFloat(entryP.value), b = parseFloat(exitP.value);
+    consumptionLabel.textContent = (!isNaN(a) && !isNaN(b)) ? `Consumo total: ${(a-b).toFixed(0)} bar` : '';
+  }
+  entryP.addEventListener('input', recalcConsumption);
+  exitP.addEventListener('input', recalcConsumption);
+  recalcConsumption();
+
+  wireDiveLocationPicker();
+
+  document.getElementById('dvSaveBtn').onclick = saveDive;
+}
+
+// Selector de ubicación con mapa + buscador — mismo patrón que el del
+// formulario de avistamientos (locInput/leafletMapInstance/pendingCoords),
+// duplicado aquí con sus propias variables (pendingDiveCoords, etc.) para no
+// interferir si ambos formularios llegaran a coexistir en el DOM.
+function wireDiveLocationPicker(){
+  const locInput = document.getElementById('dv-location');
+  const mapWrap = document.getElementById('diveInlineMapWrap');
+
+  locInput.addEventListener('focus', ()=>{
+    mapWrap.style.display = 'block';
+    setTimeout(()=>{
+      if(!diveLeafletMapInstance && window.L){
+        const start = pendingDiveCoords ? [pendingDiveCoords.lat, pendingDiveCoords.lng] : [40.4168, -3.7038];
+        diveLeafletMapInstance = L.map('diveLeafletMap').setView(start, pendingDiveCoords ? 14 : 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18, attribution: '&copy; OpenStreetMap'
+        }).addTo(diveLeafletMapInstance);
+        if(pendingDiveCoords){ diveLeafletMarker = L.marker(start).addTo(diveLeafletMapInstance); }
+        diveLeafletMapInstance.on('click', async (e)=>{
+          pendingDiveCoords = { lat:e.latlng.lat, lng:e.latlng.lng };
+          if(diveLeafletMarker) diveLeafletMapInstance.removeLayer(diveLeafletMarker);
+          diveLeafletMarker = L.marker(e.latlng).addTo(diveLeafletMapInstance);
+          document.getElementById('diveGeoStatus').textContent = 'Buscando nombre del lugar...';
+          const name = await reverseGeocode(pendingDiveCoords.lat, pendingDiveCoords.lng);
+          if(name){
+            locInput.value = name;
+            document.getElementById('diveGeoStatus').textContent = 'Ubicación detectada automáticamente';
+          } else {
+            document.getElementById('diveGeoStatus').textContent = `Pin colocado (${pendingDiveCoords.lat.toFixed(4)}, ${pendingDiveCoords.lng.toFixed(4)})`;
+          }
+        });
+      }
+      if(diveLeafletMapInstance) diveLeafletMapInstance.invalidateSize();
+    }, 30);
+  });
+  document.getElementById('diveCloseMapBtn').onclick = ()=>{ mapWrap.style.display = 'none'; };
+
+  (()=>{
+    const wrap = locInput.closest('.loc-input-wrap');
+    const acBox = document.createElement('div');
+    acBox.className = 'loc-autocomplete';
+    acBox.style.display = 'none';
+    wrap.appendChild(acBox);
+
+    let acTimer = null;
+    let acResults = [];
+    let focusedIdx = -1;
+
+    function renderAC(items, loading){
+      focusedIdx = -1;
+      if(loading){
+        acBox.innerHTML = '<div class="loc-autocomplete-loading">Buscando…</div>';
+        acBox.style.display = 'block';
+        return;
+      }
+      if(!items.length){ acBox.style.display='none'; return; }
+      acBox.innerHTML = items.map((r,i)=>{
+        const parts = r.display_name.split(',');
+        const main = parts[0].trim();
+        const sub  = parts.slice(1,3).join(',').trim();
+        return `<div class="loc-autocomplete-item" data-idx="${i}" tabindex="-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><div class="loc-autocomplete-main">${escapeHtml(main)}</div>${sub?`<div class="loc-autocomplete-sub">${escapeHtml(sub)}</div>`:''}</div>
+        </div>`;
+      }).join('');
+      acBox.style.display = 'block';
+      acBox.querySelectorAll('.loc-autocomplete-item').forEach(el=>{
+        el.addEventListener('mousedown', e=>{ e.preventDefault(); selectAC(parseInt(el.dataset.idx)); });
+      });
+    }
+
+    function closeAC(){ acBox.style.display='none'; acResults=[]; focusedIdx=-1; }
+
+    function selectAC(idx){
+      const r = acResults[idx];
+      if(!r) return;
+      const parts = r.display_name.split(',');
+      locInput.value = parts.slice(0,3).join(',').trim();
+      pendingDiveCoords = { lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
+      document.getElementById('diveGeoStatus').textContent = 'Ubicación seleccionada';
+      mapWrap.style.display = 'block';
+      const latlng = L.latLng(pendingDiveCoords.lat, pendingDiveCoords.lng);
+      setTimeout(()=>{
+        if(!diveLeafletMapInstance && window.L){
+          diveLeafletMapInstance = L.map('diveLeafletMap').setView(latlng, 14);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            maxZoom:18, attribution:'&copy; OpenStreetMap'
+          }).addTo(diveLeafletMapInstance);
+          diveLeafletMapInstance.on('click', async (e)=>{
+            pendingDiveCoords = { lat:e.latlng.lat, lng:e.latlng.lng };
+            if(diveLeafletMarker) diveLeafletMapInstance.removeLayer(diveLeafletMarker);
+            diveLeafletMarker = L.marker(e.latlng).addTo(diveLeafletMapInstance);
+            document.getElementById('diveGeoStatus').textContent = 'Buscando nombre del lugar...';
+            const name = await reverseGeocode(pendingDiveCoords.lat, pendingDiveCoords.lng);
+            if(name){ locInput.value = name; document.getElementById('diveGeoStatus').textContent = 'Ubicación detectada automáticamente'; }
+            else { document.getElementById('diveGeoStatus').textContent = `Pin colocado (${pendingDiveCoords.lat.toFixed(4)}, ${pendingDiveCoords.lng.toFixed(4)})`; }
+          });
+        }
+        if(diveLeafletMarker) diveLeafletMapInstance.removeLayer(diveLeafletMarker);
+        diveLeafletMarker = L.marker(latlng).addTo(diveLeafletMapInstance);
+        diveLeafletMapInstance.setView(latlng, 14);
+        diveLeafletMapInstance.invalidateSize();
+      }, 30);
+      closeAC();
+    }
+
+    locInput.addEventListener('input', ()=>{
+      const q = locInput.value.trim();
+      clearTimeout(acTimer);
+      if(q.length < 3){ closeAC(); return; }
+      acTimer = setTimeout(async ()=>{
+        renderAC([], true);
+        try{
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&accept-language=es`);
+          acResults = await res.json();
+          renderAC(acResults, false);
+        } catch(e){ closeAC(); }
+      }, 320);
+    });
+
+    locInput.addEventListener('keydown', e=>{
+      if(acBox.style.display==='none') return;
+      const items = acBox.querySelectorAll('.loc-autocomplete-item');
+      if(e.key==='ArrowDown'){ e.preventDefault(); focusedIdx=Math.min(focusedIdx+1,items.length-1); items.forEach((el,i)=>el.classList.toggle('focused',i===focusedIdx)); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); focusedIdx=Math.max(focusedIdx-1,0); items.forEach((el,i)=>el.classList.toggle('focused',i===focusedIdx)); }
+      else if(e.key==='Enter' && focusedIdx>=0){ e.preventDefault(); selectAC(focusedIdx); }
+      else if(e.key==='Escape'){ closeAC(); }
+    });
+
+    document.addEventListener('click', e=>{ if(!wrap.contains(e.target)) closeAC(); });
+  })();
+
+  const expandBtn = document.getElementById('diveMapExpandBtn');
+  if(expandBtn){
+    let mapExpanded = false;
+    expandBtn.onclick = ()=>{
+      const mapEl = document.getElementById('diveLeafletMap');
+      mapExpanded = !mapExpanded;
+      mapEl.style.height = mapExpanded ? '400px' : '220px';
+      expandBtn.innerHTML = mapExpanded
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+      if(diveLeafletMapInstance) diveLeafletMapInstance.invalidateSize();
+    };
+  }
+}
+
+async function saveDive(){
+  const numField = document.getElementById('dv-number').value;
+  const payload = {
+    dive_number: numField === '' ? null : Number(numField),
+    date: document.getElementById('dv-date').value || todayISO(),
+    entry_time: document.getElementById('dv-entry-time').value || null,
+    exit_time: document.getElementById('dv-exit-time').value || null,
+    duration_min: document.getElementById('dv-duration').value === '' ? null : Number(document.getElementById('dv-duration').value),
+    site_name: document.getElementById('dv-site-name').value.trim() || null,
+    dive_name: document.getElementById('dv-dive-name').value.trim() || null,
+    location_text: document.getElementById('dv-location').value.trim() || null,
+    lat: pendingDiveCoords?.lat ?? null,
+    lng: pendingDiveCoords?.lng ?? null,
+    approach_type: document.getElementById('dv-approach').value.trim() || null,
+    seabed_type: document.getElementById('dv-seabed').value.trim() || null,
+    dive_club: document.getElementById('dv-club').value.trim() || null,
+    dive_center: document.getElementById('dv-center').value.trim() || null,
+    buddy: document.getElementById('dv-buddy').value.trim() || null,
+    suit_type: document.getElementById('dv-suit').value.trim() || null,
+    air_type: document.getElementById('dv-air-type').value.trim() || null,
+    tank_liters: document.getElementById('dv-tank-liters').value === '' ? null : Number(document.getElementById('dv-tank-liters').value),
+    tank_material: document.getElementById('dv-tank-material').value.trim() || null,
+    weight_kg: document.getElementById('dv-weight').value === '' ? null : Number(document.getElementById('dv-weight').value),
+    entry_pressure: document.getElementById('dv-entry-pressure').value === '' ? null : Number(document.getElementById('dv-entry-pressure').value),
+    exit_pressure: document.getElementById('dv-exit-pressure').value === '' ? null : Number(document.getElementById('dv-exit-pressure').value),
+    water_temp: document.getElementById('dv-water-temp').value === '' ? null : Number(document.getElementById('dv-water-temp').value),
+    air_temp: document.getElementById('dv-air-temp').value === '' ? null : Number(document.getElementById('dv-air-temp').value),
+    current: document.getElementById('dv-current').value.trim() || null,
+    visibility_m: document.getElementById('dv-visibility').value === '' ? null : Number(document.getElementById('dv-visibility').value),
+    max_depth_m: document.getElementById('dv-max-depth').value === '' ? null : Number(document.getElementById('dv-max-depth').value),
+    safety_stop_m: document.getElementById('dv-safety-stop').value === '' ? null : Number(document.getElementById('dv-safety-stop').value),
+    deco_stop_m: document.getElementById('dv-deco-stop').value === '' ? null : Number(document.getElementById('dv-deco-stop').value),
+    notes: document.getElementById('dv-notes').value.trim() || null,
+  };
+
+  if(editingDive){
+    const { error } = await _sb.from('dives').update(payload).eq('id', editingDive.id);
+    if(error){ showToast('Error al guardar: ' + error.message, true); return; }
+    dives = dives.map(x=>x.id===editingDive.id ? {...x, ...payload} : x);
+    showToast('Inmersión actualizada');
+  } else {
+    const { data, error } = await _sb.from('dives').insert(payload).select().single();
+    if(error){ showToast('Error al guardar: ' + error.message, true); return; }
+    dives = [{...payload, id:data.id}, ...dives];
+    showToast('Inmersión guardada');
+  }
+  editingDive = null;
+  logbookView = 'list';
+  renderLogbookPanel();
 }
 
 // ══════════════════════════════════════════════════════════════════
