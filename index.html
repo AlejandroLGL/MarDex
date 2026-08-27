@@ -608,6 +608,42 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .admin-user-name{ font-weight:700; }
   .admin-user-username{ color:var(--muted); font-size:12px; }
 
+  /* ── Logros ───────────────────────────────────────────────────────── */
+  .ach-progress-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:28px; }
+  .ach-progress-card{
+    background:var(--card); border-radius:var(--r-sm); padding:14px 16px;
+    box-shadow:0 2px 8px rgba(5,46,74,0.07); border:1.5px solid transparent;
+  }
+  .ach-progress-card.earned{ border-color:var(--lagoon); }
+  .ach-progress-title{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px; }
+  .ach-progress-title .ach-check{ color:var(--lagoon); flex-shrink:0; }
+  .ach-progress-sub{ font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .ach-progress-bar{ height:5px; border-radius:3px; background:var(--bg); overflow:hidden; }
+  .ach-progress-fill{ height:100%; border-radius:3px; background:var(--blue); transition:width .3s ease; }
+  .ach-progress-card.ray .ach-progress-fill{ background:var(--lagoon); }
+  .ach-progress-card.fish .ach-progress-fill{ background:var(--amber); }
+  .ach-progress-card.medusa .ach-progress-fill{ background:var(--violet); }
+  .ach-progress-card.crustaceo .ach-progress-fill{ background:var(--rust); }
+  .ach-progress-card.reptil .ach-progress-fill{ background:var(--sage); }
+  .ach-progress-card.molusco .ach-progress-fill{ background:var(--magenta); }
+
+  .ach-cat-accordion{ margin-bottom:10px; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; }
+  .ach-cat-header{
+    display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+    cursor:pointer; background:var(--card); font-weight:700; font-size:13px; color:var(--ink);
+  }
+  .ach-cat-header .chev{ transition:transform .15s; color:var(--muted); flex-shrink:0; }
+  .ach-cat-accordion.open .ach-cat-header .chev{ transform:rotate(180deg); }
+  .ach-cat-body{ display:none; padding:14px 16px; background:var(--bg); }
+  .ach-cat-accordion.open .ach-cat-body{ display:block; }
+  .ach-badge-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:10px; }
+  .ach-badge{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; border-radius:var(--r-sm); background:var(--card); text-align:center; }
+  .ach-badge-icon{ width:32px; height:32px; color:var(--faint); }
+  .ach-badge.earned .ach-badge-icon{ color:var(--lagoon); }
+  .ach-badge-label{ font-size:9.5px; font-weight:600; color:var(--muted); line-height:1.2; }
+  .ach-badge.earned .ach-badge-label{ color:var(--ink); }
+  .ach-badge-env{ font-size:8px; color:var(--faint); text-transform:uppercase; letter-spacing:.03em; }
+
   /* ── Zonas de buceo (mapa + ruleta) ──────────────────────────────── */
   .zones-layout{ display:flex; flex-direction:column; align-items:center; gap:22px; margin-bottom:28px; }
   .zones-map-wrap{ width:100%; }
@@ -1873,6 +1909,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   </div>
 </div>
 
+<div class="admin-overlay" id="achievementsOverlay">
+  <div class="admin-sheet" id="achievementsSheet">
+    <!-- populated by renderAchievementsPanel() -->
+  </div>
+</div>
+
 <div class="tree-overlay" id="treeOverlay">
   <div class="tree-sheet">
     <div class="tree-header">
@@ -1978,6 +2020,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   <button class="bnav-btn" data-bnav="friends">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
     <span class="bnav-label">Amigos</span>
+  </button>
+  <button class="bnav-btn" data-bnav="achievements">
+    <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg></span>
+    <span class="bnav-label">Logros</span>
   </button>
   <button class="bnav-btn" data-bnav="saved">
     <span class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.7-4.35-9.3-8.2C.9 9.7 1.7 6 5 4.7 7.2 3.8 9.4 4.6 12 7c2.6-2.4 4.8-3.2 7-2.3 3.3 1.3 4.1 5 1.3 8.8C18.7 16.65 12 21 12 21z"/></svg></span>
@@ -3749,11 +3795,10 @@ async function renderProfilePage(){
 
     <!-- Logros -->
     <div class="pp-section">
-      <div class="pp-section-title">Logros</div>
-      <div class="pp-placeholder">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
-        Próximamente — insignias, rachas, desafíos
-      </div>
+      <button type="button" class="pp-row pp-row-link" id="ppOpenAchievementsBtn">
+        <span class="pp-row-label">Logros</span>
+        <span class="pp-row-value pp-row-chevron">${evaluateAllAchievements().filter(a=>a.earned).length} / ${getAchievementDefs().length} ›</span>
+      </button>
     </div>
 
     <button class="pp-logout" id="ppLogoutBtn">Cerrar sesión</button>
@@ -3882,6 +3927,7 @@ async function renderProfilePage(){
   };
 
   document.getElementById('ppOpenSettingsBtn').onclick = openSettingsPage;
+  document.getElementById('ppOpenAchievementsBtn').onclick = ()=>{ closeProfilePage(); openAchievementsPanel(); };
 }
 
 function sightingsFor(id){ return state.sightings[id] || []; }
@@ -5490,6 +5536,11 @@ function initBottomNav(){
         openZonesPanel();
         return;
       }
+      if(tab==='achievements'){
+        btns[0].classList.add('active');
+        openAchievementsPanel();
+        return;
+      }
       if(tab==='admin'){
         btns[0].classList.add('active');
         openAdminPanel();
@@ -5736,6 +5787,7 @@ function initMobileFAB(){
     { bnav:'tree',     label:'Clave',     svg:'<circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="M7.97 10.65 15.03 7 M7.97 13.35 15.03 17"/><line x1="6" y1="3" x2="6" y2="10"/><line x1="6" y1="14" x2="6" y2="21"/>' },
     { bnav:'profile',  label:'Perfil',    svg:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
     { bnav:'friends',  label:'Amigos',    svg:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
+    { bnav:'achievements', label:'Logros', svg:'<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>' },
     { bnav:'admin',    label:'Admin',     svg:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>', adminOnly:true },
   ];
 
@@ -5834,6 +5886,7 @@ function initMobileFAB(){
     if(tab==='admin')    { openAdminPanel(); return; }
     if(tab==='logbook')  { openLogbookPanel(); return; }
     if(tab==='zones')    { openZonesPanel(); return; }
+    if(tab==='achievements') { openAchievementsPanel(); return; }
     if(tab==='explore')  { showFavOnly=false; currentLock='todos'; renderLockNav(); renderCatNav(); renderGrid(); }
     else if(tab==='sightings'){ showFavOnly=false; currentLock='desbloqueado'; renderLockNav(); renderGrid(); }
     else if(tab==='saved')   { showFavOnly=true; renderCatNav(); renderGrid(); }
@@ -6520,6 +6573,100 @@ function renderZoneSpeciesGrid(){
   grid.innerHTML = html;
   grid.querySelectorAll('[data-id]').forEach(card=>{
     card.onclick = ()=>{ closeZonesPanel(); openModal(card.dataset.id); };
+  });
+}
+
+let achEnvFilter = 'todos'; // 'todos' | 'libre' | 'acuario'
+let achOpenCats = new Set(); // categorías con el acordeón de especies desplegado
+
+function openAchievementsPanel(){
+  document.getElementById('achievementsOverlay').classList.add('open');
+  renderAchievementsPanel();
+}
+function closeAchievementsPanel(){
+  document.getElementById('achievementsOverlay').classList.remove('open');
+}
+document.getElementById('achievementsOverlay').addEventListener('click', e=>{
+  if(e.target===document.getElementById('achievementsOverlay')) closeAchievementsPanel();
+});
+
+function renderAchievementsPanel(){
+  const sheet = document.getElementById('achievementsSheet');
+  const all = evaluateAllAchievements();
+  const earnedCount = all.filter(a=>a.earned).length;
+
+  const nonSpecies = all.filter(a=>a.type!=='species' && (achEnvFilter==='todos' || a.env===achEnvFilter || a.env===null));
+  const speciesAch = all.filter(a=>a.type==='species' && (achEnvFilter==='todos' || a.env===achEnvFilter));
+
+  sheet.innerHTML = `
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">Logros</div>
+        <div class="admin-subtitle">${earnedCount} / ${all.length} logros conseguidos</div>
+      </div>
+      <button class="admin-close" id="achievementsCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+
+    <div class="chip-row" id="achEnvFilterRow">
+      <button type="button" class="chip ${achEnvFilter==='todos'?'active':''}" data-env="todos">Todos</button>
+      <button type="button" class="chip ${achEnvFilter==='libre'?'active':''}" data-env="libre">En libertad</button>
+      <button type="button" class="chip ${achEnvFilter==='acuario'?'active':''}" data-env="acuario">Acuario</button>
+    </div>
+
+    <div class="admin-section-title" style="margin-top:20px;">Hitos y categorías</div>
+    <div class="ach-progress-grid" id="achMilestoneGrid"></div>
+
+    <div class="admin-section-title">Especies</div>
+    <div id="achSpeciesAccordions"></div>
+  `;
+
+  document.getElementById('achievementsCloseBtn').onclick = closeAchievementsPanel;
+  sheet.querySelectorAll('#achEnvFilterRow [data-env]').forEach(btn=>{
+    btn.onclick = ()=>{ achEnvFilter = btn.dataset.env; renderAchievementsPanel(); };
+  });
+
+  const checkSvg = `<svg class="ach-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  document.getElementById('achMilestoneGrid').innerHTML = nonSpecies.map(a=>{
+    const pct = a.target ? Math.min(100, Math.round((a.current/a.target)*100)) : (a.earned?100:0);
+    const sub = a.type==='depth'
+      ? (a.current ? `${a.current} m` : 'Sin registros aún')
+      : `${Math.min(a.current,a.target)} / ${a.target}`;
+    return `<div class="ach-progress-card ${a.themeClass} ${a.earned?'earned':''}">
+      <div class="ach-progress-title">${a.earned?checkSvg:''}<span>${escapeHtml(a.title)}</span></div>
+      <div class="ach-progress-sub">${sub}</div>
+      <div class="ach-progress-bar"><div class="ach-progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('achSpeciesAccordions').innerHTML = CAT_DEFS.map(([cat,label])=>{
+    const catSpecies = speciesAch.filter(a=>a.cat===cat);
+    if(!catSpecies.length) return '';
+    const earnedInCat = catSpecies.filter(a=>a.earned).length;
+    const isOpen = achOpenCats.has(cat);
+    return `<div class="ach-cat-accordion ${isOpen?'open':''}" data-cat="${cat}">
+      <div class="ach-cat-header">
+        <span>${escapeHtml(label)} — ${earnedInCat}/${catSpecies.length}</span>
+        <span class="chev">${ICONS.chevronDown}</span>
+      </div>
+      <div class="ach-cat-body">
+        <div class="ach-badge-grid">
+          ${catSpecies.map(a=>`<div class="ach-badge ${a.earned?'earned':''}">
+            <div class="ach-badge-icon">${catSilhouette(cat)}</div>
+            <div class="ach-badge-label">${escapeHtml(a.title)}</div>
+            <div class="ach-badge-env">${a.env==='libre'?'Libertad':'Acuario'}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('#achSpeciesAccordions .ach-cat-header').forEach(header=>{
+    header.onclick = ()=>{
+      const acc = header.closest('.ach-cat-accordion');
+      const cat = acc.dataset.cat;
+      if(achOpenCats.has(cat)) achOpenCats.delete(cat); else achOpenCats.add(cat);
+      renderAchievementsPanel();
+    };
   });
 }
 
