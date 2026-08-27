@@ -562,6 +562,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     background:var(--bg); width:100%; max-width:960px; min-height:100vh;
     padding:28px 24px 60px; position:relative;
   }
+  @media(max-width:600px){
+    /* Deja hueco para la cámara/notch, igual que .overlay */
+    .admin-sheet{ padding-top: calc(20px + max(env(safe-area-inset-top, 0px), 20px)); }
+  }
   .admin-header{
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom:28px; padding-bottom:16px; border-bottom:1px solid var(--border);
