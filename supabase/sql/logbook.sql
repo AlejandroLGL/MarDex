@@ -70,3 +70,8 @@ create policy "dives_delete_own" on public.dives
 -- por eso es nullable: los avistamientos creados desde "Explorar" sin pasar
 -- por el logbook siguen funcionando igual que hasta ahora).
 alter table public.sightings add column if not exists dive_id uuid references public.dives(id) on delete set null;
+
+-- Fotos de la inmersión: una principal (portada) y varias en observaciones.
+-- Se guardan como data URL, igual que las fotos de los avistamientos.
+alter table public.dives add column if not exists main_photo text;
+alter table public.dives add column if not exists notes_photos jsonb not null default '[]'::jsonb;
