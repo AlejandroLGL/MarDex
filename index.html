@@ -6723,14 +6723,30 @@ function renderAchievementsLogrosView(all){
   });
 }
 
+let achRankingScope = 'amigos'; // 'amigos' | 'global'
+
+function renderAchievementsRankingView(all){
+  const body = document.getElementById('achBody');
+  body.innerHTML = `
+    <div class="chip-row" id="achRankingScopeRow" style="margin-top:20px;">
+      <button type="button" class="chip ${achRankingScope==='amigos'?'active':''}" data-scope="amigos">Amigos</button>
+      <button type="button" class="chip ${achRankingScope==='global'?'active':''}" data-scope="global">Global</button>
+    </div>
+    <div class="admin-section-title" style="margin-top:16px;">${achRankingScope==='amigos'?'Ranking de amigos':'Ranking global'}</div>
+    <div id="achLeaderboardWrap"><div class="zones-empty">Cargando…</div></div>
+  `;
+  body.querySelectorAll('#achRankingScopeRow [data-scope]').forEach(btn=>{
+    btn.onclick = ()=>{ achRankingScope = btn.dataset.scope; renderAchievementsRankingView(all); };
+  });
+
+  if(achRankingScope==='global') renderGlobalLeaderboard();
+  else renderFriendsLeaderboard(all);
+}
+
 // Ranking de amigos: reutiliza get_friends() (ya trae especies/avistamientos/
 // favoritos por amigo, usado también en el panel de Amigos) más los datos
 // propios del usuario — no hace falta ninguna RPC nueva para esto.
-async function renderAchievementsRankingView(all){
-  const body = document.getElementById('achBody');
-  body.innerHTML = `<div class="admin-section-title" style="margin-top:20px;">Ranking de amigos</div>
-    <div id="achLeaderboardWrap"><div class="zones-empty">Cargando…</div></div>`;
-
+async function renderFriendsLeaderboard(all){
   const earnedCount = all.filter(a=>a.earned).length;
   const me = {
     id: currentAccountData?.id, name: currentAccountData?.name, username: currentAccountData?.username,
@@ -6743,6 +6759,7 @@ async function renderAchievementsRankingView(all){
 
   const { data: friends, error } = await _sb.rpc('get_friends');
   const wrap = document.getElementById('achLeaderboardWrap');
+  if(!wrap) return; // el usuario pudo cambiar de pestaña mientras cargaba
   if(error){ wrap.innerHTML = `<div class="zones-empty">No se pudo cargar el ranking de amigos.</div>`; return; }
 
   const rows = [me, ...(friends||[]).map(f=>({...f, achievements_count:null}))]
@@ -6759,6 +6776,33 @@ async function renderAchievementsRankingView(all){
       <td>${r.species_count}</td>
       <td>${r.sightings_count}</td>
       <td>${r.achievements_count!=null ? r.achievements_count : '—'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+// Ranking global: requiere la función get_leaderboard() de
+// supabase/sql/achievements_leaderboard.sql — hasta que esa función exista
+// en el proyecto de Supabase, esto mostrará un aviso en vez de romperse.
+async function renderGlobalLeaderboard(){
+  const { data: board, error } = await _sb.rpc('get_leaderboard');
+  const wrap = document.getElementById('achLeaderboardWrap');
+  if(!wrap) return;
+  if(error){
+    wrap.innerHTML = `<div class="zones-empty">El ranking global todavía no está activado en el servidor.</div>`;
+    return;
+  }
+  const rows = (board||[]).map(r=>({...r, isMe: !!r.is_me}));
+  wrap.innerHTML = `<div class="admin-table-wrap"><table class="admin-table">
+    <thead><tr><th>#</th><th>Usuario</th><th>Especies</th><th>Avistamientos</th><th>Profundidad máx.</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr class="${r.isMe?'ach-lb-me':''}">
+      <td>${i+1}</td>
+      <td>
+        <span class="ach-lb-avatar">${avatarInner(r)}</span>
+        ${escapeHtml(r.name||r.username||'—')}${r.isMe?' <span class="admin-badge-admin">Tú</span>':''}
+      </td>
+      <td>${r.species_count}</td>
+      <td>${r.sightings_count}</td>
+      <td>${r.max_depth_m!=null ? r.max_depth_m+' m' : '—'}</td>
     </tr>`).join('')}</tbody>
   </table></div>`;
 }
