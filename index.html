@@ -1312,6 +1312,48 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .dive-photo-remove svg{ width:11px; height:11px; }
   /* El mensaje de vacío ocupa toda la fila, no una sola columna de la rejilla */
   .zones-order-grid > .zones-empty{ grid-column:1 / -1; }
+
+  /* ── Logbook con aspecto de hoja de bitácora en papel ─────────────── */
+  .dvs-section{ margin-bottom:14px; }
+  .dvs-head{
+    font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--ink); margin:0 0 5px 2px;
+  }
+  .dvs-body{
+    border:1.5px solid #C9D9C0; border-radius:var(--r-sm);
+    background:#FBF8E6; padding:12px 14px;
+  }
+  .dvs-body.blue{
+    background:linear-gradient(180deg,#E3EEFB 0%,#C3D9F2 100%);
+    border-color:#9DBEE2;
+  }
+  .dvs-body.plain{ background:var(--card); border-color:var(--line); }
+  /* Campos con estilo de formulario impreso: solo línea inferior */
+  .dvs-body .field{ margin-bottom:10px; }
+  .dvs-body .field:last-child{ margin-bottom:0; }
+  .dvs-body .field label{ font-size:9.5px; letter-spacing:.5px; color:#6A7B62; margin-bottom:2px; }
+  .dvs-body .field input[type=text],
+  .dvs-body .field input[type=date],
+  .dvs-body .field input[type=number],
+  .dvs-body .field input[type=time],
+  .dvs-body .field textarea{
+    background:transparent; border:none; border-bottom:1.5px solid rgba(13,43,64,0.22);
+    border-radius:0; padding:5px 2px; font-weight:600;
+  }
+  .dvs-body .field input:focus, .dvs-body .field textarea:focus{
+    outline:none; box-shadow:none; border-bottom-color:var(--blue);
+  }
+  .dvs-body .field textarea{ border:1.5px solid rgba(13,43,64,0.18); border-radius:8px; padding:8px 10px; background:rgba(255,255,255,0.45); }
+  .dvs-body .loc-input-wrap input{ padding-left:26px !important; }
+  .dvs-body .loc-input-wrap .icon{ left:2px; }
+  /* Filas de datos ya guardados, densas como en la hoja de papel */
+  .dvs-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:2px 18px; }
+  .dvs-item{ display:flex; align-items:baseline; gap:6px; padding:5px 0; border-bottom:1px dotted rgba(13,43,64,0.18); min-width:0; }
+  .dvs-item-label{ font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:#6A7B62; font-weight:700; flex-shrink:0; }
+  .dvs-item-value{ font-size:13px; color:var(--ink); font-weight:700; margin-left:auto; text-align:right; word-break:break-word; }
+  /* Gráfico del perfil de inmersión */
+  .dive-profile-svg{ width:100%; height:auto; display:block; }
+  .dive-profile-note{ font-size:10.5px; color:#3C5A78; margin-top:8px; line-height:1.4; }
   .loc-input-wrap{ position:relative; }
   .loc-input-wrap .icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); }
   .loc-input-wrap input{ padding-left:36px !important; }
@@ -6158,44 +6200,112 @@ async function deleteDive(diveId){
   showToast('Inmersión eliminada');
 }
 
+// Dibuja un perfil esquemático de la inmersión (descenso, fondo, paradas y
+// ascenso) a partir de los datos que el usuario ya ha introducido. No es el
+// perfil real segundo a segundo — eso llegará cuando se puedan importar los
+// datos del ordenador de buceo — pero da la misma lectura visual que el
+// recuadro "GRÁFICO" de una hoja de bitácora en papel.
+function diveProfileSvg(d){
+  const maxDepth = d.max_depth_m;
+  if(maxDepth == null || !(maxDepth > 0)) return null;
+
+  const W = 320, H = 150, surfaceY = 16, floorY = 116;
+  const depthToY = m => surfaceY + (m/maxDepth) * (floorY - surfaceY);
+
+  const deco = (d.deco_stop_m != null && d.deco_stop_m > 0) ? d.deco_stop_m : null;
+  const safety = (d.safety_stop_m != null && d.safety_stop_m > 0) ? d.safety_stop_m : null;
+
+  // Reparto horizontal: bajada, fondo, y un tramo por cada parada.
+  const pts = [[8, surfaceY], [58, depthToY(maxDepth)]];
+  let x = 186;
+  pts.push([x, depthToY(maxDepth)]);
+  if(deco){ x += 22; pts.push([x, depthToY(deco)]); x += 34; pts.push([x, depthToY(deco)]); }
+  if(safety){ x += 20; pts.push([x, depthToY(safety)]); x += 34; pts.push([x, depthToY(safety)]); }
+  pts.push([312, surfaceY]);
+
+  const line = pts.map(p=>`${p[0]},${p[1].toFixed(1)}`).join(' ');
+  const area = `8,${surfaceY} ` + line + ` 312,${surfaceY}`;
+
+  const labels = [];
+  if(deco) labels.push(`<text x="${(pts[3][0]+pts[4][0])/2}" y="${pts[3][1]-6}" class="dp-tag">${deco} m</text>`);
+  if(safety){
+    const i = deco ? 5 : 3;
+    labels.push(`<text x="${(pts[i][0]+pts[i+1][0])/2}" y="${pts[i][1]-6}" class="dp-tag">${safety} m</text>`);
+  }
+
+  return `<svg class="dive-profile-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    <style>
+      .dp-tag{ font:700 9px var(--sans); fill:#0D2B40; text-anchor:middle; }
+      .dp-axis{ font:700 9px var(--sans); fill:#3C5A78; }
+    </style>
+    <line x1="8" y1="${surfaceY}" x2="312" y2="${surfaceY}" stroke="rgba(13,43,64,0.35)" stroke-width="1" stroke-dasharray="3 3"/>
+    <polygon points="${area}" fill="rgba(0,120,190,0.16)"/>
+    <polyline points="${line}" fill="none" stroke="#0D2B40" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="10" y="${surfaceY-5}" class="dp-axis">Superficie</text>
+    <text x="10" y="${depthToY(maxDepth)+14}" class="dp-axis">${maxDepth} m máx.</text>
+    ${d.duration_min!=null ? `<text x="312" y="${H-8}" class="dp-axis" text-anchor="end">${d.duration_min} min</text>` : ''}
+    ${labels.join('')}
+  </svg>`;
+}
+
 function renderDiveDetail(){
   const body = document.getElementById('logbookBody');
   const d = editingDive || {};
   const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : null;
   const consumption = (d.entry_pressure!=null && d.exit_pressure!=null) ? (d.entry_pressure-d.exit_pressure)+' bar' : null;
 
-  const rows = [
-    ['Número de inmersión', d.dive_number],
-    ['Fecha', dateLabel],
-    ['Hora de entrada', d.entry_time ? d.entry_time.slice(0,5) : null],
-    ['Hora de salida', d.exit_time ? d.exit_time.slice(0,5) : null],
-    ['Tiempo total', d.duration_min!=null ? d.duration_min+' min' : null],
-    ['Nombre del sitio', d.site_name],
-    ['Nombre de la inmersión', d.dive_name],
-    ['Ubicación', d.location_text],
-    ['Tipo de aproximación', d.approach_type],
-    ['Lecho marino', d.seabed_type],
-    ['Club de buceo', d.dive_club],
-    ['Centro de buceo', d.dive_center],
-    ['Compañero', d.buddy],
-    ['Tipo de traje', d.suit_type],
-    ['Tipo de aire', d.air_type],
-    ['Litros de la botella', d.tank_liters],
-    ['Material de la botella', d.tank_material],
-    ['Lastre', d.weight_kg!=null ? d.weight_kg+' kg' : null],
-    ['Presión de entrada', d.entry_pressure!=null ? d.entry_pressure+' bar' : null],
-    ['Presión de salida', d.exit_pressure!=null ? d.exit_pressure+' bar' : null],
-    ['Consumo total', consumption],
-    ['Temperatura del agua', d.water_temp!=null ? d.water_temp+' °C' : null],
-    ['Temperatura del aire', d.air_temp!=null ? d.air_temp+' °C' : null],
-    ['Corriente', d.current],
-    ['Visibilidad', d.visibility_m!=null ? d.visibility_m+' m' : null],
-    ['Profundidad máxima', d.max_depth_m!=null ? d.max_depth_m+' m' : null],
-    ['Parada de seguridad', d.safety_stop_m!=null ? d.safety_stop_m+' m' : null],
-    ['Parada de descompresión', d.deco_stop_m!=null ? d.deco_stop_m+' m' : null],
-  ].filter(([,v])=>v!=null && v!=='');
+  // Bloques de datos agrupados como en la hoja de bitácora en papel.
+  const groups = [
+    ['Inmersión', [
+      ['Nº', d.dive_number],
+      ['Fecha', dateLabel],
+      ['Entrada', d.entry_time ? d.entry_time.slice(0,5) : null],
+      ['Salida', d.exit_time ? d.exit_time.slice(0,5) : null],
+      ['Tiempo total', d.duration_min!=null ? d.duration_min+' min' : null],
+      ['Lugar', d.site_name],
+      ['Nombre', d.dive_name],
+      ['Ubicación', d.location_text],
+      ['Salida desde', d.approach_type],
+      ['Lecho marino', d.seabed_type],
+    ]],
+    ['Aire y equipo', [
+      ['Presión inicio', d.entry_pressure!=null ? d.entry_pressure+' bar' : null],
+      ['Presión final', d.exit_pressure!=null ? d.exit_pressure+' bar' : null],
+      ['Consumo', consumption],
+      ['Tipo de aire', d.air_type],
+      ['Botella', d.tank_liters!=null ? d.tank_liters+' l' : null],
+      ['Material', d.tank_material],
+      ['Lastre', d.weight_kg!=null ? d.weight_kg+' kg' : null],
+      ['Traje', d.suit_type],
+    ]],
+    ['Condiciones', [
+      ['Temp. agua', d.water_temp!=null ? d.water_temp+' °C' : null],
+      ['Temp. aire', d.air_temp!=null ? d.air_temp+' °C' : null],
+      ['Visibilidad', d.visibility_m!=null ? d.visibility_m+' m' : null],
+      ['Corriente', d.current],
+    ]],
+    ['Centro y compañía', [
+      ['Centro', d.dive_center],
+      ['Club', d.dive_club],
+      ['Compañero', d.buddy],
+    ]],
+  ];
+
+  const groupHtml = groups.map(([title, items])=>{
+    const filled = items.filter(([,v])=>v!=null && v!=='');
+    if(!filled.length) return '';
+    return `<div class="dvs-section">
+      <div class="dvs-head">${escapeHtml(title)}</div>
+      <div class="dvs-body">
+        <div class="dvs-grid">
+          ${filled.map(([l,v])=>`<div class="dvs-item"><span class="dvs-item-label">${escapeHtml(l)}</span><span class="dvs-item-value">${escapeHtml(String(v))}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 
   const notesPhotos = Array.isArray(d.notes_photos) ? d.notes_photos : [];
+  const profile = diveProfileSvg(d);
 
   body.innerHTML = `
     <div class="row2" style="margin-bottom:10px;">
@@ -6204,24 +6314,33 @@ function renderDiveDetail(){
     </div>
     <button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>
     ${d.main_photo ? `<img class="dive-main-photo" id="dvMainPhotoView" src="${d.main_photo}" alt="">` : ''}
-    <div class="pp-section" style="border-top:none;padding-top:0;margin-top:0;">
-      ${rows.map(([label,value])=>`<div class="pp-row"><span class="pp-row-label">${escapeHtml(label)}</span><span class="pp-row-value">${escapeHtml(String(value))}</span></div>`).join('')}
+    ${groupHtml}
+
+    <div class="dvs-section">
+      <div class="dvs-head">Gráfico</div>
+      <div class="dvs-body blue">
+        ${profile || ''}
+        <div class="dive-profile-note">
+          ${profile
+            ? 'Perfil esquemático a partir de los datos introducidos. Próximamente podrás importar el perfil real desde tu ordenador de buceo.'
+            : 'Introduce la profundidad máxima para ver aquí el perfil de la inmersión. Próximamente podrás importar el perfil real desde tu ordenador de buceo.'}
+        </div>
+      </div>
     </div>
-    ${(d.notes || notesPhotos.length) ? `<div class="pp-section">
-      <div class="pp-section-title">Observaciones</div>
-      ${d.notes ? `<div style="font-size:13px;color:var(--ink);">${escapeHtml(d.notes)}</div>` : ''}
-      ${notesPhotos.length ? `<div class="dive-photo-grid">${notesPhotos.map(src=>`<div class="dive-photo-thumb"><img src="${src}" alt="" data-zoom></div>`).join('')}</div>` : ''}
-    </div>` : ''}
-    <div class="pp-section">
-      <div class="pp-section-title">Especies vistas</div>
-      <div class="zones-order-grid" id="diveSpeciesGrid"></div>
-      <button type="button" class="btn secondary" id="addDiveSpeciesBtn" style="margin-top:12px;width:100%;">${icon('plus','icon-sm')} Añadir especie vista</button>
+
+    <div class="dvs-section">
+      <div class="dvs-head">Comentarios</div>
+      <div class="dvs-body">
+        ${d.notes ? `<div style="font-size:13px;color:var(--ink);line-height:1.5;">${escapeHtml(d.notes)}</div>` : `<div style="font-size:12px;color:#8A9A82;">Sin comentarios.</div>`}
+        ${notesPhotos.length ? `<div class="dive-photo-grid">${notesPhotos.map(src=>`<div class="dive-photo-thumb"><img src="${src}" alt="" data-zoom></div>`).join('')}</div>` : ''}
+      </div>
     </div>
-    <div class="pp-section">
-      <div class="pp-section-title">Perfil de profundidad</div>
-      <div class="pp-placeholder">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Próximamente — conecta tu ordenador de buceo para importar el perfil de esta inmersión (profundidad, temperatura y tiempo) y verlo en una gráfica.
+
+    <div class="dvs-section">
+      <div class="dvs-head">Especies vistas</div>
+      <div class="dvs-body plain">
+        <div class="zones-order-grid" id="diveSpeciesGrid"></div>
+        <button type="button" class="btn secondary" id="addDiveSpeciesBtn" style="margin-top:12px;width:100%;">${icon('plus','icon-sm')} Añadir especie vista</button>
       </div>
     </div>
   `;
@@ -6455,108 +6574,116 @@ function renderDiveForm(){
   const body = document.getElementById('logbookBody');
   const d = editingDive || {};
   const nextDiveNumber = dives.reduce((max,x)=>Math.max(max, x.dive_number||0), 0) + 1;
+  const sec = (title, inner, cls) => `<div class="dvs-section"><div class="dvs-head">${title}</div><div class="dvs-body ${cls||''}">${inner}</div></div>`;
 
   body.innerHTML = `
     <div class="new-sighting" style="margin-top:0;border-top:none;padding-top:0;">
-      <div class="field-section-title">Datos generales</div>
-      <div class="field-row2">
-        <div class="field"><label>Número de inmersión</label><input type="number" id="dv-number" value="${d.dive_number ?? nextDiveNumber}"></div>
-        <div class="field"><label>Fecha</label><input type="date" id="dv-date" value="${d.date || todayISO()}"></div>
-      </div>
-      <div class="field-row2">
-        <div class="field"><label>Hora de entrada</label><input type="time" id="dv-entry-time" value="${d.entry_time ? d.entry_time.slice(0,5) : ''}"></div>
-        <div class="field"><label>Hora de salida</label><input type="time" id="dv-exit-time" value="${d.exit_time ? d.exit_time.slice(0,5) : ''}"></div>
-      </div>
-      <div class="field"><label>Tiempo total (min)</label><input type="number" id="dv-duration" value="${d.duration_min ?? ''}" placeholder="Se calcula solo con hora de entrada y salida"></div>
-      <div class="field-row2">
-        <div class="field"><label>Nombre del sitio</label><input type="text" id="dv-site-name" value="${escapeHtml(d.site_name||'')}"></div>
-        <div class="field"><label>Nombre de la inmersión</label><input type="text" id="dv-dive-name" value="${escapeHtml(d.dive_name||'')}"></div>
-      </div>
 
-      <div class="field-section-title">Ubicación</div>
-      <div class="field">
-        <label>Ubicación</label>
-        <div class="loc-input-wrap">
-          ${icon('mapPin','icon-sm')}
-          <input type="text" id="dv-location" value="${escapeHtml(d.location_text||'')}" placeholder="Toca aquí o escribe" autocomplete="off">
+      ${sec('Inmersión', `
+        <div class="field-row2">
+          <div class="field"><label>Nº</label><input type="number" id="dv-number" value="${d.dive_number ?? nextDiveNumber}"></div>
+          <div class="field"><label>Fecha</label><input type="date" id="dv-date" value="${d.date || todayISO()}"></div>
         </div>
-      </div>
-      <div id="diveInlineMapWrap">
-        <div id="diveLeafletMap"></div>
-        <button type="button" class="map-expand-btn" id="diveMapExpandBtn" title="Ampliar mapa">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-        </button>
-        <div class="map-foot">
-          <span class="geo-status" id="diveGeoStatus"></span>
-          <button type="button" class="close-map-link" id="diveCloseMapBtn">Cerrar mapa</button>
+        <div class="field-row2">
+          <div class="field"><label>Hora entrada</label><input type="time" id="dv-entry-time" value="${d.entry_time ? d.entry_time.slice(0,5) : ''}"></div>
+          <div class="field"><label>Hora salida</label><input type="time" id="dv-exit-time" value="${d.exit_time ? d.exit_time.slice(0,5) : ''}"></div>
         </div>
-      </div>
-      <div class="field-row2">
-        <div class="field"><label>Tipo de aproximación</label><input type="text" id="dv-approach" list="dvApproachList" value="${escapeHtml(d.approach_type||'')}"><datalist id="dvApproachList"><option value="Costa"><option value="Barco"></datalist></div>
-        <div class="field"><label>Lecho marino</label><input type="text" id="dv-seabed" list="dvSeabedList" value="${escapeHtml(d.seabed_type||'')}"><datalist id="dvSeabedList"><option value="Arena"><option value="Roca"><option value="Posidonia"><option value="Grava"><option value="Fango"><option value="Mixto"></datalist></div>
-      </div>
+        <div class="field"><label>Tiempo total (min)</label><input type="number" id="dv-duration" value="${d.duration_min ?? ''}" placeholder="Se calcula con la hora de entrada y salida"></div>
+        <div class="field-row2">
+          <div class="field"><label>Lugar</label><input type="text" id="dv-site-name" value="${escapeHtml(d.site_name||'')}"></div>
+          <div class="field"><label>Nombre de la inmersión</label><input type="text" id="dv-dive-name" value="${escapeHtml(d.dive_name||'')}"></div>
+        </div>
+        <div class="field-row2">
+          <div class="field"><label>Salida desde</label><input type="text" id="dv-approach" list="dvApproachList" value="${escapeHtml(d.approach_type||'')}" placeholder="Costa / Barco"><datalist id="dvApproachList"><option value="Costa"><option value="Barco"></datalist></div>
+          <div class="field"><label>Lecho marino</label><input type="text" id="dv-seabed" list="dvSeabedList" value="${escapeHtml(d.seabed_type||'')}" placeholder="Arena, roca..."><datalist id="dvSeabedList"><option value="Arena"><option value="Roca"><option value="Posidonia"><option value="Grava"><option value="Fango"><option value="Mixto"></datalist></div>
+        </div>
+      `)}
 
-      <div class="field-section-title">Centro y compañía</div>
-      <div class="field-row2">
-        <div class="field"><label>Club de buceo</label><input type="text" id="dv-club" value="${escapeHtml(d.dive_club||'')}"></div>
-        <div class="field"><label>Centro de buceo</label><input type="text" id="dv-center" value="${escapeHtml(d.dive_center||'')}"></div>
-      </div>
-      <div class="field"><label>Compañero</label><input type="text" id="dv-buddy" value="${escapeHtml(d.buddy||'')}"></div>
+      ${sec('Ubicación', `
+        <div class="field">
+          <label>Ubicación</label>
+          <div class="loc-input-wrap">
+            ${icon('mapPin','icon-sm')}
+            <input type="text" id="dv-location" value="${escapeHtml(d.location_text||'')}" placeholder="Toca aquí o escribe" autocomplete="off">
+          </div>
+        </div>
+        <div id="diveInlineMapWrap">
+          <div id="diveLeafletMap"></div>
+          <button type="button" class="map-expand-btn" id="diveMapExpandBtn" title="Ampliar mapa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          </button>
+          <div class="map-foot">
+            <span class="geo-status" id="diveGeoStatus"></span>
+            <button type="button" class="close-map-link" id="diveCloseMapBtn">Cerrar mapa</button>
+          </div>
+        </div>
+      `)}
 
-      <div class="field-section-title">Equipo</div>
-      <div class="field-row2">
-        <div class="field"><label>Tipo de traje</label><input type="text" id="dv-suit" list="dvSuitList" value="${escapeHtml(d.suit_type||'')}"><datalist id="dvSuitList"><option value="Húmedo"><option value="Semiseco"><option value="Seco"></datalist></div>
-        <div class="field"><label>Tipo de aire</label><input type="text" id="dv-air-type" list="dvAirTypeList" value="${escapeHtml(d.air_type||'')}"><datalist id="dvAirTypeList"><option value="Aire"><option value="Nitrox"><option value="Trimix"></datalist></div>
-      </div>
-      <div class="field-row2">
-        <div class="field"><label>Litros de la botella</label><input type="number" id="dv-tank-liters" value="${d.tank_liters ?? ''}"></div>
-        <div class="field"><label>Material de la botella</label><input type="text" id="dv-tank-material" list="dvTankMaterialList" value="${escapeHtml(d.tank_material||'')}"><datalist id="dvTankMaterialList"><option value="Acero"><option value="Aluminio"></datalist></div>
-      </div>
-      <div class="field"><label>Lastre (kg)</label><input type="number" id="dv-weight" value="${d.weight_kg ?? ''}"></div>
+      ${sec('Aire y equipo', `
+        <div class="field-row2">
+          <div class="field"><label>Presión inicio (bar)</label><input type="number" id="dv-entry-pressure" value="${d.entry_pressure ?? ''}"></div>
+          <div class="field"><label>Presión final (bar)</label><input type="number" id="dv-exit-pressure" value="${d.exit_pressure ?? ''}"></div>
+        </div>
+        <div class="dive-consumption" id="dvConsumptionLabel"></div>
+        <div class="field-row2">
+          <div class="field"><label>Tipo de aire</label><input type="text" id="dv-air-type" list="dvAirTypeList" value="${escapeHtml(d.air_type||'')}" placeholder="Aire / Nitrox"><datalist id="dvAirTypeList"><option value="Aire"><option value="Nitrox"><option value="Trimix"></datalist></div>
+          <div class="field"><label>Traje</label><input type="text" id="dv-suit" list="dvSuitList" value="${escapeHtml(d.suit_type||'')}" placeholder="Húmedo / Seco"><datalist id="dvSuitList"><option value="Húmedo"><option value="Semiseco"><option value="Seco"></datalist></div>
+        </div>
+        <div class="field-row2">
+          <div class="field"><label>Botella (l)</label><input type="number" id="dv-tank-liters" value="${d.tank_liters ?? ''}"></div>
+          <div class="field"><label>Material</label><input type="text" id="dv-tank-material" list="dvTankMaterialList" value="${escapeHtml(d.tank_material||'')}" placeholder="Acero / Aluminio"><datalist id="dvTankMaterialList"><option value="Acero"><option value="Aluminio"></datalist></div>
+        </div>
+        <div class="field"><label>Lastre (kg)</label><input type="number" id="dv-weight" value="${d.weight_kg ?? ''}"></div>
+      `)}
 
-      <div class="field-section-title">Presión de aire</div>
-      <div class="field-row2">
-        <div class="field"><label>Presión de entrada (bar)</label><input type="number" id="dv-entry-pressure" value="${d.entry_pressure ?? ''}"></div>
-        <div class="field"><label>Presión de salida (bar)</label><input type="number" id="dv-exit-pressure" value="${d.exit_pressure ?? ''}"></div>
-      </div>
-      <div class="dive-consumption" id="dvConsumptionLabel"></div>
+      ${sec('Condiciones', `
+        <div class="field-row2">
+          <div class="field"><label>Temp. agua (°C)</label><input type="number" id="dv-water-temp" value="${d.water_temp ?? ''}"></div>
+          <div class="field"><label>Temp. aire (°C)</label><input type="number" id="dv-air-temp" value="${d.air_temp ?? ''}"></div>
+        </div>
+        <div class="field-row2">
+          <div class="field"><label>Visibilidad (m)</label><input type="number" id="dv-visibility" value="${d.visibility_m ?? ''}"></div>
+          <div class="field"><label>Corriente</label><input type="text" id="dv-current" list="dvCurrentList" value="${escapeHtml(d.current||'')}" placeholder="Nula, suave..."><datalist id="dvCurrentList"><option value="Nula"><option value="Suave"><option value="Moderada"><option value="Fuerte"></datalist></div>
+        </div>
+      `)}
 
-      <div class="field-section-title">Condiciones</div>
-      <div class="field-row2">
-        <div class="field"><label>Temperatura del agua (°C)</label><input type="number" id="dv-water-temp" value="${d.water_temp ?? ''}"></div>
-        <div class="field"><label>Temperatura del aire (°C)</label><input type="number" id="dv-air-temp" value="${d.air_temp ?? ''}"></div>
-      </div>
-      <div class="field-row2">
-        <div class="field"><label>Corriente</label><input type="text" id="dv-current" list="dvCurrentList" value="${escapeHtml(d.current||'')}"><datalist id="dvCurrentList"><option value="Nula"><option value="Suave"><option value="Moderada"><option value="Fuerte"></datalist></div>
-        <div class="field"><label>Visibilidad (m)</label><input type="number" id="dv-visibility" value="${d.visibility_m ?? ''}"></div>
-      </div>
+      ${sec('Gráfico', `
+        <div class="field"><label>Profundidad máxima (m)</label><input type="number" id="dv-max-depth" value="${d.max_depth_m ?? ''}"></div>
+        <div class="field-row2">
+          <div class="field"><label>Parada de seguridad (m)</label><input type="number" id="dv-safety-stop" value="${d.safety_stop_m ?? ''}"></div>
+          <div class="field"><label>Parada de descompresión (m)</label><input type="number" id="dv-deco-stop" value="${d.deco_stop_m ?? ''}"></div>
+        </div>
+        <div id="dvProfilePreview" style="margin-top:10px;"></div>
+      `, 'blue')}
 
-      <div class="field-section-title">Perfil</div>
-      <div class="field"><label>Profundidad máxima (m)</label><input type="number" id="dv-max-depth" value="${d.max_depth_m ?? ''}"></div>
-      <div class="field-row2">
-        <div class="field"><label>Parada de seguridad (m)</label><input type="number" id="dv-safety-stop" value="${d.safety_stop_m ?? ''}"></div>
-        <div class="field"><label>Parada de descompresión (m)</label><input type="number" id="dv-deco-stop" value="${d.deco_stop_m ?? ''}"></div>
-      </div>
+      ${sec('Centro y compañía', `
+        <div class="field-row2">
+          <div class="field"><label>Centro de buceo</label><input type="text" id="dv-center" value="${escapeHtml(d.dive_center||'')}"></div>
+          <div class="field"><label>Club de buceo</label><input type="text" id="dv-club" value="${escapeHtml(d.dive_club||'')}"></div>
+        </div>
+        <div class="field"><label>Compañero</label><input type="text" id="dv-buddy" value="${escapeHtml(d.buddy||'')}"></div>
+      `)}
 
-      <div class="field-section-title">Foto principal</div>
-      <div class="field">
-        <button type="button" class="btn secondary" id="dvPickMainPhoto" style="width:100%;">${icon('camera','icon-sm')} ${d.main_photo ? 'Cambiar foto principal' : 'Añadir foto principal'}</button>
-        <img class="photo-preview" id="dvMainPhotoPreview" src="${d.main_photo||''}" style="${d.main_photo?'display:block;':''}">
-        <button type="button" class="close-map-link" id="dvRemoveMainPhoto" style="margin-top:6px;display:${d.main_photo?'block':'none'};">Quitar foto principal</button>
-      </div>
+      ${sec('Comentarios', `
+        <div class="field"><textarea id="dv-notes" placeholder="Notas sobre la inmersión...">${escapeHtml(d.notes||'')}</textarea></div>
+        <div class="field">
+          <button type="button" class="btn secondary" id="dvAddNotesPhoto" style="width:100%;">${icon('camera','icon-sm')} Añadir fotos</button>
+          <div class="dive-photo-grid" id="dvNotesPhotoGrid"></div>
+        </div>
+      `)}
 
-      <div class="field-section-title">Observaciones</div>
-      <div class="field"><textarea id="dv-notes" placeholder="Notas sobre la inmersión...">${escapeHtml(d.notes||'')}</textarea></div>
-      <div class="field">
-        <button type="button" class="btn secondary" id="dvAddNotesPhoto" style="width:100%;">${icon('camera','icon-sm')} Añadir fotos a observaciones</button>
-        <div class="dive-photo-grid" id="dvNotesPhotoGrid"></div>
-      </div>
+      ${sec('Foto principal', `
+        <div class="field">
+          <button type="button" class="btn secondary" id="dvPickMainPhoto" style="width:100%;">${icon('camera','icon-sm')} ${d.main_photo ? 'Cambiar foto principal' : 'Añadir foto principal'}</button>
+          <img class="photo-preview" id="dvMainPhotoPreview" src="${d.main_photo||''}" style="${d.main_photo?'display:block;':''}">
+          <button type="button" class="close-map-link" id="dvRemoveMainPhoto" style="margin-top:6px;display:${d.main_photo?'block':'none'};">Quitar foto principal</button>
+        </div>
+      `, 'plain')}
 
-      ${!editingDive ? `
-      <div class="field-section-title">Especies vistas</div>
-      <div class="zones-order-grid" id="dvPendingSpeciesGrid"></div>
-      <button type="button" class="btn secondary" id="dvAddPendingSpeciesBtn" style="width:100%;margin-bottom:12px;">${icon('plus','icon-sm')} Añadir especie vista</button>
-      ` : ''}
+      ${!editingDive ? sec('Especies vistas', `
+        <div class="zones-order-grid" id="dvPendingSpeciesGrid"></div>
+        <button type="button" class="btn secondary" id="dvAddPendingSpeciesBtn" style="width:100%;margin-top:12px;">${icon('plus','icon-sm')} Añadir especie vista</button>
+      `, 'plain') : ''}
 
       <div class="row2">
         <button type="button" class="btn secondary" id="dvCancelBtn">Cancelar</button>
@@ -6587,6 +6714,22 @@ function wireDiveForm(){
   }
 
   wireDivePhotoPickers();
+
+  // Vista previa del gráfico que se actualiza según se rellenan los datos.
+  const profileEl = document.getElementById('dvProfilePreview');
+  const profileInputs = ['dv-max-depth','dv-safety-stop','dv-deco-stop','dv-duration'].map(id=>document.getElementById(id));
+  function refreshProfilePreview(){
+    const num = el => el && el.value !== '' ? Number(el.value) : null;
+    const svg = diveProfileSvg({
+      max_depth_m: num(profileInputs[0]),
+      safety_stop_m: num(profileInputs[1]),
+      deco_stop_m: num(profileInputs[2]),
+      duration_min: num(profileInputs[3]),
+    });
+    profileEl.innerHTML = svg || `<div class="dive-profile-note" style="margin-top:0;">Introduce la profundidad máxima para ver aquí el perfil.</div>`;
+  }
+  profileInputs.forEach(el=>el && el.addEventListener('input', refreshProfilePreview));
+  refreshProfilePreview();
 
   const deleteBtn = document.getElementById('dvDeleteBtn');
   if(deleteBtn) deleteBtn.onclick = ()=>deleteDive(editingDive.id);
