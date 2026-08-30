@@ -1,0 +1,4 @@
+Coloca aquí las fotos de Carangiformes (peces), nombradas como {id}.jpg
+
+Especies de este orden:
+- juriellimon.jpg  (Pseudocaranx dentex — Juriel limón)
