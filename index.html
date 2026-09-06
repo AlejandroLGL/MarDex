@@ -593,6 +593,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     font-size:14px; font-weight:700; color:var(--muted); text-transform:uppercase;
     letter-spacing:.05em; margin-bottom:12px;
   }
+  .admin-species-toolbar{ display:flex; gap:10px; align-items:center; }
+  @media(max-width:600px){ .admin-species-toolbar{ flex-wrap:wrap; } .admin-species-toolbar .search-wrap{ flex-basis:100%; } }
+  .admin-zone-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px 14px; }
+  .admin-zone-chk{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); font-weight:600; cursor:pointer; }
+  .admin-zone-chk input{ width:16px; height:16px; accent-color:var(--blue); cursor:pointer; }
   .admin-table-wrap{ overflow-x:auto; border-radius:var(--r-md); box-shadow:0 2px 8px rgba(5,46,74,0.07); }
   .admin-table{
     width:100%; border-collapse:collapse; background:var(--card); font-size:13px;
@@ -914,6 +919,39 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .chip.fav-chip.active{ background:var(--coral); color:#fff; border-color:transparent; }
 
   main{ padding:24px 28px 110px; background:transparent; min-height:calc(100vh - 160px); }
+
+  /* Vistas de página: ocupan la columna principal en lugar de la topbar y la
+     rejilla de especies, en vez de abrirse como pop-up encima de todo. */
+  .page-view{ display:none; padding:28px 32px 110px; min-height:100vh; }
+  body.view-logbook #logbookPage{ display:block; }
+  body.view-logbook > .app > .main-col > .topbar,
+  body.view-logbook > .app > .main-col > main{ display:none; }
+  /* Los filtros de la barra lateral son de especies: no pintan nada aquí. */
+  body.view-logbook .filters-collapsible,
+  body.view-logbook .filters-toggle-btn{ display:none !important; }
+  .page-view-inner{ max-width:960px; margin:0 auto; }
+  /* Cabecera de vista: mismo lenguaje que la topbar de Explorar. */
+  .page-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:24px; }
+  .page-header-text{ min-width:0; }
+  .page-header h2{ margin:0; font-family:var(--serif); font-size:34px; font-weight:400; letter-spacing:-0.2px; color:var(--ink); line-height:1.05; }
+  .page-header .subtitle{ color:var(--muted); font-size:13px; margin-top:4px; }
+  .page-back-btn{
+    display:flex; align-items:center; gap:7px; flex-shrink:0;
+    background:var(--card); border:1px solid var(--line); border-radius:20px;
+    padding:8px 15px 8px 12px; cursor:pointer; font-family:var(--sans);
+    font-size:12.5px; font-weight:700; color:var(--blue); transition:background .15s;
+  }
+  .page-back-btn:hover{ background:var(--blue-soft); }
+  .page-back-btn svg{ width:15px; height:15px; }
+  @media(max-width:600px){
+    .page-header h2{ font-size:26px; }
+  }
+  @media(max-width:820px){
+    .page-view{ padding:20px 18px 110px; min-height:auto; }
+  }
+  @media(max-width:600px){
+    .page-view{ padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+  }
   .grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; }
   @media (max-width:1000px){ .grid{ grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:600px){ .grid{ grid-template-columns:1fr; } }
@@ -1291,11 +1329,28 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .dive-card:hover{ box-shadow:0 4px 14px rgba(5,46,74,0.12); }
   .dive-card-main{ min-width:0; flex:1; }
+  .dive-card-cover{
+    width:64px; height:64px; border-radius:var(--r-sm); overflow:hidden; flex-shrink:0;
+    background:var(--bg); display:flex; align-items:center; justify-content:center;
+  }
+  .dive-card-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .dive-card-cover.empty{ color:var(--blue); opacity:.35; }
+  .dive-card-cover.empty svg{ width:22px; height:22px; }
+  @media(max-width:600px){
+    .dive-card-cover{ width:52px; height:52px; }
+  }
   .dive-card-title{ font-weight:700; color:var(--ink); font-size:14px; }
   .dive-card-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
   .dive-card-depth{ font-family:var(--mono); font-weight:700; color:var(--blue); font-size:15px; white-space:nowrap; flex-shrink:0; }
   .dive-consumption{ font-size:12px; font-weight:600; color:var(--blue); margin:-4px 0 4px; min-height:16px; }
+  .dive-card-side{ display:flex; align-items:center; gap:12px; flex-shrink:0; }
   .dive-card-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  /* En pantalla estrecha el título necesita todo el ancho, así que la
+     profundidad y los botones bajan a una segunda fila. */
+  @media(max-width:600px){
+    .dive-card{ flex-wrap:wrap; row-gap:12px; padding:12px 14px; }
+    .dive-card-side{ width:100%; justify-content:flex-end; }
+  }
   .dive-card-edit{
     height:32px; padding:0 14px; border-radius:16px; border:none; background:rgba(0,162,255,0.1);
     color:var(--blue); cursor:pointer; display:flex; align-items:center; justify-content:center;
@@ -1374,6 +1429,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   /* Gráfico del perfil de inmersión */
   .dive-profile-svg{ width:100%; height:auto; display:block; }
   .dive-profile-note{ font-size:10.5px; color:#3C5A78; margin-top:8px; line-height:1.4; }
+  .dive-species-note{ font-size:10.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
   .loc-input-wrap{ position:relative; }
   .loc-input-wrap .icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); }
   .loc-input-wrap input{ padding-left:36px !important; }
@@ -1920,6 +1976,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     <main>
       <div class="grid" id="grid"></div>
     </main>
+    <!-- El logbook es una vista propia de la columna principal, no un pop-up:
+         se muestra en lugar de la topbar + rejilla de especies. -->
+    <div class="page-view" id="logbookPage">
+      <div class="page-view-inner" id="logbookSheet">
+        <!-- populated by renderLogbookPanel() -->
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2018,12 +2081,6 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 <div class="admin-overlay" id="adminOverlay">
   <div class="admin-sheet" id="adminSheet">
     <!-- populated by renderAdminPanel() -->
-  </div>
-</div>
-
-<div class="admin-overlay" id="logbookOverlay">
-  <div class="admin-sheet" id="logbookSheet">
-    <!-- populated by renderLogbookPanel() -->
   </div>
 </div>
 
@@ -2303,7 +2360,10 @@ const CARD_THEME_CLASS = { raya:'ray', pez:'fish', medusa:'medusa', crustaceo:'c
 function catFolder(cat){ return CAT_FOLDERS[cat] || 'tiburones'; }
 const CAT_SILHOUETTES = { raya:RAY_SILHOUETTE, pez:FISH_SILHOUETTE, medusa:MEDUSA_SILHOUETTE, crustaceo:CRUSTACEO_SILHOUETTE, tiburon:SHARK_SILHOUETTE, reptil:REPTIL_SILHOUETTE, molusco:MOLUSCO_SILHOUETTE };
 function catSilhouette(cat){ return CAT_SILHOUETTES[cat] || SHARK_SILHOUETTE; }
-function speciesImgPath(s){ return `especies/imagenes/${catFolder(s.cat)}/${s.order.toLowerCase()}/${s.id}.jpg`; }
+// `photo_url` es la foto que un admin ha subido desde el panel (vive en
+// Supabase Storage); mientras nadie la toque, la especie sigue sirviendo la
+// foto estática del repositorio como hasta ahora.
+function speciesImgPath(s){ return s.photo_url || `especies/imagenes/${catFolder(s.cat)}/${s.order.toLowerCase()}/${s.id}.jpg`; }
 
 function placeholderMarkup(cat){
   const wave = `<svg class="placeholder-wave" viewBox="0 0 200 40" preserveAspectRatio="none" fill="currentColor"><path d="M0 20 Q25 5 50 20 T100 20 T150 20 T200 20 V40 H0 Z"/></svg>`;
@@ -2513,6 +2573,48 @@ let SPECIES = [
   {id:'tamborilazul', cat:'pez', order:'Tetraodontiformes', name:'Tamboril azul', sci:'Sphoeroides pachygaster', region:'Canarias', zones:['canarias','mediterraneo'], code:'PEZ-79', size:'0.4 m', habitat:'Fondos de arena y roca, más profundos que sus parientes', depth:'20–200 m', speed:'Lenta', diet:'Crustáceos, moluscos y cefalópodos', rarity:3, blurb:'Se distingue del resto de tamboriles por su piel completamente lisa, sin espinas ni manchas marcadas, y su tono gris azulado con el vientre blanco. Como todos los tetraodóntidos, acumula tetrodotoxina y no es comestible.'},
 ];
 
+// Categoría → prefijo de código (TBR-32, PEZ-79...). Usado solo para sugerir
+// el siguiente código libre al dar de alta una especie desde el admin.
+const CAT_CODE_PREFIX = { tiburon:'TBR', raya:'RAY', pez:'PEZ', medusa:'MED', crustaceo:'CRU', reptil:'REP', molusco:'MOL' };
+function nextSpeciesCode(cat){
+  const prefix = CAT_CODE_PREFIX[cat];
+  if(!prefix) return '';
+  const nums = SPECIES.filter(s=>s.cat===cat).map(s=>{
+    const m = /^[A-Z]+-(\d+)$/.exec(s.code||'');
+    return m ? Number(m[1]) : 0;
+  });
+  return `${prefix}-${(nums.length ? Math.max(...nums) : 0) + 1}`;
+}
+// Identificador de especie a partir del nombre: solo minúsculas y números,
+// porque se usa tal cual en la ruta de la foto y en los ids de logros.
+function slugifyId(str){
+  return (str||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,40);
+}
+
+// Catálogo de especies: antes vivía solo en species.json, un fichero estático
+// que había que regenerar y desplegar por PR cada vez que cambiaba algo. Con
+// el editor del panel de admin los datos viven en la tabla `species` de
+// Supabase, así que un cambio de un admin lo ve todo el mundo al momento sin
+// tocar el repositorio. Se guarda además una copia en el almacenamiento
+// compartido (`safeSet`) para que la app arranque con el último catálogo
+// conocido sin conexión; si tampoco hay eso (primerísimo arranque, sin red),
+// se usa el array `SPECIES` de arriba, embebido en el propio HTML, como
+// último recurso.
+async function loadSpeciesCatalog(){
+  try{
+    const { data, error } = await _sb.from('species').select('*').order('code');
+    if(!error && Array.isArray(data) && data.length){
+      SPECIES = data;
+      safeSet('mardex-species-cache', JSON.stringify(data), true);
+      return;
+    }
+  }catch(e){}
+  try{
+    const cached = await safeGet('mardex-species-cache', true);
+    if(cached) SPECIES = JSON.parse(cached);
+  }catch(e){}
+}
+
 // ---------- estado ----------
 let state = { sightings:{}, favorites:{} };
 let selectedCats = new Set();
@@ -2546,6 +2648,15 @@ let diveSpeciesPickerMode = 'sighting'; // 'sighting' (inmersión ya guardada) |
 let pendingDiveMainPhoto = null;   // data URL de la foto principal
 let pendingDiveNotesPhotos = [];   // data URLs de las fotos de observaciones
 let saveInFlight = false;
+
+// ── Editor de especies (solo admins) ────────────────────────────────────
+let adminView = 'stats';        // 'stats' | 'species' | 'speciesForm'
+let editingSpeciesId = null;    // null = dando de alta una especie nueva
+let speciesAdminSearch = '';
+let speciesAdminCatFilter = 'todos';
+let pendingSpeciesPhotoBlob = null;    // foto nueva elegida, aún sin subir
+let pendingSpeciesPhotoPreview = null; // URL de objeto para previsualizarla
+let speciesPhotoCleared = false;       // true si se pulsó "quitar foto"
 let expandedSightings = new Set();
 let currentProfile = null;
 let viewMode = 'large';
@@ -4512,11 +4623,9 @@ function closeModal(){
   const returnToDive = !!activeDiveContext;
   activeDiveContext = null;
   renderGrid();
-  if(returnToDive){
-    // Se abrió desde "Añadir especie vista" en el Logbook: al cerrar,
-    // volvemos al detalle de esa inmersión (ya actualizado con la nueva
-    // especie vinculada) en vez de dejar al usuario en Explorar.
-    document.getElementById('logbookOverlay').classList.add('open');
+  if(returnToDive && isLogbookView()){
+    // Se abrió desde "Añadir especie vista" en el Logbook: al cerrar la ficha
+    // repintamos la inmersión para que aparezca ya la especie vinculada.
     renderLogbookPanel();
   }
   if(history.state && history.state.modal){
@@ -4529,7 +4638,6 @@ function closeModal(){
 // no importa si la especie ya tenía avistamientos previos: aquí siempre se
 // quiere registrar uno nuevo).
 function openModalForDiveSighting(id){
-  document.getElementById('logbookOverlay').classList.remove('open');
   openSpeciesId = id;
   expandedSightings = new Set();
   window._closeFabMenu?.();
@@ -5083,6 +5191,28 @@ function resizeImageFile(file, maxW){
         canvas.height = img.height * scale;
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Igual que resizeImageFile pero devuelve un Blob en vez de un data URL,
+// listo para subir directamente a Supabase Storage (así se evita ida y
+// vuelta por base64 con fotos que pueden ser bastante grandes).
+function resizeImageFileToBlob(file, maxW){
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob=>resolve(blob), 'image/jpeg', 0.85);
       };
       img.src = ev.target.result;
     };
@@ -5710,44 +5840,23 @@ function initBottomNav(){
   btns.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const tab = btn.dataset.bnav;
-      btns.forEach(b=>b.classList.remove('active'));
-      if(tab==='map'){
-        btns[0].classList.add('active');
-        openGlobalMap();
-        return;
-      }
-      if(tab==='tree'){
-        btns[0].classList.add('active');
-        openTreeOverlay();
-        return;
-      }
+      // Los paneles pop-up se abren encima sin cambiar la vista de fondo, así
+      // que el resaltado del dock lo decide syncBottomNavActive().
+      if(tab==='map'){ openGlobalMap(); syncBottomNavActive(); return; }
+      if(tab==='tree'){ openTreeOverlay(); syncBottomNavActive(); return; }
       if(tab==='profile'){
-        btns[0].classList.add('active');
         if(currentProfile) openProfilePage();
         else openProfilePicker();
+        syncBottomNavActive();
         return;
       }
-      if(tab==='friends'){
-        btns[0].classList.add('active');
-        openFriendsPanel();
-        return;
-      }
-      if(tab==='logbook'){
-        btns[0].classList.add('active');
-        openLogbookPanel();
-        return;
-      }
-      if(tab==='zones'){
-        btns[0].classList.add('active');
-        openZonesPanel();
-        return;
-      }
-      if(tab==='admin'){
-        btns[0].classList.add('active');
-        openAdminPanel();
-        return;
-      }
-      btn.classList.add('active');
+      if(tab==='friends'){ openFriendsPanel(); syncBottomNavActive(); return; }
+      if(tab==='zones'){ openZonesPanel(); syncBottomNavActive(); return; }
+      if(tab==='admin'){ openAdminPanel(); syncBottomNavActive(); return; }
+
+      // Vistas de verdad de la columna principal.
+      if(tab==='logbook'){ openLogbookPanel(); return; }
+      closeLogbookPanel();
       if(tab==='explore'){
         showFavOnly=false; currentLock='todos';
         renderLockNav(); renderCatNav(); renderGrid();
@@ -5755,6 +5864,7 @@ function initBottomNav(){
         showFavOnly=true;
         renderCatNav(); renderGrid();
       }
+      syncBottomNavActive();
       saveUIPrefs();
     });
   });
@@ -6086,9 +6196,13 @@ function initMobileFAB(){
     if(tab==='admin')    { openAdminPanel(); return; }
     if(tab==='logbook')  { openLogbookPanel(); return; }
     if(tab==='zones')    { openZonesPanel(); return; }
+    // Las de abajo son vistas de la columna principal: si venías del logbook
+    // hay que salir de él para que se vea la rejilla de especies.
+    closeLogbookPanel();
     if(tab==='explore')  { showFavOnly=false; currentLock='todos'; renderLockNav(); renderCatNav(); renderGrid(); }
     else if(tab==='sightings'){ showFavOnly=false; currentLock='desbloqueado'; renderLockNav(); renderGrid(); }
     else if(tab==='saved')   { showFavOnly=true; renderCatNav(); renderGrid(); }
+    syncBottomNavActive();
   }
 
   fabBtn.addEventListener('click', ()=>{
@@ -6101,6 +6215,8 @@ function initMobileFAB(){
 // ── Admin panel ───────────────────────────────────────────────────────
 function openAdminPanel(){
   document.getElementById('adminOverlay').classList.add('open');
+  adminView = 'stats';
+  editingSpeciesId = null;
   renderAdminPanel();
 }
 function closeAdminPanel(){
@@ -6108,25 +6224,39 @@ function closeAdminPanel(){
 }
 onBackdropClose('adminOverlay', closeAdminPanel);
 
-// ── Logbook (importar datos de ordenador de buceo) ───────────────────────
-// De momento es solo la entrada de navegación y una pantalla vacía: leer
-// datos reales de un ordenador de buceo (perfil de inmersión, temperatura,
-// tiempo, nitrógeno en sangre, etc.), la gráfica de profundidad/tiempo y
-// poder marcar en ella las especies avistadas se implementan más adelante.
+// ── Logbook ──────────────────────────────────────────────────────────────
+// Es una vista propia de la columna principal (como "Explorar"), no un
+// pop-up: `body.view-logbook` intercambia la topbar + rejilla de especies
+// por #logbookPage.
 function openLogbookPanel(){
-  document.getElementById('logbookOverlay').classList.add('open');
+  const wasOpen = isLogbookView();
+  document.body.classList.add('view-logbook');
+  syncBottomNavActive();
+  window.scrollTo(0, 0);
+  if(wasOpen && logbookView !== 'list') return;  // ya estabas dentro: no reinicies
   logbookView = 'list';
   editingDive = null;
   loadDives();
 }
 function closeLogbookPanel(){
-  document.getElementById('logbookOverlay').classList.remove('open');
+  document.body.classList.remove('view-logbook');
+  syncBottomNavActive();
 }
-onBackdropClose('logbookOverlay', closeLogbookPanel);
+function isLogbookView(){ return document.body.classList.contains('view-logbook'); }
+
+// Marca en el dock el botón de la vista que se está viendo por debajo. Los
+// paneles que sí siguen siendo pop-up (mapa, zonas, amigos…) no cambian la
+// vista de fondo, así que el resaltado tiene que reflejarla a ella.
+function syncBottomNavActive(){
+  const tab = isLogbookView() ? 'logbook' : (showFavOnly ? 'saved' : 'explore');
+  document.querySelectorAll('#bottomNav [data-bnav]').forEach(b=>{
+    b.classList.toggle('active', b.dataset.bnav === tab);
+  });
+}
 
 async function loadDives(){
   const sheet = document.getElementById('logbookSheet');
-  sheet.innerHTML = `<div class="admin-header"><div><div class="admin-title">Logbook</div></div></div><div class="zones-empty">Cargando…</div>`;
+  sheet.innerHTML = `<div class="page-header"><div class="page-header-text"><h2>Logbook</h2></div></div><div class="zones-empty">Cargando…</div>`;
   const { data, error } = await _sb.from('dives').select('*').order('date', { ascending:false });
   dives = error ? [] : (data || []);
   renderLogbookPanel();
@@ -6143,15 +6273,22 @@ function renderLogbookPanel(){
     title = d.dive_name || d.site_name || 'Inmersión';
     subtitle = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : '';
   }
-  sheet.innerHTML = `<div class="admin-header">
-    <div>
-      <div class="admin-title">${escapeHtml(title)}</div>
-      <div class="admin-subtitle">${escapeHtml(subtitle)}</div>
+  sheet.innerHTML = `<div class="page-header">
+    <div class="page-header-text">
+      <h2>${escapeHtml(title)}</h2>
+      <div class="subtitle">${escapeHtml(subtitle)}</div>
     </div>
-    <button class="admin-close" id="logbookCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button type="button" class="page-back-btn" id="logbookCloseBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Explorar
+    </button>
   </div>
   <div id="logbookBody"></div>`;
-  document.getElementById('logbookCloseBtn').onclick = closeLogbookPanel;
+  document.getElementById('logbookCloseBtn').onclick = ()=>{
+    showFavOnly = false;
+    closeLogbookPanel();
+    renderCatNav(); renderGrid();
+  };
 
   if(logbookView==='form') renderDiveForm();
   else if(logbookView==='detail') renderDiveDetail();
@@ -6174,15 +6311,21 @@ function renderLogbookList(){
   listEl.innerHTML = dives.map(d=>{
     const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : '';
     const subParts = [d.site_name, d.dive_center].filter(Boolean);
+    const cover = d.main_photo
+      ? `<div class="dive-card-cover"><img src="${d.main_photo}" alt="" loading="lazy" onerror="this.closest('.dive-card-cover').classList.add('empty');this.remove()"></div>`
+      : `<div class="dive-card-cover empty">${icon('anchor','icon-sm')}</div>`;
     return `<div class="dive-card" data-id="${d.id}">
+      ${cover}
       <div class="dive-card-main">
         <div class="dive-card-title">${d.dive_number!=null?'#'+d.dive_number+' · ':''}${escapeHtml(d.dive_name || d.site_name || dateLabel || 'Inmersión')}</div>
         <div class="dive-card-sub">${escapeHtml(dateLabel)}${subParts.length?' · '+escapeHtml(subParts.join(' · ')):''}</div>
       </div>
-      ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : ''}
-      <div class="dive-card-actions">
-        <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>
-        <button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>
+      <div class="dive-card-side">
+        ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : ''}
+        <div class="dive-card-actions">
+          <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>
+          <button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -6413,7 +6556,9 @@ function renderDiveSpeciesGrid(dive){
     </div>`;
   }).join('');
   grid.querySelectorAll('[data-id]').forEach(card=>{
-    card.onclick = ()=>{ closeLogbookPanel(); openModal(card.dataset.id); };
+    // El logbook ya no es un pop-up, así que la ficha se abre encima y al
+    // cerrarla se vuelve a la inmersión donde estabas.
+    card.onclick = ()=>openModal(card.dataset.id);
   });
 }
 
@@ -6709,10 +6854,14 @@ function renderDiveForm(){
         </div>
       `, 'plain')}
 
-      ${!editingDive ? sec('Especies vistas', `
+      ${editingDive ? sec('Especies vistas', `
+        <div class="zones-order-grid" id="diveSpeciesGrid"></div>
+        <div class="dive-species-note">Las especies ya registradas se guardan como avistamientos aparte, así que se añaden y se quitan al momento, sin esperar a "Guardar cambios".</div>
+        <button type="button" class="btn secondary" id="addDiveSpeciesBtn" style="width:100%;margin-top:12px;">${icon('plus','icon-sm')} Añadir especie vista</button>
+      `, 'plain') : sec('Especies vistas', `
         <div class="zones-order-grid" id="dvPendingSpeciesGrid"></div>
         <button type="button" class="btn secondary" id="dvAddPendingSpeciesBtn" style="width:100%;margin-top:12px;">${icon('plus','icon-sm')} Añadir especie vista</button>
-      `, 'plain') : ''}
+      `, 'plain')}
 
       <div class="row2">
         <button type="button" class="btn secondary" id="dvCancelBtn">Cancelar</button>
@@ -6740,6 +6889,21 @@ function wireDiveForm(){
   if(addPendingBtn){
     addPendingBtn.onclick = ()=>{ diveSpeciesPickerMode = 'pending'; openDiveSpeciesPicker(); };
     renderPendingSpeciesGrid();
+  }
+
+  // Al editar, las especies ya están guardadas como avistamientos vinculados
+  // por dive_id, así que se listan igual que en el detalle. Antes esta sección
+  // no se pintaba al editar y parecía que se hubieran perdido.
+  const addSightingBtn = document.getElementById('addDiveSpeciesBtn');
+  if(addSightingBtn && editingDive){
+    addSightingBtn.onclick = ()=>{
+      // Añadir una especie sale a la ficha de la especie y al volver repinta
+      // el formulario, así que primero guardamos en memoria lo escrito hasta
+      // ahora para no perderlo.
+      editingDive = { ...editingDive, ...readDiveForm() };
+      startAddDiveSighting(editingDive);
+    };
+    renderDiveSpeciesGrid(editingDive);
   }
 
   wireDivePhotoPickers();
@@ -6987,9 +7151,13 @@ function wireDiveLocationPicker(){
   }
 }
 
-async function saveDive(){
+// Lee el formulario a un objeto con la misma forma que una fila de `dives`.
+// Se usa al guardar y también para conservar lo que el usuario lleve escrito
+// cuando el formulario se tiene que repintar (p. ej. al añadir una especie
+// vista desde la edición, que pasa por la ficha de la especie y vuelve).
+function readDiveForm(){
   const numField = document.getElementById('dv-number').value;
-  const payload = {
+  return {
     dive_number: numField === '' ? null : Number(numField),
     date: document.getElementById('dv-date').value || todayISO(),
     entry_time: document.getElementById('dv-entry-time').value || null,
@@ -7023,6 +7191,10 @@ async function saveDive(){
     main_photo: pendingDiveMainPhoto,
     notes_photos: pendingDiveNotesPhotos,
   };
+}
+
+async function saveDive(){
+  const payload = readDiveForm();
 
   if(editingDive){
     const { error } = await _sb.from('dives').update(payload).eq('id', editingDive.id);
@@ -7905,22 +8077,44 @@ async function renderAdminPanel(){
   sheet.innerHTML = `<div class="admin-header">
     <div>
       <div class="admin-title">Panel de administración</div>
-      <div class="admin-subtitle">Estadísticas y usuarios de MarDex</div>
+      <div class="admin-subtitle">Estadísticas, usuarios y catálogo de especies</div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;">
-      <button class="admin-refresh" id="adminRefreshBtn">Actualizar</button>
+      ${adminView==='stats' ? `<button class="admin-refresh" id="adminRefreshBtn">Actualizar</button>` : ''}
       <button class="admin-close" id="adminCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
   </div>
-  <div class="admin-stats" id="adminStatsGrid"><div style="color:var(--muted);font-size:13px;grid-column:1/-1">Cargando stats…</div></div>
-  <div class="admin-section-title">Usuarios registrados</div>
-  <div class="admin-table-wrap"><table class="admin-table" id="adminUserTable">
-    <thead><tr><th>Usuario</th><th>Correo</th><th>Avistamientos</th><th>Especies</th><th>Favoritos</th><th>Registro</th></tr></thead>
-    <tbody id="adminUserBody"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Cargando…</td></tr></tbody>
-  </table></div>`;
+  <div class="chip-row" id="adminTabs" style="margin-top:0;margin-bottom:20px;">
+    <button type="button" class="chip ${adminView==='stats'?'active':''}" data-view="stats">Estadísticas</button>
+    <button type="button" class="chip ${adminView!=='stats'?'active':''}" data-view="species">Especies</button>
+  </div>
+  <div id="adminBody"></div>`;
 
   document.getElementById('adminCloseBtn').onclick = closeAdminPanel;
-  document.getElementById('adminRefreshBtn').onclick = ()=>renderAdminPanel();
+  const refreshBtn = document.getElementById('adminRefreshBtn');
+  if(refreshBtn) refreshBtn.onclick = ()=>renderAdminStats();
+  sheet.querySelectorAll('#adminTabs [data-view]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(btn.dataset.view===adminView || (btn.dataset.view==='species' && adminView==='speciesForm')) return;
+      adminView = btn.dataset.view;
+      renderAdminPanel();
+    };
+  });
+
+  if(adminView==='speciesForm') renderSpeciesForm();
+  else if(adminView==='species') renderSpeciesAdminList();
+  else await renderAdminStats();
+}
+
+async function renderAdminStats(){
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <div class="admin-stats" id="adminStatsGrid"><div style="color:var(--muted);font-size:13px;grid-column:1/-1">Cargando stats…</div></div>
+    <div class="admin-section-title">Usuarios registrados</div>
+    <div class="admin-table-wrap"><table class="admin-table" id="adminUserTable">
+      <thead><tr><th>Usuario</th><th>Correo</th><th>Avistamientos</th><th>Especies</th><th>Favoritos</th><th>Registro</th></tr></thead>
+      <tbody id="adminUserBody"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Cargando…</td></tr></tbody>
+    </table></div>`;
 
   const [{data:stats,error:e1},{data:users,error:e2}] = await Promise.all([
     _sb.rpc('get_admin_stats'),
@@ -7952,6 +8146,321 @@ async function renderAdminPanel(){
     <td class="admin-num">${u.favorites_count}</td>
     <td style="color:var(--muted);font-size:12px">${new Date(u.created_at).toLocaleDateString('es-ES')}</td>
   </tr>`).join('');
+}
+
+// ── Editor de especies ────────────────────────────────────────────────────
+// Lista con buscador y filtro por categoría; "Editar" y "+ Añadir especie"
+// llevan al mismo formulario (renderSpeciesForm), solo cambia si
+// editingSpeciesId apunta a una especie existente o es null.
+function renderSpeciesAdminList(){
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <div class="admin-species-toolbar">
+      <div class="search-wrap" style="position:relative;flex:1;min-width:0;">
+        <span class="icon" id="admSpeciesSearchIcon"></span>
+        <input type="text" id="admSpeciesSearch" placeholder="Buscar por nombre, científico o código..." value="${escapeHtml(speciesAdminSearch)}">
+      </div>
+      <button type="button" class="btn" id="admNewSpeciesBtn">${icon('plus','icon-sm')} Añadir especie</button>
+    </div>
+    <div class="chip-row" id="admCatFilterRow" style="margin:14px 0 16px;">
+      <button type="button" class="chip ${speciesAdminCatFilter==='todos'?'active':''}" data-cat="todos">Todos (${SPECIES.length})</button>
+      ${CAT_DEFS.map(([key,label])=>`<button type="button" class="chip ${speciesAdminCatFilter===key?'active':''}" data-cat="${key}">${label} (${SPECIES.filter(s=>s.cat===key).length})</button>`).join('')}
+    </div>
+    <div class="dive-card-list" id="admSpeciesList"></div>
+  `;
+  document.getElementById('admSpeciesSearchIcon').innerHTML = ICONS.search;
+  document.getElementById('admNewSpeciesBtn').onclick = ()=>{
+    editingSpeciesId = null;
+    adminView = 'speciesForm';
+    renderAdminPanel();
+  };
+  const searchInput = document.getElementById('admSpeciesSearch');
+  searchInput.oninput = ()=>{ speciesAdminSearch = searchInput.value; renderSpeciesAdminRows(); };
+  document.querySelectorAll('#admCatFilterRow [data-cat]').forEach(btn=>{
+    btn.onclick = ()=>{ speciesAdminCatFilter = btn.dataset.cat; renderSpeciesAdminList(); };
+  });
+  renderSpeciesAdminRows();
+}
+
+function renderSpeciesAdminRows(){
+  const listEl = document.getElementById('admSpeciesList');
+  if(!listEl) return;
+  const q = speciesAdminSearch.trim().toLowerCase();
+  let list = SPECIES.slice();
+  if(speciesAdminCatFilter!=='todos') list = list.filter(s=>s.cat===speciesAdminCatFilter);
+  if(q) list = list.filter(s=>s.name.toLowerCase().includes(q) || s.sci.toLowerCase().includes(q) || (s.code||'').toLowerCase().includes(q));
+  list.sort((a,b)=>a.name.localeCompare(b.name,'es'));
+
+  if(!list.length){ listEl.innerHTML = `<div class="zones-empty">Sin resultados.</div>`; return; }
+  listEl.innerHTML = list.map(s=>`
+    <div class="dive-card" data-id="${s.id}">
+      <div class="dive-card-cover"><img src="${speciesImgPath(s)}" alt="" loading="lazy" onerror="this.remove()"></div>
+      <div class="dive-card-main">
+        <div class="dive-card-title">${escapeHtml(s.name)}</div>
+        <div class="dive-card-sub">${escapeHtml(s.sci)} · ${escapeHtml(s.code||'—')}</div>
+      </div>
+      <div class="dive-card-actions">
+        <button type="button" class="dive-card-edit" data-edit="${s.id}">Editar</button>
+        <button type="button" class="dive-card-delete" data-delete="${s.id}" title="Eliminar especie" aria-label="Eliminar especie">${ICONS.trash}</button>
+      </div>
+    </div>
+  `).join('');
+  listEl.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick = ()=>{ editingSpeciesId = btn.dataset.edit; adminView = 'speciesForm'; renderAdminPanel(); };
+  });
+  listEl.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.onclick = ()=>deleteSpeciesAdmin(btn.dataset.delete);
+  });
+}
+
+async function deleteSpeciesAdmin(id){
+  const sp = SPECIES.find(s=>s.id===id);
+  const ok = await askConfirm(`¿Eliminar "${sp?.name||id}" del catálogo? Solo se puede si ningún usuario la ha avistado todavía.`);
+  if(!ok) return;
+  const { error } = await _sb.rpc('admin_delete_species', { p_species_id: id });
+  if(error){ showToast('No se pudo eliminar: ' + error.message, true); return; }
+  SPECIES = SPECIES.filter(s=>s.id!==id);
+  safeSet('mardex-species-cache', JSON.stringify(SPECIES), true);
+  showToast('Especie eliminada');
+  editingSpeciesId = null;
+  adminView = 'species';
+  renderAdminPanel();
+}
+
+function renderSpeciesForm(){
+  const body = document.getElementById('adminBody');
+  const sp = editingSpeciesId ? SPECIES.find(s=>s.id===editingSpeciesId) : null;
+  const isNew = !sp;
+  pendingSpeciesPhotoBlob = null;
+  speciesPhotoCleared = false;
+  if(pendingSpeciesPhotoPreview){ URL.revokeObjectURL(pendingSpeciesPhotoPreview); pendingSpeciesPhotoPreview = null; }
+
+  const existingOrders = [...new Set(SPECIES.map(s=>s.order))].sort((a,b)=>a.localeCompare(b,'es'));
+  const orderIsNew = sp && !existingOrders.includes(sp.order);
+  // 'global' no es una zona del mapa (se trata aparte en el filtro de Zonas),
+  // así que se añade a mano delante de las que sí lo son.
+  const seenZoneKeys = new Set();
+  const zoneOptions = [{key:'global', label:'Global'}, ...ZONES].filter(z=>{
+    if(seenZoneKeys.has(z.key)) return false;
+    seenZoneKeys.add(z.key);
+    return true;
+  });
+  const rarityLabels = ['Frecuente','Ocasional','Poco común','Raro','Excepcional'];
+  const sec = (title, inner) => `<div class="dvs-section"><div class="dvs-head">${title}</div><div class="dvs-body plain">${inner}</div></div>`;
+
+  body.innerHTML = `
+    <button type="button" class="page-back-btn" id="admSpeciesBackBtn" style="margin-bottom:18px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Especies
+    </button>
+
+    ${sec('Identidad', `
+      <div class="field-row2">
+        <div class="field"><label>Nombre común</label><input type="text" id="spName" value="${escapeHtml(sp?.name||'')}"></div>
+        <div class="field"><label>Nombre científico</label><input type="text" id="spSci" value="${escapeHtml(sp?.sci||'')}"></div>
+      </div>
+      <div class="field-row2">
+        <div class="field">
+          <label>Identificador ${isNew?'':'(no editable)'}</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="spId" value="${escapeHtml(sp?.id||'')}" ${isNew?'':'disabled'} placeholder="p.ej. tiburonnodriza" style="flex:1;">
+            ${isNew?`<button type="button" class="btn secondary" id="spSlugBtn" style="flex-shrink:0;">Generar</button>`:''}
+          </div>
+          ${isNew?'<div class="dive-species-note">Se usa en la ruta de la foto y no se puede cambiar luego: solo minúsculas y números.</div>':''}
+        </div>
+        <div class="field">
+          <label>Código</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="spCode" value="${escapeHtml(sp?.code||'')}" placeholder="p.ej. TBR-33" style="flex:1;">
+            <button type="button" class="btn secondary" id="spCodeBtn" style="flex-shrink:0;">Generar</button>
+          </div>
+        </div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Categoría</label>
+          <select id="spCat">
+            <option value="">Elegir…</option>
+            ${CAT_DEFS.map(([key,label])=>`<option value="${key}" ${sp?.cat===key?'selected':''}>${escapeHtml(label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Orden</label>
+          <select id="spOrderSelect">
+            <option value="">Elegir…</option>
+            ${existingOrders.map(o=>`<option value="${escapeHtml(o)}" ${sp?.order===o?'selected':''}>${escapeHtml(o)}</option>`).join('')}
+            <option value="__new__" ${orderIsNew?'selected':''}>+ Nuevo orden…</option>
+          </select>
+          <input type="text" id="spOrderNew" placeholder="Nombre del nuevo orden" value="${orderIsNew?escapeHtml(sp.order):''}" style="margin-top:8px;${orderIsNew?'':'display:none;'}">
+        </div>
+      </div>
+    `)}
+
+    ${sec('Características', `
+      <div class="field-row2">
+        <div class="field"><label>Región</label><input type="text" id="spRegion" value="${escapeHtml(sp?.region||'')}" placeholder="p.ej. Mediterráneo"></div>
+        <div class="field"><label>Tamaño</label><input type="text" id="spSize" value="${escapeHtml(sp?.size||'')}" placeholder="p.ej. 1.5 m"></div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Hábitat</label><input type="text" id="spHabitat" value="${escapeHtml(sp?.habitat||'')}"></div>
+        <div class="field"><label>Profundidad</label><input type="text" id="spDepth" value="${escapeHtml(sp?.depth||'')}" placeholder="p.ej. 5–100 m"></div>
+      </div>
+      <div class="field-row2">
+        <div class="field"><label>Velocidad</label><input type="text" id="spSpeed" value="${escapeHtml(sp?.speed||'')}" placeholder="p.ej. Moderada"></div>
+        <div class="field"><label>Rareza</label>
+          <select id="spRarity">
+            <option value="">Elegir…</option>
+            ${rarityLabels.map((label,i)=>`<option value="${i+1}" ${sp?.rarity===i+1?'selected':''}>${i+1} — ${label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Dieta</label><input type="text" id="spDiet" value="${escapeHtml(sp?.diet||'')}"></div>
+    `)}
+
+    ${sec('Zonas donde se puede ver', `
+      <div class="admin-zone-grid" id="spZones">
+        ${zoneOptions.map(z=>`<label class="admin-zone-chk"><input type="checkbox" value="${z.key}" ${sp?.zones?.includes(z.key)?'checked':''}> ${escapeHtml(z.label)}</label>`).join('')}
+      </div>
+    `)}
+
+    ${sec('Descripción', `
+      <div class="field"><label>Texto de la ficha</label><textarea id="spBlurb" rows="4">${escapeHtml(sp?.blurb||'')}</textarea></div>
+    `)}
+
+    ${sec('Foto', `
+      <div class="field">
+        <button type="button" class="btn secondary" id="spPickPhotoBtn" style="width:100%;">${icon('camera','icon-sm')} ${sp?.photo_url ? 'Cambiar foto' : 'Subir foto'}</button>
+        <img class="photo-preview" id="spPhotoPreview" src="${sp?.photo_url||''}" style="${sp?.photo_url?'display:block;':'display:none;'}">
+        <button type="button" class="close-map-link" id="spRemovePhotoBtn" style="margin-top:6px;display:${sp?.photo_url?'block':'none'};">Quitar foto (usar la del repositorio)</button>
+        ${!sp?.photo_url ? `<div class="dive-species-note">Mientras no subas una foto aquí, se sigue mostrando la que ya existe en el repositorio para esta especie (si la hay).</div>` : ''}
+      </div>
+    `)}
+
+    <div class="row2">
+      <button type="button" class="btn secondary" id="spCancelBtn">Cancelar</button>
+      <button type="button" class="btn" id="spSaveBtn">${isNew?'Añadir especie':'Guardar cambios'}</button>
+    </div>
+    ${!isNew ? `<button type="button" class="pp-logout" id="spDeleteBtn" style="margin-top:12px;">Eliminar especie</button>` : ''}
+  `;
+
+  wireSpeciesForm(sp, isNew);
+}
+
+function wireSpeciesForm(sp, isNew){
+  const backToList = ()=>{ adminView = 'species'; renderAdminPanel(); };
+  document.getElementById('admSpeciesBackBtn').onclick = backToList;
+  document.getElementById('spCancelBtn').onclick = backToList;
+  document.getElementById('spSaveBtn').onclick = saveSpeciesAdmin;
+  if(!isNew) document.getElementById('spDeleteBtn').onclick = ()=>deleteSpeciesAdmin(editingSpeciesId);
+
+  if(isNew){
+    document.getElementById('spSlugBtn').onclick = ()=>{
+      document.getElementById('spId').value = slugifyId(document.getElementById('spName').value);
+    };
+  }
+  document.getElementById('spCodeBtn').onclick = ()=>{
+    const cat = document.getElementById('spCat').value;
+    if(!cat){ showToast('Elige primero una categoría.', true); return; }
+    document.getElementById('spCode').value = nextSpeciesCode(cat);
+  };
+
+  const orderSel = document.getElementById('spOrderSelect');
+  const orderNew = document.getElementById('spOrderNew');
+  orderSel.addEventListener('change', ()=>{
+    orderNew.style.display = orderSel.value==='__new__' ? 'block' : 'none';
+  });
+
+  const photoBtn = document.getElementById('spPickPhotoBtn');
+  const photoPreview = document.getElementById('spPhotoPreview');
+  const removeBtn = document.getElementById('spRemovePhotoBtn');
+  photoBtn.onclick = ()=>{
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const blob = await resizeImageFileToBlob(file, 900);
+      pendingSpeciesPhotoBlob = blob;
+      speciesPhotoCleared = false;
+      if(pendingSpeciesPhotoPreview) URL.revokeObjectURL(pendingSpeciesPhotoPreview);
+      pendingSpeciesPhotoPreview = URL.createObjectURL(blob);
+      photoPreview.src = pendingSpeciesPhotoPreview;
+      photoPreview.style.display = 'block';
+      removeBtn.style.display = 'block';
+    };
+    input.click();
+  };
+  removeBtn.onclick = ()=>{
+    pendingSpeciesPhotoBlob = null;
+    speciesPhotoCleared = true;
+    if(pendingSpeciesPhotoPreview){ URL.revokeObjectURL(pendingSpeciesPhotoPreview); pendingSpeciesPhotoPreview = null; }
+    photoPreview.src = '';
+    photoPreview.style.display = 'none';
+    removeBtn.style.display = 'none';
+  };
+}
+
+async function saveSpeciesAdmin(){
+  const isNew = !editingSpeciesId;
+  const id = isNew ? slugifyId(document.getElementById('spId').value) : editingSpeciesId;
+  const name = document.getElementById('spName').value.trim();
+  const sci = document.getElementById('spSci').value.trim();
+  const cat = document.getElementById('spCat').value;
+  const orderSel = document.getElementById('spOrderSelect').value;
+  const order = (orderSel==='__new__' ? document.getElementById('spOrderNew').value : orderSel).trim();
+  const rarityVal = document.getElementById('spRarity').value;
+  const zones = Array.from(document.querySelectorAll('#spZones input:checked')).map(cb=>cb.value);
+
+  if(!id){ showToast('Falta el identificador de la especie.', true); return; }
+  if(!name || !sci || !cat || !order){ showToast('Rellena al menos nombre, nombre científico, categoría y orden.', true); return; }
+  if(isNew && SPECIES.some(s=>s.id===id)){ showToast('Ya existe una especie con ese identificador.', true); return; }
+
+  const payload = {
+    id, cat, order, name, sci,
+    region: document.getElementById('spRegion').value.trim() || null,
+    zones,
+    code: document.getElementById('spCode').value.trim() || null,
+    size: document.getElementById('spSize').value.trim() || null,
+    habitat: document.getElementById('spHabitat').value.trim() || null,
+    depth: document.getElementById('spDepth').value.trim() || null,
+    speed: document.getElementById('spSpeed').value.trim() || null,
+    diet: document.getElementById('spDiet').value.trim() || null,
+    rarity: rarityVal ? Number(rarityVal) : null,
+    blurb: document.getElementById('spBlurb').value.trim() || null,
+  };
+
+  const saveBtn = document.getElementById('spSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Guardando…';
+
+  try{
+    if(pendingSpeciesPhotoBlob){
+      // Se sube primero para tener la URL a mano antes de guardar la fila.
+      const path = `${id}.jpg`;
+      const { error: upErr } = await _sb.storage.from('species-photos').upload(path, pendingSpeciesPhotoBlob, { upsert:true, cacheControl:'3600', contentType:'image/jpeg' });
+      if(upErr) throw upErr;
+      const { data: pub } = _sb.storage.from('species-photos').getPublicUrl(path);
+      payload.photo_url = pub.publicUrl + '?t=' + Date.now();
+    } else if(speciesPhotoCleared){
+      payload.photo_url = null;
+    } else {
+      payload.photo_url = (!isNew && SPECIES.find(s=>s.id===id)?.photo_url) || null;
+    }
+
+    const { data, error } = await _sb.from('species').upsert(payload).select().single();
+    if(error) throw error;
+
+    const idx = SPECIES.findIndex(s=>s.id===id);
+    if(idx>=0) SPECIES[idx] = data; else SPECIES.push(data);
+    safeSet('mardex-species-cache', JSON.stringify(SPECIES), true);
+
+    showToast(isNew ? 'Especie añadida' : 'Especie actualizada');
+    editingSpeciesId = null;
+    adminView = 'species';
+    renderAdminPanel();
+  }catch(err){
+    showToast('Error al guardar: ' + (err.message||err), true);
+    saveBtn.disabled = false;
+    saveBtn.textContent = isNew ? 'Añadir especie' : 'Guardar cambios';
+  }
 }
 
 function initGlassSurface(){
@@ -8061,10 +8570,7 @@ function initGlassSurface(){
 }
 
 async function init(){
-  try{
-    const r = await fetch('species.json');
-    if(r.ok) SPECIES = await r.json();
-  }catch(e){}
+  await loadSpeciesCatalog();
   loadUIPrefs();
   initGlassSurface();
   const isRecovery = location.hash.includes('type=recovery') || new URLSearchParams(location.search).get('type')==='recovery';
