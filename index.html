@@ -1258,6 +1258,18 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .field input:focus, .field textarea:focus{ outline:none; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft); }
   .field textarea{ resize:vertical; min-height:64px; }
+  /* Desplegables de opciones fijas: mismo aspecto que un input, pero con
+     flecha propia para que se lean como un desplegable de verdad y no como
+     el listado de sugerencias del navegador. */
+  .field select{
+    width:100%; min-width:0; background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm);
+    color:var(--ink); padding:10px 32px 10px 12px; font-size:13px; font-family:var(--sans); font-weight:600;
+    -webkit-appearance:none; appearance:none; cursor:pointer;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B7387' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 10px center; background-size:14px 14px;
+  }
+  .field select:focus{ outline:none; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-soft); }
+  .field select:invalid, .field select.is-empty{ color:var(--faint); font-weight:500; }
   .field-row2{ display:flex; gap:8px; }
   .field-row2 > .field{ flex:1; min-width:0; }
   .dive-context-note{
@@ -1278,18 +1290,19 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     font-family:var(--sans);
   }
   .dive-card:hover{ box-shadow:0 4px 14px rgba(5,46,74,0.12); }
-  .dive-card-main{ min-width:0; }
+  .dive-card-main{ min-width:0; flex:1; }
   .dive-card-title{ font-weight:700; color:var(--ink); font-size:14px; }
   .dive-card-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
   .dive-card-depth{ font-family:var(--mono); font-weight:700; color:var(--blue); font-size:15px; white-space:nowrap; flex-shrink:0; }
   .dive-consumption{ font-size:12px; font-weight:600; color:var(--blue); margin:-4px 0 4px; min-height:16px; }
+  .dive-card-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
   .dive-card-edit{
-    width:32px; height:32px; border-radius:50%; border:none; background:rgba(0,162,255,0.1);
+    height:32px; padding:0 14px; border-radius:16px; border:none; background:rgba(0,162,255,0.1);
     color:var(--blue); cursor:pointer; display:flex; align-items:center; justify-content:center;
     flex-shrink:0; transition:background .15s;
+    font-family:var(--sans); font-size:12.5px; font-weight:700; letter-spacing:.02em;
   }
   .dive-card-edit:hover{ background:rgba(0,162,255,0.22); }
-  .dive-card-edit svg{ width:15px; height:15px; }
   .dive-card-delete{
     width:32px; height:32px; border-radius:50%; border:none; background:rgba(255,95,83,0.12);
     color:var(--coral); cursor:pointer; display:flex; align-items:center; justify-content:center;
@@ -1344,6 +1357,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     outline:none; box-shadow:none; border-bottom-color:var(--blue);
   }
   .dvs-body .field textarea{ border:1.5px solid rgba(13,43,64,0.18); border-radius:8px; padding:8px 10px; background:rgba(255,255,255,0.45); }
+  .dvs-body .field select{
+    background-color:transparent; border:none; border-bottom:1.5px solid rgba(13,43,64,0.22);
+    border-radius:0; padding:5px 24px 5px 2px; font-weight:600;
+    background-position:right 2px center;
+  }
+  .dvs-body .field select:focus{ outline:none; box-shadow:none; border-bottom-color:var(--blue); }
+  .dvs-body .field select.is-empty{ color:#8A9A82; }
   .dvs-body .loc-input-wrap input{ padding-left:26px !important; }
   .dvs-body .loc-input-wrap .icon{ left:2px; }
   /* Filas de datos ya guardados, densas como en la hoja de papel */
@@ -2150,6 +2170,23 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 </nav>
 
 <script>
+// ── Cierre al pulsar el fondo de un overlay ──────────────────────
+// Un `click` se dispara sobre el ancestro común del mousedown y el mouseup,
+// así que si el usuario empieza a seleccionar texto dentro del panel y suelta
+// el ratón fuera, el `click` acaba teniendo el overlay como target y el panel
+// se cerraría perdiendo lo escrito. Para evitarlo solo cerramos cuando la
+// pulsación *empezó* también en el fondo del overlay.
+function onBackdropClose(overlayId, closeFn){
+  const el = document.getElementById(overlayId);
+  if(!el) return;
+  let pressedOnBackdrop = false;
+  el.addEventListener('pointerdown', e=>{ pressedOnBackdrop = (e.target === el); });
+  el.addEventListener('click', e=>{
+    if(e.target === el && pressedOnBackdrop) closeFn();
+    pressedOnBackdrop = false;
+  });
+}
+
 // ── Supabase ─────────────────────────────────────────────────────
 const _sb = supabase.createClient(
   'https://bcstkmnqowwcsywfdjjm.supabase.co',
@@ -2716,9 +2753,7 @@ async function openProfilePicker(){
 }
 
 // Cerrar al hacer click en el fondo del overlay
-document.getElementById('profileOverlay').addEventListener('click', e => {
-  if(e.target === document.getElementById('profileOverlay')) closeProfileOverlay();
-});
+onBackdropClose('profileOverlay', closeProfileOverlay);
 
 async function renderAuthScreen(mode, errorMsg, resetAccount){
   const card = document.getElementById('authCard');
@@ -3185,9 +3220,7 @@ function openTreeOverlay(){
 function closeTreeOverlay(){
   document.getElementById('treeOverlay').classList.remove('open');
 }
-document.getElementById('treeOverlay').addEventListener('click',e=>{
-  if(e.target===document.getElementById('treeOverlay')) closeTreeOverlay();
-});
+onBackdropClose('treeOverlay', closeTreeOverlay);
 document.getElementById('treeCloseBtn').onclick = closeTreeOverlay;
 document.getElementById('treeClearBtn').onclick = ()=>{ keyMultiSelect.clear(); renderKeyColumns(); };
 document.getElementById('treeApplyBtn').onclick = applyTreeFilter;
@@ -3542,9 +3575,7 @@ function closeProfilePage(){
   document.getElementById('profilePageOverlay').classList.remove('open');
 }
 
-document.getElementById('profilePageOverlay').addEventListener('click', e => {
-  if(e.target === document.getElementById('profilePageOverlay')) closeProfilePage();
-});
+onBackdropClose('profilePageOverlay', closeProfilePage);
 
 // ── Página de Configuración (propio canvas, abierta desde Perfil) ──────────
 function openSettingsPage(){
@@ -3554,9 +3585,7 @@ function openSettingsPage(){
 function closeSettingsPage(){
   document.getElementById('settingsPageOverlay').classList.remove('open');
 }
-document.getElementById('settingsPageOverlay').addEventListener('click', e => {
-  if(e.target === document.getElementById('settingsPageOverlay')) closeSettingsPage();
-});
+onBackdropClose('settingsPageOverlay', closeSettingsPage);
 
 function renderSettingsPage(){
   const sheet = document.getElementById('settingsPageSheet');
@@ -3639,9 +3668,7 @@ function openAdvancedPage(){
 function closeAdvancedPage(){
   document.getElementById('advancedPageOverlay').classList.remove('open');
 }
-document.getElementById('advancedPageOverlay').addEventListener('click', e => {
-  if(e.target === document.getElementById('advancedPageOverlay')) closeAdvancedPage();
-});
+onBackdropClose('advancedPageOverlay', closeAdvancedPage);
 
 function renderAdvancedPage(){
   const sheet = document.getElementById('advancedPageSheet');
@@ -5154,9 +5181,7 @@ document.getElementById('identifyFileInput').addEventListener('change', async (e
   }
 });
 
-document.getElementById('overlay').addEventListener('click', (e)=>{
-  if(e.target.id === 'overlay') closeModal();
-});
+onBackdropClose('overlay', closeModal);
 
 window.addEventListener('popstate', (e)=>{
   if(e.state && e.state.modal){
@@ -5345,9 +5370,7 @@ function openFriendSightingDetail(p){
 function closeFriendSightingDetail(){
   document.getElementById('friendSightingOverlay').classList.remove('open');
 }
-document.getElementById('friendSightingOverlay').addEventListener('click', e=>{
-  if(e.target===document.getElementById('friendSightingOverlay')) closeFriendSightingDetail();
-});
+onBackdropClose('friendSightingOverlay', closeFriendSightingDetail);
 
 function openGlobalMap(){
   const overlay = document.getElementById('globalMapOverlay');
@@ -5575,9 +5598,7 @@ function closeGlobalMap(){
   document.getElementById('globalMapOverlay').classList.remove('open');
 }
 document.getElementById('globalMapCloseBtn').onclick = closeGlobalMap;
-document.getElementById('globalMapOverlay').addEventListener('click',e=>{
-  if(e.target===document.getElementById('globalMapOverlay')) closeGlobalMap();
-});
+onBackdropClose('globalMapOverlay', closeGlobalMap);
 
 // Fullscreen del mapa
 document.getElementById('globalMapFsBtn').onclick = ()=>{
@@ -5742,8 +5763,8 @@ function initBottomNav(){
 // ── Friends panel ─────────────────────────────────────────────────────
 function openFriendsPanel(){ document.getElementById('friendsOverlay').classList.add('open'); renderFriendsPanel(); }
 function closeFriendsPanel(){ document.getElementById('friendsOverlay').classList.remove('open'); }
-document.getElementById('friendsOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('friendsOverlay')) closeFriendsPanel(); });
-document.getElementById('friendProfileOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('friendProfileOverlay')) closeFriendProfile(); });
+onBackdropClose('friendsOverlay', closeFriendsPanel);
+onBackdropClose('friendProfileOverlay', closeFriendProfile);
 
 async function renderFriendsPanel(){
   const sheet = document.getElementById('friendsSheet');
@@ -6085,9 +6106,7 @@ function openAdminPanel(){
 function closeAdminPanel(){
   document.getElementById('adminOverlay').classList.remove('open');
 }
-document.getElementById('adminOverlay').addEventListener('click', e=>{
-  if(e.target===document.getElementById('adminOverlay')) closeAdminPanel();
-});
+onBackdropClose('adminOverlay', closeAdminPanel);
 
 // ── Logbook (importar datos de ordenador de buceo) ───────────────────────
 // De momento es solo la entrada de navegación y una pantalla vacía: leer
@@ -6103,9 +6122,7 @@ function openLogbookPanel(){
 function closeLogbookPanel(){
   document.getElementById('logbookOverlay').classList.remove('open');
 }
-document.getElementById('logbookOverlay').addEventListener('click', e=>{
-  if(e.target===document.getElementById('logbookOverlay')) closeLogbookPanel();
-});
+onBackdropClose('logbookOverlay', closeLogbookPanel);
 
 async function loadDives(){
   const sheet = document.getElementById('logbookSheet');
@@ -6117,7 +6134,7 @@ async function loadDives(){
 
 function renderLogbookPanel(){
   const sheet = document.getElementById('logbookSheet');
-  let title = 'Logbook', subtitle = `${dives.length} inmersión${dives.length!==1?'es':''} registrada${dives.length!==1?'s':''}`;
+  let title = 'Logbook', subtitle = `${dives.length} ${dives.length!==1?'inmersiones registradas':'inmersión registrada'}`;
   if(logbookView==='form'){
     title = editingDive ? 'Editar inmersión' : 'Nueva inmersión';
     subtitle = 'Rellena los datos de tu inmersión';
@@ -6163,8 +6180,10 @@ function renderLogbookList(){
         <div class="dive-card-sub">${escapeHtml(dateLabel)}${subParts.length?' · '+escapeHtml(subParts.join(' · ')):''}</div>
       </div>
       ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : ''}
-      <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">${ICONS.pencil}</button>
-      <button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>
+      <div class="dive-card-actions">
+        <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>
+        <button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>
+      </div>
     </div>`;
   }).join('');
   listEl.querySelectorAll('.dive-card').forEach(card=>{
@@ -6207,6 +6226,16 @@ async function deleteDive(diveId){
 // perfil real segundo a segundo — eso llegará cuando se puedan importar los
 // datos del ordenador de buceo — pero da la misma lectura visual que el
 // recuadro "GRÁFICO" de una hoja de bitácora en papel.
+// Desplegable de opciones fijas del logbook. Si la inmersión guardada tiene un
+// valor que ya no está en la lista (por ejemplo escrito a mano en una versión
+// anterior con datalist), se añade como opción extra para no perderlo al editar.
+function dvSelect(id, options, value, emptyLabel){
+  const v = value || '';
+  const opts = options.includes(v) || !v ? options : options.concat([v]);
+  const body = opts.map(o=>`<option value="${escapeHtml(o)}"${o===v?' selected':''}>${escapeHtml(o)}</option>`).join('');
+  return `<select id="${id}"${v?'':' class="is-empty"'}><option value=""${v?'':' selected'}>${escapeHtml(emptyLabel)}</option>${body}</select>`;
+}
+
 function diveProfileSvg(d){
   const maxDepth = d.max_depth_m;
   if(maxDepth == null || !(maxDepth > 0)) return null;
@@ -6510,9 +6539,7 @@ function closeDiveSpeciesPicker(){
   document.getElementById('diveSpeciesPickerOverlay').classList.remove('open');
   activeDiveContext = null;
 }
-document.getElementById('diveSpeciesPickerOverlay').addEventListener('click', e=>{
-  if(e.target===document.getElementById('diveSpeciesPickerOverlay')) closeDiveSpeciesPicker();
-});
+onBackdropClose('diveSpeciesPickerOverlay', closeDiveSpeciesPicker);
 
 function renderDiveSpeciesPicker(){
   const sheet = document.getElementById('diveSpeciesPickerSheet');
@@ -6590,14 +6617,14 @@ function renderDiveForm(){
           <div class="field"><label>Hora entrada</label><input type="time" id="dv-entry-time" value="${d.entry_time ? d.entry_time.slice(0,5) : ''}"></div>
           <div class="field"><label>Hora salida</label><input type="time" id="dv-exit-time" value="${d.exit_time ? d.exit_time.slice(0,5) : ''}"></div>
         </div>
-        <div class="field"><label>Tiempo total (min)</label><input type="number" id="dv-duration" value="${d.duration_min ?? ''}" placeholder="Se calcula con la hora de entrada y salida"></div>
+        <div class="field"><label>Tiempo total (min)</label><input type="number" id="dv-duration" value="${d.duration_min ?? ''}" placeholder="Se calcula con dos de los tres tiempos"></div>
         <div class="field-row2">
           <div class="field"><label>Lugar</label><input type="text" id="dv-site-name" value="${escapeHtml(d.site_name||'')}"></div>
           <div class="field"><label>Nombre de la inmersión</label><input type="text" id="dv-dive-name" value="${escapeHtml(d.dive_name||'')}"></div>
         </div>
         <div class="field-row2">
-          <div class="field"><label>Salida desde</label><input type="text" id="dv-approach" list="dvApproachList" value="${escapeHtml(d.approach_type||'')}" placeholder="Costa / Barco"><datalist id="dvApproachList"><option value="Costa"><option value="Barco"></datalist></div>
-          <div class="field"><label>Lecho marino</label><input type="text" id="dv-seabed" list="dvSeabedList" value="${escapeHtml(d.seabed_type||'')}" placeholder="Arena, roca..."><datalist id="dvSeabedList"><option value="Arena"><option value="Roca"><option value="Posidonia"><option value="Grava"><option value="Fango"><option value="Mixto"></datalist></div>
+          <div class="field"><label>Salida desde</label>${dvSelect('dv-approach',['Costa','Barco'],d.approach_type,'Sin especificar')}</div>
+          <div class="field"><label>Lecho marino</label>${dvSelect('dv-seabed',['Arena','Roca','Posidonia','Grava','Fango','Mixto'],d.seabed_type,'Sin especificar')}</div>
         </div>
       `)}
 
@@ -6628,12 +6655,12 @@ function renderDiveForm(){
         </div>
         <div class="dive-consumption" id="dvConsumptionLabel"></div>
         <div class="field-row2">
-          <div class="field"><label>Tipo de aire</label><input type="text" id="dv-air-type" list="dvAirTypeList" value="${escapeHtml(d.air_type||'')}" placeholder="Aire / Nitrox"><datalist id="dvAirTypeList"><option value="Aire"><option value="Nitrox"><option value="Trimix"></datalist></div>
-          <div class="field"><label>Traje</label><input type="text" id="dv-suit" list="dvSuitList" value="${escapeHtml(d.suit_type||'')}" placeholder="Húmedo / Seco"><datalist id="dvSuitList"><option value="Húmedo"><option value="Semiseco"><option value="Seco"></datalist></div>
+          <div class="field"><label>Tipo de aire</label>${dvSelect('dv-air-type',['Aire','Nitrox','Trimix'],d.air_type,'Sin especificar')}</div>
+          <div class="field"><label>Traje</label>${dvSelect('dv-suit',['Húmedo','Semiseco','Seco'],d.suit_type,'Sin especificar')}</div>
         </div>
         <div class="field-row2">
           <div class="field"><label>Botella (l)</label><input type="number" id="dv-tank-liters" value="${d.tank_liters ?? ''}"></div>
-          <div class="field"><label>Material</label><input type="text" id="dv-tank-material" list="dvTankMaterialList" value="${escapeHtml(d.tank_material||'')}" placeholder="Acero / Aluminio"><datalist id="dvTankMaterialList"><option value="Acero"><option value="Aluminio"></datalist></div>
+          <div class="field"><label>Material</label>${dvSelect('dv-tank-material',['Acero','Aluminio'],d.tank_material,'Sin especificar')}</div>
         </div>
         <div class="field"><label>Lastre (kg)</label><input type="number" id="dv-weight" value="${d.weight_kg ?? ''}"></div>
       `)}
@@ -6645,7 +6672,7 @@ function renderDiveForm(){
         </div>
         <div class="field-row2">
           <div class="field"><label>Visibilidad (m)</label><input type="number" id="dv-visibility" value="${d.visibility_m ?? ''}"></div>
-          <div class="field"><label>Corriente</label><input type="text" id="dv-current" list="dvCurrentList" value="${escapeHtml(d.current||'')}" placeholder="Nula, suave..."><datalist id="dvCurrentList"><option value="Nula"><option value="Suave"><option value="Moderada"><option value="Fuerte"></datalist></div>
+          <div class="field"><label>Corriente</label>${dvSelect('dv-current',['Nula','Suave','Moderada','Fuerte'],d.current,'Sin especificar')}</div>
         </div>
       `)}
 
@@ -6736,20 +6763,65 @@ function wireDiveForm(){
   const deleteBtn = document.getElementById('dvDeleteBtn');
   if(deleteBtn) deleteBtn.onclick = ()=>deleteDive(editingDive.id);
 
-  // Tiempo total: se autocalcula de entrada/salida pero se puede sobrescribir a mano.
+  // Los desplegables se pintan en gris mientras están vacíos (como un
+  // placeholder) y en el color normal en cuanto se elige una opción.
+  document.querySelectorAll('#logbookSheet select').forEach(sel=>{
+    sel.addEventListener('change', ()=>sel.classList.toggle('is-empty', sel.value === ''));
+  });
+
+  // Hora de entrada, hora de salida y tiempo total están relacionados: con dos
+  // cualesquiera de los tres se deduce el que falta, en cualquier dirección
+  // (entrada+salida → tiempo, entrada+tiempo → salida, salida+tiempo → entrada).
+  // Todo se puede sobrescribir a mano después.
   const entryTimeInput = document.getElementById('dv-entry-time');
   const exitTimeInput = document.getElementById('dv-exit-time');
   const durationInput = document.getElementById('dv-duration');
-  function recalcDuration(){
-    const a = entryTimeInput.value, b = exitTimeInput.value;
-    if(!a || !b) return;
-    const [ah,am] = a.split(':').map(Number), [bh,bm] = b.split(':').map(Number);
-    let mins = (bh*60+bm) - (ah*60+am);
-    if(mins < 0) mins += 24*60;
-    durationInput.value = mins;
+  const parseClock = v => {
+    const m = /^(\d{1,2}):(\d{2})/.exec(v || '');
+    if(!m) return null;
+    const h = Number(m[1]), mi = Number(m[2]);
+    if(h > 23 || mi > 59) return null;
+    return h*60 + mi;
+  };
+  const fmtClock = mins => {
+    const t = ((Math.round(mins) % 1440) + 1440) % 1440;
+    return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
+  };
+  const parseDuration = () => {
+    if(durationInput.value === '') return null;
+    const n = Number(durationInput.value);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+  // Una inmersión puede cruzar la medianoche, así que una diferencia negativa
+  // entre salida y entrada se interpreta como el día siguiente.
+  const spanMinutes = (from, to) => { let d = to - from; if(d < 0) d += 1440; return d; };
+  function recalcTimes(changed){
+    const entry = parseClock(entryTimeInput.value);
+    const exit = parseClock(exitTimeInput.value);
+    const dur = parseDuration();
+    if(changed === 'duration'){
+      if(dur == null) return;
+      if(entry != null) exitTimeInput.value = fmtClock(entry + dur);
+      else if(exit != null) entryTimeInput.value = fmtClock(exit - dur);
+      return;
+    }
+    if(changed === 'entry'){
+      if(entry == null) return;
+      if(exit != null) durationInput.value = spanMinutes(entry, exit);
+      else if(dur != null) exitTimeInput.value = fmtClock(entry + dur);
+      return;
+    }
+    // changed === 'exit'
+    if(exit == null) return;
+    if(entry != null) durationInput.value = spanMinutes(entry, exit);
+    else if(dur != null) entryTimeInput.value = fmtClock(exit - dur);
   }
-  entryTimeInput.addEventListener('change', recalcDuration);
-  exitTimeInput.addEventListener('change', recalcDuration);
+  // Asignar `.value` por código no dispara eventos, así que refrescamos el
+  // perfil a mano por si lo recalculado ha sido el tiempo total.
+  const onTimeChange = which => ()=>{ recalcTimes(which); refreshProfilePreview(); };
+  entryTimeInput.addEventListener('change', onTimeChange('entry'));
+  exitTimeInput.addEventListener('change', onTimeChange('exit'));
+  durationInput.addEventListener('change', onTimeChange('duration'));
 
   // Consumo total: solo se muestra calculado, no se guarda como campo aparte.
   const entryP = document.getElementById('dv-entry-pressure');
@@ -7361,9 +7433,7 @@ function openZonesPanel(){
 function closeZonesPanel(){
   document.getElementById('zonesOverlay').classList.remove('open');
 }
-document.getElementById('zonesOverlay').addEventListener('click', e=>{
-  if(e.target===document.getElementById('zonesOverlay')) closeZonesPanel();
-});
+onBackdropClose('zonesOverlay', closeZonesPanel);
 
 function renderZonesPanel(){
   const sheet = document.getElementById('zonesSheet');
@@ -7645,9 +7715,7 @@ function openAchievementsPanel(){
 function closeAchievementsPanel(){
   document.getElementById('achievementsOverlay').classList.remove('open');
 }
-document.getElementById('achievementsOverlay').addEventListener('click', e=>{
-  if(e.target===document.getElementById('achievementsOverlay')) closeAchievementsPanel();
-});
+onBackdropClose('achievementsOverlay', closeAchievementsPanel);
 
 function renderAchievementsPanel(){
   const sheet = document.getElementById('achievementsSheet');
