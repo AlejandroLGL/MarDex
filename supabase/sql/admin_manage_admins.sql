@@ -43,8 +43,19 @@ begin
     raise exception 'No autorizado';
   end if;
 
+  -- Cast explícito de cada columna: sin esto, si alguna columna real (p.ej.
+  -- `name`/`username` como varchar en vez de text) no coincide byte a byte
+  -- con el tipo declarado arriba, Postgres da "structure of query does not
+  -- match function result type" aunque el tipo sea compatible.
   return query
-    select p.id, p.name, p.username, au.email, p.is_admin, p.is_owner, au.created_at
+    select
+      p.id::uuid,
+      p.name::text,
+      p.username::text,
+      au.email::text,
+      p.is_admin::boolean,
+      p.is_owner::boolean,
+      au.created_at::timestamptz
     from public.profiles p
     join auth.users au on au.id = p.id
     order by p.is_owner desc, p.is_admin desc, au.created_at asc;
