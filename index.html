@@ -598,6 +598,16 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .admin-zone-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px 14px; }
   .admin-zone-chk{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); font-weight:600; cursor:pointer; }
   .admin-zone-chk input{ width:16px; height:16px; accent-color:var(--blue); cursor:pointer; }
+  .admin-role-btn{
+    height:32px; padding:0 14px; border-radius:16px; border:none; background:rgba(0,162,255,0.1);
+    color:var(--blue); cursor:pointer; font-family:var(--sans); font-size:12.5px; font-weight:700;
+    letter-spacing:.02em; transition:background .15s;
+  }
+  .admin-role-btn:hover{ background:rgba(0,162,255,0.22); }
+  .admin-role-btn.danger{ background:rgba(255,95,83,0.12); color:var(--coral); }
+  .admin-role-btn.danger:hover{ background:rgba(255,95,83,0.26); }
+  .admin-role-locked{ color:var(--faint); display:inline-flex; align-items:center; justify-content:flex-end; }
+  .admin-role-locked svg{ width:15px; height:15px; }
   .admin-table-wrap{ overflow-x:auto; border-radius:var(--r-md); box-shadow:0 2px 8px rgba(5,46,74,0.07); }
   .admin-table{
     width:100%; border-collapse:collapse; background:var(--card); font-size:13px;
@@ -612,7 +622,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .admin-table tr:hover td{ background:rgba(47,128,237,0.04); }
   .admin-badge-admin{
     display:inline-block; padding:2px 7px; border-radius:20px; font-size:10px;
-    font-weight:700; background:var(--ocean); color:#fff; margin-left:4px; vertical-align:middle;
+    font-weight:700; background:var(--blue); color:#fff; margin-left:4px; vertical-align:middle;
   }
   .admin-user-name{ font-weight:700; }
   .admin-user-username{ color:var(--muted); font-size:12px; }
@@ -2657,6 +2667,7 @@ let speciesAdminCatFilter = 'todos';
 let pendingSpeciesPhotoBlob = null;    // foto nueva elegida, aún sin subir
 let pendingSpeciesPhotoPreview = null; // URL de objeto para previsualizarla
 let speciesPhotoCleared = false;       // true si se pulsó "quitar foto"
+let adminRolesUsers = [];              // caché en memoria de la pestaña "Administradores"
 let expandedSightings = new Set();
 let currentProfile = null;
 let viewMode = 'large';
@@ -8086,7 +8097,8 @@ async function renderAdminPanel(){
   </div>
   <div class="chip-row" id="adminTabs" style="margin-top:0;margin-bottom:20px;">
     <button type="button" class="chip ${adminView==='stats'?'active':''}" data-view="stats">Estadísticas</button>
-    <button type="button" class="chip ${adminView!=='stats'?'active':''}" data-view="species">Especies</button>
+    <button type="button" class="chip ${adminView==='species'||adminView==='speciesForm'?'active':''}" data-view="species">Especies</button>
+    <button type="button" class="chip ${adminView==='admins'?'active':''}" data-view="admins">Administradores</button>
   </div>
   <div id="adminBody"></div>`;
 
@@ -8102,6 +8114,7 @@ async function renderAdminPanel(){
   });
 
   if(adminView==='speciesForm') renderSpeciesForm();
+  else if(adminView==='admins') await renderAdminRoles();
   else if(adminView==='species') renderSpeciesAdminList();
   else await renderAdminStats();
 }
@@ -8461,6 +8474,83 @@ async function saveSpeciesAdmin(){
     saveBtn.disabled = false;
     saveBtn.textContent = isNew ? 'Añadir especie' : 'Guardar cambios';
   }
+}
+
+// ── Gestión de administradores ──────────────────────────────────────────
+// El propietario (marcado con `is_owner` en Supabase, fijado a mano por SQL
+// una sola vez) nunca aparece con botón de acción: ni él ni ningún otro
+// admin puede quitarle el admin desde aquí. Tampoco se puede cambiar el
+// propio rol, para no dejarse fuera del panel sin querer.
+async function renderAdminRoles(){
+  const body = document.getElementById('adminBody');
+  body.innerHTML = `
+    <div class="admin-species-toolbar">
+      <div class="search-wrap" style="position:relative;flex:1;min-width:0;">
+        <span class="icon" id="admRolesSearchIcon"></span>
+        <input type="text" id="admRolesSearch" placeholder="Buscar por nombre, usuario o correo...">
+      </div>
+    </div>
+    <div class="dive-card-list" id="admRolesList" style="margin-top:16px;"><div class="zones-empty">Cargando…</div></div>
+  `;
+  document.getElementById('admRolesSearchIcon').innerHTML = ICONS.search;
+  document.getElementById('admRolesSearch').oninput = renderAdminRolesRows;
+
+  const { data, error } = await _sb.rpc('admin_list_users_for_roles');
+  if(error){
+    document.getElementById('admRolesList').innerHTML = `<div class="zones-empty" style="color:#e74c3c;">Error al cargar: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+  adminRolesUsers = data || [];
+  renderAdminRolesRows();
+}
+
+// Filas tipo tarjeta (como la lista de especies), no una tabla ancha: en
+// pantallas estrechas una tabla de 4 columnas obliga a desplazar en
+// horizontal para ver la acción, que es justo lo único que hay que tocar.
+function renderAdminRolesRows(){
+  const listEl = document.getElementById('admRolesList');
+  if(!listEl) return;
+  const q = (document.getElementById('admRolesSearch')?.value || '').trim().toLowerCase();
+  let list = adminRolesUsers;
+  if(q) list = list.filter(u=>(u.name||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+
+  if(!list.length){ listEl.innerHTML = `<div class="zones-empty">Sin resultados.</div>`; return; }
+
+  listEl.innerHTML = list.map(u=>{
+    const isSelf = u.id === currentAccountData?.id;
+    let action;
+    if(u.is_owner){
+      action = `<span class="admin-role-locked" title="El propietario es permanente y no se puede cambiar desde aquí">${icon('lock','icon-sm')}</span>`;
+    } else if(isSelf){
+      action = `<span class="admin-role-locked" title="No puedes cambiar tu propio rol">—</span>`;
+    } else {
+      action = `<button type="button" class="admin-role-btn${u.is_admin?' danger':''}" data-toggle="${u.id}" data-make="${u.is_admin?'0':'1'}">${u.is_admin?'Quitar admin':'Hacer admin'}</button>`;
+    }
+    const badge = u.is_owner ? '<span class="admin-badge-admin">propietario</span>' : (u.is_admin ? '<span class="admin-badge-admin">admin</span>' : '');
+    return `<div class="dive-card" style="cursor:default;">
+      <div class="dive-card-main">
+        <div class="dive-card-title">${escapeHtml(u.name||u.username||'—')}${badge}</div>
+        <div class="dive-card-sub">@${escapeHtml(u.username||'—')} · ${escapeHtml(u.email||'—')}</div>
+      </div>
+      <div class="dive-card-actions">${action}</div>
+    </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.onclick = ()=>toggleUserAdmin(btn.dataset.toggle, btn.dataset.make==='1');
+  });
+}
+
+async function toggleUserAdmin(userId, makeAdmin){
+  const u = adminRolesUsers.find(x=>x.id===userId);
+  const label = u?.name || u?.username || 'este usuario';
+  const ok = await askConfirm(makeAdmin ? `¿Hacer administrador a ${label}?` : `¿Quitar el admin a ${label}?`);
+  if(!ok) return;
+  const { error } = await _sb.rpc('admin_set_is_admin', { p_user_id: userId, p_is_admin: makeAdmin });
+  if(error){ showToast('No se pudo cambiar: ' + error.message, true); return; }
+  if(u) u.is_admin = makeAdmin;
+  showToast(makeAdmin ? 'Ahora es administrador' : 'Ya no es administrador');
+  renderAdminRolesRows();
 }
 
 function initGlassSurface(){
