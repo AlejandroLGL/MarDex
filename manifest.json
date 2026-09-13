@@ -1,4 +1,5 @@
 {
+  "id": "/mardex/",
   "name": "MarDex — Pokédex de Buceo",
   "short_name": "MarDex",
   "description": "Tu pokédex personal de tiburones y rayas. Registra avistamientos y construye tu colección.",
@@ -22,6 +23,9 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["lifestyle", "sports"],
+  "categories": [
+    "lifestyle",
+    "sports"
+  ],
   "screenshots": []
 }

@@ -718,7 +718,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .zones-order-title:first-of-type{ margin-top:0; }
   .zones-order-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:12px; margin-bottom:4px; }
   .zone-mini-card{ display:flex; flex-direction:column; }
-  .zone-mini-photo{ aspect-ratio:1 !important; }
+  .zone-mini-photo{ aspect-ratio:1 !important; box-shadow:5px 5px 14px rgba(7,59,92,0.16); }
   .zone-mini-name{ padding:6px 8px; font-size:11px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .zones-empty{ color:var(--muted); text-align:center; padding:30px 0; font-size:13px; }
   .admin-num{ font-weight:700; color:var(--ocean); }
@@ -1037,11 +1037,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 
   /* cards */
   .card{
-    background:var(--card); border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow);
+    background:var(--card); border-radius:var(--r-md); overflow:hidden; box-shadow:5px 5px 18px rgba(7,59,92,0.12),2px 2px 6px rgba(7,59,92,0.07);
     cursor:pointer; border:1px solid var(--line); display:flex; flex-direction:column;
     transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
   }
-  .card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-hover); border-color:var(--sky); }
+  .card:hover{ transform:translateY(-4px); box-shadow:8px 10px 36px rgba(7,59,92,0.18),4px 5px 14px rgba(7,59,92,0.10); border-color:var(--sky); }
   .card.ray:hover{ border-color:var(--seafoam); }
   .card.fish:hover{ border-color:var(--amber-soft); }
   .card.medusa:hover{ border-color:var(--violet-soft); }
@@ -1136,6 +1136,17 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .card-region{ font-size:9.5px; color:var(--faint); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; }
   .is-unlocked .code-badge{ background:var(--lagoon); color:var(--deep); }
   .no-results{ color:var(--muted); text-align:center; padding:60px 0; font-size:14px; grid-column:1/-1; background:transparent; }
+  /* category section headers in ungrouped grid */
+  .grid-cat-header{
+    grid-column:1/-1; display:flex; align-items:center; gap:12px;
+    padding:8px 4px 4px; margin-top:16px;
+  }
+  .grid-cat-header:first-child{ margin-top:0; }
+  .grid-cat-header-label{
+    font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); white-space:nowrap;
+  }
+  .grid-cat-header-line{ flex:1; height:1px; background:var(--line); }
 
   /* overlays */
   .overlay{
@@ -4566,6 +4577,64 @@ function renderGrid(){
   const list = sortedSpecies(filtered);
   if(list.length === 0){
     grid.innerHTML = `<div class="no-results">No se ha encontrado ninguna especie.</div>`;
+    return;
+  }
+  // Group by category when no filters/search are active
+  const noFilters = selectedCats.size===0 && selectedOrders.size===0 && !showFavOnly && !searchTerm && currentLock==='todos' && currentEnv==='todos';
+  if(noFilters){
+    const bycat = {};
+    list.forEach(s=>{ (bycat[s.cat]||(bycat[s.cat]=[])).push(s); });
+    const cardHtml = s => {
+      const unlockedFlag = isUnlocked(s.id);
+      const catClass = CARD_THEME_CLASS[s.cat] || '';
+      const isFav = !!state.favorites[s.id];
+      return `<div class="card ${catClass} ${unlockedFlag?'is-unlocked':''}" data-id="${s.id}" data-rarity="${s.rarity}">
+        <div class="photo-box">
+          <span class="code-badge">${s.code}</span>
+          ${placeholderMarkup(s.cat)}
+          <img src="${speciesImgPath(s)}" onerror="this.remove()">
+          ${unlockedFlag ? `<button class="fav-btn ${isFav?'is-fav':''}" data-fav="${s.id}" title="Favorito">${isFav?icon('heartFilled'):icon('heartOutline')}</button>` : ''}
+          <div class="status-overlay ${unlockedFlag?'':'locked'}"></div>
+          <div class="card-photo-overlay">
+            <div class="card-status-pill ${unlockedFlag?'unlocked':''}">${unlockedFlag?'':icon('lock','icon-sm')}${unlockedFlag?'Registrado':'Por descubrir'}</div>
+            <div class="card-name">${s.name}</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-body-row">
+            <span class="order-tag">${s.order}</span>
+            <span class="card-region">${s.region}</span>
+          </div>
+          <div class="card-name-list">${s.name}</div>
+          <div class="card-sci">${s.sci}</div>
+        </div>
+      </div>`;
+    };
+    grid.innerHTML = CAT_DEFS.flatMap(([cat, label])=>{
+      const group = bycat[cat];
+      if(!group || group.length===0) return [];
+      return [
+        `<div class="grid-cat-header"><span class="grid-cat-header-label">${label}</span><span class="grid-cat-header-line"></span></div>`,
+        ...group.map(cardHtml)
+      ];
+    }).join('');
+    grid.querySelectorAll('.card').forEach(card=>{
+      card.addEventListener('click', (e)=>{ if(e.target.closest('.fav-btn')) return; openModal(card.dataset.id); });
+    });
+    grid.querySelectorAll('.fav-btn').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        const id = btn.dataset.fav;
+        const nowFav = !state.favorites[id];
+        state.favorites[id] = nowFav;
+        if(!nowFav) delete state.favorites[id];
+        btn.classList.add('fav-pop');
+        setTimeout(()=>btn.classList.remove('fav-pop'), 350);
+        renderGrid();
+        if(nowFav) await _sb.from('favorites').insert({species_id:id});
+        else await _sb.from('favorites').delete().eq('species_id',id);
+      });
+    });
     return;
   }
   grid.innerHTML = list.map(s=>{
