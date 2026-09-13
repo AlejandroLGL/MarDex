@@ -1330,36 +1330,50 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .field-section-title:first-of-type{ margin-top:0; padding-top:0; border-top:none; }
 
-  .dive-card-list{ display:flex; flex-direction:column; gap:10px; }
+  .dive-card-list{ display:flex; flex-direction:column; gap:12px; }
   .dive-card{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    background:var(--card); border-radius:var(--r-md); padding:14px 16px;
-    box-shadow:0 2px 8px rgba(5,46,74,0.07); cursor:pointer; transition:box-shadow .15s; border:none; width:100%; text-align:left;
+    display:flex; align-items:stretch; overflow:hidden;
+    background:var(--card); border-radius:14px;
+    box-shadow:5px 5px 18px rgba(5,46,74,0.11),2px 2px 6px rgba(5,46,74,0.07);
+    cursor:pointer; transition:box-shadow .18s,transform .18s; border:none; width:100%; text-align:left;
     font-family:var(--sans);
   }
-  .dive-card:hover{ box-shadow:0 4px 14px rgba(5,46,74,0.12); }
-  .dive-card-main{ min-width:0; flex:1; }
+  .dive-card:hover{ box-shadow:8px 10px 32px rgba(5,46,74,0.17),4px 5px 12px rgba(5,46,74,0.10); transform:translateY(-2px); }
+  /* thumbnail column */
   .dive-card-cover{
-    width:64px; height:64px; border-radius:var(--r-sm); overflow:hidden; flex-shrink:0;
-    background:var(--bg); display:flex; align-items:center; justify-content:center;
+    width:88px; flex-shrink:0; position:relative; overflow:hidden;
+    background:linear-gradient(160deg,#0080C8 0%,#00BDD6 50%,#2DD4A4 100%);
+    border-radius:0;
   }
   .dive-card-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .dive-card-cover.empty{ color:var(--blue); opacity:.35; }
-  .dive-card-cover.empty svg{ width:22px; height:22px; }
-  @media(max-width:600px){
-    .dive-card-cover{ width:52px; height:52px; }
+  .dive-card-cover-overlay{
+    position:absolute; inset:0; background:linear-gradient(to top, rgba(5,46,74,0.5) 0%, transparent 55%);
   }
-  .dive-card-title{ font-weight:700; color:var(--ink); font-size:14px; }
-  .dive-card-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
-  .dive-card-depth{ font-family:var(--mono); font-weight:700; color:var(--blue); font-size:15px; white-space:nowrap; flex-shrink:0; }
+  .dive-card-cover-num{
+    position:absolute; bottom:7px; left:0; right:0; text-align:center;
+    font-family:var(--mono); font-size:11px; font-weight:800; color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,0.4);
+  }
+  .dive-card-cover.empty{ display:flex; align-items:center; justify-content:center; }
+  .dive-card-cover.empty svg{ width:28px; height:28px; opacity:.5; color:#fff; }
+  @media(max-width:480px){ .dive-card-cover{ width:70px; } }
+  /* content */
+  .dive-card-main{ min-width:0; flex:1; }
+  .dive-card-content{ flex:1; min-width:0; padding:14px 14px 12px; display:flex; flex-direction:column; justify-content:center; gap:3px; }
+  .dive-card-header{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .dive-card-num{ font-family:var(--mono); font-size:20px; font-weight:900; color:var(--blue); line-height:1; flex-shrink:0; }
+  .dive-card-title{ font-size:16px; font-weight:700; color:var(--ink); line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dive-card-sub{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  /* right column */
+  .dive-card-side{ display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; padding:12px 12px 12px 8px; gap:8px; flex-shrink:0; }
+  .dive-card-depth{
+    font-family:var(--mono); font-weight:800; font-size:13px; white-space:nowrap;
+    background:var(--blue); color:#fff; padding:3px 10px; border-radius:20px;
+  }
+  .dive-card-actions{ display:flex; gap:6px; align-items:center; }
   .dive-consumption{ font-size:12px; font-weight:600; color:var(--blue); margin:-4px 0 4px; min-height:16px; }
-  .dive-card-side{ display:flex; align-items:center; gap:12px; flex-shrink:0; }
-  .dive-card-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
-  /* En pantalla estrecha el título necesita todo el ancho, así que la
-     profundidad y los botones bajan a una segunda fila. */
-  @media(max-width:600px){
-    .dive-card{ flex-wrap:wrap; row-gap:12px; padding:12px 14px; }
-    .dive-card-side{ width:100%; justify-content:flex-end; }
+  @media(max-width:480px){
+    .dive-card-depth{ font-size:12px; padding:2px 8px; }
   }
   .dive-card-edit{
     height:32px; padding:0 14px; border-radius:16px; border:none; background:rgba(0,162,255,0.1);
@@ -6322,17 +6336,30 @@ function renderLogbookList(){
   listEl.innerHTML = dives.map(d=>{
     const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : '';
     const subParts = [d.site_name, d.dive_center].filter(Boolean);
+    const diveName = escapeHtml(d.dive_name || d.site_name || dateLabel || 'Inmersión');
+    const numLabel = d.dive_number!=null ? '#'+d.dive_number : '';
+    const metaParts = [dateLabel, ...subParts.map(p=>escapeHtml(p))].filter(Boolean);
     const cover = d.main_photo
-      ? `<div class="dive-card-cover"><img src="${d.main_photo}" alt="" loading="lazy" onerror="this.closest('.dive-card-cover').classList.add('empty');this.remove()"></div>`
-      : `<div class="dive-card-cover empty">${icon('anchor','icon-sm')}</div>`;
+      ? `<div class="dive-card-cover">
+          <img src="${d.main_photo}" alt="" loading="lazy" onerror="this.closest('.dive-card-cover').classList.add('empty');this.remove()">
+          <div class="dive-card-cover-overlay"></div>
+          ${numLabel ? `<div class="dive-card-cover-num">${numLabel}</div>` : ''}
+        </div>`
+      : `<div class="dive-card-cover empty">
+          ${icon('anchor','icon-sm')}
+          ${numLabel ? `<div class="dive-card-cover-num">${numLabel}</div>` : ''}
+        </div>`;
     return `<div class="dive-card" data-id="${d.id}">
       ${cover}
-      <div class="dive-card-main">
-        <div class="dive-card-title">${d.dive_number!=null?'#'+d.dive_number+' · ':''}${escapeHtml(d.dive_name || d.site_name || dateLabel || 'Inmersión')}</div>
-        <div class="dive-card-sub">${escapeHtml(dateLabel)}${subParts.length?' · '+escapeHtml(subParts.join(' · ')):''}</div>
+      <div class="dive-card-content">
+        <div class="dive-card-header">
+          ${numLabel ? `<span class="dive-card-num">${numLabel}</span>` : ''}
+          <span class="dive-card-title">${diveName}</span>
+        </div>
+        <div class="dive-card-sub">${metaParts.join(' · ')}</div>
       </div>
       <div class="dive-card-side">
-        ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : ''}
+        ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : '<div></div>'}
         <div class="dive-card-actions">
           <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>
           <button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>
