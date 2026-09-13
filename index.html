@@ -4865,10 +4865,10 @@ function formatMeasure(str){
 }
 
 function formTemplate(existing){
-  const title = existing ? escapeHtml(existing.title||'') : '';
   const sizeIdx = existing && existing.sizeIdx!=null ? existing.sizeIdx : 3;
   const depthVal = existing && existing.depthObserved!=null ? existing.depthObserved : '';
   const diveLocked = !!activeDiveContext && !existing;
+  const title = existing ? escapeHtml(existing.title||'') : (diveLocked && activeDiveContext.name ? escapeHtml('Inmersión en ' + activeDiveContext.name) : '');
   const location = existing ? escapeHtml(existing.location||'') : (diveLocked ? escapeHtml(activeDiveContext.location||'') : '');
   const comment = existing ? escapeHtml(existing.comment||'') : '';
   const dateVal = existing && existing.dateISO ? existing.dateISO : (diveLocked ? activeDiveContext.date : todayISO());
