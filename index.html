@@ -5471,19 +5471,36 @@ document.getElementById('searchClearBtn').addEventListener('click', ()=>{
   renderGrid();
 });
 
-// Confirmado: en un perfil de Chrome normal (no en incógnito) el navegador
-// puede volver a meter en este campo texto que se escribió alguna vez, sin
-// que dispare el evento 'input' — nuestro propio `searchTerm` nunca se
-// entera. En vez de perseguir el momento exacto en que el navegador lo
-// hace (varían según se abra la pestaña, se recargue, se enfoque el
-// campo...), se corrige el valor visible cada vez que diverge de lo que
-// el usuario ha escrito de verdad.
-(function watchSearchFieldDrift(){
-  const el = document.getElementById('search');
-  function reconcile(){ if(el.value !== searchTerm) el.value = searchTerm; }
-  el.addEventListener('focus', reconcile);
-  setInterval(reconcile, 600);
-})();
+// Por qué el intento anterior (comparar el valor visible con `searchTerm`
+// cada pocos milisegundos) no servía: un autorrelleno DE VERDAD del
+// navegador — al usar el gestor de contraseñas de Chrome para iniciar
+// sesión, que a veces rellena también otros campos "sueltos" de la misma
+// página — dispara un evento 'input' normal y corriente, indistinguible
+// del tecleo real. Nuestro propio listener de 'input' lo tomaba entonces
+// por bueno y actualizaba `searchTerm` a la vez que el campo, así que
+// nunca había ninguna discrepancia que corregir.
+//
+// La única señal fiable de "esto lo ha puesto el navegador, no la
+// persona" es el pseudo-selector :-webkit-autofill que Chrome (y el resto
+// de navegadores basados en Chromium/WebKit) añade a un campo justo
+// cuando lo autorrellena. No hay evento para ese pseudo-selector
+// directamente, pero se puede detectar con el truco de engancharle una
+// animación CSS vacía y escuchar cuándo arranca: eso sí que solo pasa con
+// autorrelleno real, nunca con tecleo ni con nada que haga nuestro propio
+// JS.
+const _autofillDetectCss = document.createElement('style');
+_autofillDetectCss.textContent = `
+  @keyframes mdxAutofillDetect { from {} }
+  input[type=search]:-webkit-autofill { animation-name: mdxAutofillDetect; }
+`;
+document.head.appendChild(_autofillDetectCss);
+document.addEventListener('animationstart', e=>{
+  if(e.animationName !== 'mdxAutofillDetect') return;
+  const el = e.target;
+  if(!(el instanceof HTMLInputElement) || el.type !== 'search') return;
+  el.value = '';
+  el.dispatchEvent(new Event('input', {bubbles:true}));
+});
 
 document.getElementById('filtersToggleChev').innerHTML = ICONS.chevronDown;
 document.getElementById('filtersToggleBtn').addEventListener('click', ()=>{
