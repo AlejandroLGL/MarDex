@@ -8780,14 +8780,24 @@ function initGlassSurface(){
   });
 }
 
+// El navegador puede volver a rellenar por su cuenta el valor de un <input>
+// al recargar la página (F5): es la restauración de estado de formularios
+// ligada al historial de navegación, un mecanismo aparte del autorrelleno
+// que `autocomplete="off"` no evita, y que no siempre aplica en el mismo
+// momento en que se parsea el HTML — a veces lo hace más tarde, incluso
+// después de que el propio DOMContentLoaded haya disparado init(). Por eso
+// se anula en varios momentos del ciclo de carga, no solo uno.
+function clearSearchLeftover(){
+  const el = document.getElementById('search');
+  if(el && el.value) el.value = '';
+}
+document.addEventListener('DOMContentLoaded', clearSearchLeftover);
+window.addEventListener('load', clearSearchLeftover);
+window.addEventListener('pageshow', clearSearchLeftover); // vuelta desde bfcache
+setTimeout(clearSearchLeftover, 400);
+
 async function init(){
-  // El navegador puede volver a rellenar por su cuenta el valor de un
-  // <input> al recargar la página (F5): es la restauración de estado de
-  // formularios ligada al historial de navegación, un mecanismo aparte del
-  // autorrelleno que `autocomplete="off"` no evita. Se anula a mano nada
-  // más arrancar para que el buscador empiece siempre vacío.
-  const searchEl = document.getElementById('search');
-  if(searchEl) searchEl.value = '';
+  clearSearchLeftover();
 
   await loadSpeciesCatalog();
   loadUIPrefs();
