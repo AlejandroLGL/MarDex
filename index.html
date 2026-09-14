@@ -5462,6 +5462,20 @@ document.getElementById('searchClearBtn').addEventListener('click', ()=>{
   renderGrid();
 });
 
+// Confirmado: en un perfil de Chrome normal (no en incógnito) el navegador
+// puede volver a meter en este campo texto que se escribió alguna vez, sin
+// que dispare el evento 'input' — nuestro propio `searchTerm` nunca se
+// entera. En vez de perseguir el momento exacto en que el navegador lo
+// hace (varían según se abra la pestaña, se recargue, se enfoque el
+// campo...), se corrige el valor visible cada vez que diverge de lo que
+// el usuario ha escrito de verdad.
+(function watchSearchFieldDrift(){
+  const el = document.getElementById('search');
+  function reconcile(){ if(el.value !== searchTerm) el.value = searchTerm; }
+  el.addEventListener('focus', reconcile);
+  setInterval(reconcile, 600);
+})();
+
 document.getElementById('filtersToggleChev').innerHTML = ICONS.chevronDown;
 document.getElementById('filtersToggleBtn').addEventListener('click', ()=>{
   document.getElementById('filtersToggleBtn').classList.toggle('open');
