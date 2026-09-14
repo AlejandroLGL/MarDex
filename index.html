@@ -8781,6 +8781,14 @@ function initGlassSurface(){
 }
 
 async function init(){
+  // El navegador puede volver a rellenar por su cuenta el valor de un
+  // <input> al recargar la página (F5): es la restauración de estado de
+  // formularios ligada al historial de navegación, un mecanismo aparte del
+  // autorrelleno que `autocomplete="off"` no evita. Se anula a mano nada
+  // más arrancar para que el buscador empiece siempre vacío.
+  const searchEl = document.getElementById('search');
+  if(searchEl) searchEl.value = '';
+
   await loadSpeciesCatalog();
   loadUIPrefs();
   initGlassSurface();
