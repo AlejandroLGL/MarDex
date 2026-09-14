@@ -910,6 +910,15 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .search-wrap input::placeholder{ color:var(--faint); }
   .search-wrap input:focus{ outline:none; border-color:var(--blue); background:rgba(255,255,255,0.96); box-shadow:0 0 0 3px rgba(0,128,200,0.2), 0 4px 20px rgba(7,59,92,0.12); }
+  /* type="search" evita que Chrome ofrezca autorrellenar estos campos con
+     usuarios/contraseñas guardados (los trataba como campo de login pese a
+     autocomplete="off", que ignora para esos casos). Quitamos su propia
+     lupa/cruz nativas porque cada buscador ya trae las suyas. */
+  input[type=search]::-webkit-search-decoration,
+  input[type=search]::-webkit-search-cancel-button,
+  input[type=search]::-webkit-search-results-button,
+  input[type=search]::-webkit-search-results-decoration{ display:none; appearance:none; }
+  input[type=search]{ appearance:none; -webkit-appearance:none; }
   .search-clear-btn{
     position:absolute; right:5px; top:50%; transform:translateY(-50%);
     width:26px; height:26px; border-radius:50%; border:none; background:transparent;
@@ -2002,7 +2011,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
       <div class="search-row">
         <div class="search-wrap">
           <span class="icon" id="searchIcon"></span>
-          <input type="text" id="search" placeholder="Buscar especie, familia o hábitat..." autocomplete="off">
+          <input type="search" id="search" placeholder="Buscar especie, familia o hábitat..." autocomplete="off" data-form-type="other">
           <button type="button" class="search-clear-btn" id="searchClearBtn" title="Borrar búsqueda" aria-label="Borrar búsqueda">
             <span class="icon" id="searchClearIcon"></span>
           </button>
@@ -2210,7 +2219,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
       <button type="button" class="map-filter-pill fav" id="mapFavBtn"></button>
     </div>
     <div class="map-filter-group">
-      <input type="text" class="map-filter-search" id="mapSearchInput" placeholder="Buscar especie, familia o hábitat...">
+      <input type="search" class="map-filter-search" id="mapSearchInput" placeholder="Buscar especie, familia o hábitat..." autocomplete="off" data-form-type="other">
     </div>
   </div>
   <div id="globalMapEl"></div>
@@ -6844,7 +6853,7 @@ function renderDiveSpeciesPicker(){
     </div>
     <div class="search-wrap" style="position:relative;margin-bottom:16px;">
       <span class="icon" id="diveSpeciesSearchIcon"></span>
-      <input type="text" id="diveSpeciesSearchInput" placeholder="Buscar especie o nombre científico..." autocomplete="off">
+      <input type="search" id="diveSpeciesSearchInput" placeholder="Buscar especie o nombre científico..." autocomplete="off" data-form-type="other">
     </div>
     <div class="zones-order-grid" id="diveSpeciesResults"></div>
   `;
@@ -8306,7 +8315,7 @@ function renderSpeciesAdminList(){
     <div class="admin-species-toolbar">
       <div class="search-wrap" style="position:relative;flex:1;min-width:0;">
         <span class="icon" id="admSpeciesSearchIcon"></span>
-        <input type="text" id="admSpeciesSearch" placeholder="Buscar por nombre, científico o código..." value="${escapeHtml(speciesAdminSearch)}">
+        <input type="search" id="admSpeciesSearch" placeholder="Buscar por nombre, científico o código..." value="${escapeHtml(speciesAdminSearch)}" autocomplete="off" data-form-type="other">
       </div>
       <button type="button" class="btn" id="admNewSpeciesBtn">${icon('plus','icon-sm')} Añadir especie</button>
     </div>
@@ -8622,7 +8631,7 @@ async function renderAdminRoles(){
     <div class="admin-species-toolbar">
       <div class="search-wrap" style="position:relative;flex:1;min-width:0;">
         <span class="icon" id="admRolesSearchIcon"></span>
-        <input type="text" id="admRolesSearch" placeholder="Buscar por nombre, usuario o correo...">
+        <input type="search" id="admRolesSearch" placeholder="Buscar por nombre, usuario o correo..." autocomplete="off" data-form-type="other">
       </div>
     </div>
     <div class="dive-card-list" id="admRolesList" style="margin-top:16px;"><div class="zones-empty">Cargando…</div></div>
