@@ -1,7 +1,7 @@
 // MarDex Service Worker
 // Estrategia: cache-first para el shell de la app, network-first para imágenes
 
-const CACHE_NAME = 'mardex-v4';
+const CACHE_NAME = 'mardex-v5';
 const CACHE_DURATION_IMAGES = 30 * 24 * 60 * 60 * 1000; // 30 días
 
 // Recursos del shell de la app que se cachean en la instalación
@@ -56,7 +56,7 @@ self.addEventListener('fetch', event => {
   // Catálogo de especies → network-first (cambia con cada especie añadida;
   // preferimos datos frescos y solo caemos al caché si no hay conexión)
   if (url.pathname.endsWith('/species.json')) {
-    event.respondWith(networkFirstStrategy(event.request));
+    event.respondWith(networkFirstStrategy(event.request, { bypassHttpCache: true }));
     return;
   }
 
@@ -65,8 +65,13 @@ self.addEventListener('fetch', event => {
   // al caché cuando no hay red (antes esto iba por stale-while-revalidate,
   // que enseña primero lo que hubiera cacheado en el install y podía dejar
   // a un dispositivo viendo una versión muy vieja de la app indefinidamente).
+  // bypassHttpCache: un `fetch()` normal puede seguir sirviéndose de la
+  // caché HTTP del propio navegador/CDN aunque la estrategia sea
+  // "network-first" — eso dejó a gente viendo una versión rota ya
+  // corregida en el servidor. `cache:'reload'` fuerza a ignorar esa caché
+  // intermedia, igual que ya hacíamos con las fotos en cacheFirstStrategy.
   if (url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname.endsWith('/manifest.json')) {
-    event.respondWith(networkFirstStrategy(event.request));
+    event.respondWith(networkFirstStrategy(event.request, { bypassHttpCache: true }));
     return;
   }
 
@@ -94,9 +99,9 @@ async function cacheFirstStrategy(request) {
   }
 }
 
-async function networkFirstStrategy(request) {
+async function networkFirstStrategy(request, opts) {
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, opts && opts.bypassHttpCache ? { cache: 'reload' } : undefined);
     if (response.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, response.clone());
