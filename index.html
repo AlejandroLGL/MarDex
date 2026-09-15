@@ -1969,9 +1969,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .home-section-title:first-child{ margin-top:0; }
 
-  /* Tarjeta de perfil: banner + avatar + nombre superpuestos, clicable */
+  /* Tarjeta de perfil: banner + avatar + nombre superpuestos, clicable.
+     La tarjeta se mantiene baja (aspect-ratio ancho) para que el peso visual
+     esté en el avatar y el nombre, no en el fondo. */
   .home-profile-card{
-    display:block; width:100%; position:relative; aspect-ratio:16/8; border-radius:var(--r-lg,20px);
+    display:block; width:100%; position:relative; aspect-ratio:16/5; border-radius:44px;
     overflow:hidden; border:none; cursor:pointer; padding:0; text-align:left;
     background:linear-gradient(135deg, #0D7EA6 0%, #052E4A 100%);
     box-shadow:5px 5px 18px rgba(7,59,92,0.16),2px 2px 6px rgba(7,59,92,0.09);
@@ -1981,25 +1983,25 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-banner-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; }
   .home-banner-img.loaded{ display:block; }
   .home-profile-overlay{
-    position:absolute; inset:0; display:flex; align-items:center; gap:14px; padding:18px 20px;
+    position:absolute; inset:0; display:flex; align-items:center; gap:16px; padding:14px 22px;
     background:linear-gradient(180deg, rgba(5,25,40,0) 35%, rgba(5,20,32,0.72) 100%);
   }
   .home-profile-avatar{
-    width:58px; height:58px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    width:84px; height:84px; border-radius:50%; flex-shrink:0; overflow:hidden;
     background:linear-gradient(135deg,#DCE7EE,#B9C6CF); color:#5B6B75;
-    display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700;
-    border:2.5px solid rgba(255,255,255,0.85); text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:700;
+    border:3px solid rgba(255,255,255,0.85); text-transform:uppercase;
   }
   .home-profile-avatar img{ width:100%; height:100%; object-fit:cover; }
   .home-profile-text{ min-width:0; color:#fff; }
-  .home-profile-name{ font-size:17px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35); }
-  .home-profile-username{ font-size:12.5px; color:rgba(255,255,255,0.8); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
+  .home-profile-name{ font-size:23px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35); }
+  .home-profile-username{ font-size:15px; color:rgba(255,255,255,0.8); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
 
   /* Carrusel: una tarjeta visible a la vez en móvil, rota sola */
   .home-carousel{ margin-top:14px; }
   .home-carousel-track{ position:relative; width:100%; aspect-ratio:16/9.5; }
   .home-carousel-slide{
-    position:absolute; inset:0; border-radius:var(--r-lg,20px); padding:20px;
+    position:absolute; inset:0; border-radius:44px; padding:20px;
     display:flex; flex-direction:column; justify-content:flex-end; gap:4px;
     background:linear-gradient(150deg, #90A4AE 0%, #78909C 100%);
     box-shadow:5px 5px 18px rgba(7,59,92,0.14),2px 2px 6px rgba(7,59,92,0.08);
@@ -2020,11 +2022,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-carousel-progress-bar{ height:100%; width:0%; background:var(--blue); border-radius:2px; }
   .home-carousel-progress-bar.animate{ width:100%; transition:width 7s linear; }
 
+  /* En web/PC sigue siendo un carrusel real (una tarjeta visible, rotando
+     sola): solo se limita el ancho máximo para que no ocupe toda la pantalla. */
   @media(min-width:821px){
-    /* En web/PC no hace falta rotar: se ven las tres a la vez, en fila. */
-    .home-carousel-track{ position:static; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; aspect-ratio:unset; }
-    .home-carousel-slide{ position:static; opacity:1; pointer-events:auto; aspect-ratio:16/11; }
-    .home-carousel-dots, .home-carousel-progress{ display:none; }
+    .home-carousel{ max-width:520px; margin-left:auto; margin-right:auto; }
   }
 
   /* Widgets personalizables: rejilla tipo dashboard, 1x1 cuadrado pequeño,
@@ -2036,9 +2037,16 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-widgets-header .home-section-title{ margin:0; }
   .home-edit-toggle{
     font-size:12px; font-weight:700; color:var(--blue); background:var(--blue-soft); border:none;
-    border-radius:14px; padding:6px 14px; cursor:pointer;
+    border-radius:28px; padding:6px 14px; cursor:pointer;
   }
   .home-edit-toggle.active{ background:var(--coral); color:#fff; }
+  /* Canvas contenedor: envuelve toda la rejilla de widgets en una tarjeta
+     propia (fondo + sombra + esquinas redondeadas), en vez de dejar los
+     widgets sueltos sobre el fondo de la página. */
+  .home-widgets-canvas{
+    background:var(--card); border-radius:36px; padding:16px;
+    box-shadow:5px 5px 18px rgba(7,59,92,0.12),2px 2px 6px rgba(7,59,92,0.07);
+  }
   /* Alto de fila fijo en vez de basado en aspect-ratio: con columnas 1fr,
      un 2x2 y un 1x1 compartiendo fila no se ponen de acuerdo en qué alto de
      fila "cuadrado" quiere cada uno (el 2x2 es casi el doble de ancho, así
@@ -2050,32 +2058,36 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     display:grid; grid-template-columns:repeat(2, 1fr); grid-auto-rows:160px; gap:14px;
   }
   @media(min-width:600px){ .home-widget-grid{ grid-template-columns:repeat(4, 1fr); grid-auto-rows:170px; } }
+  /* Colores invertidos respecto a la primera versión: fondo de color con
+     icono/texto en blanco, en vez de fondo blanco con icono de color. */
   .home-widget{
-    position:relative; border-radius:var(--r-md); cursor:pointer; border:none; background:var(--card);
-    box-shadow:5px 5px 18px rgba(7,59,92,0.12),2px 2px 6px rgba(7,59,92,0.07);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    position:relative; border-radius:36px; cursor:pointer; border:none;
+    background:linear-gradient(135deg, #12A0D6 0%, #0D5E87 100%);
+    box-shadow:5px 5px 18px rgba(7,59,92,0.18),2px 2px 6px rgba(7,59,92,0.10);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
     padding:10px; transition:transform .2s ease, box-shadow .2s ease;
-    color:var(--ink); font-family:var(--sans);
+    color:#fff; font-family:var(--sans);
   }
-  .home-widget:hover{ transform:translateY(-3px); box-shadow:8px 10px 36px rgba(7,59,92,0.18),4px 5px 14px rgba(7,59,92,0.10); }
+  .home-widget:hover{ transform:translateY(-3px); box-shadow:8px 10px 36px rgba(7,59,92,0.24),4px 5px 14px rgba(7,59,92,0.13); }
   .home-widget.size-1x1{ grid-column:span 1; grid-row:span 1; }
   .home-widget.size-2x1{ grid-column:span 2; grid-row:span 1; }
   .home-widget.size-2x2{ grid-column:span 2; grid-row:span 2; }
-  .home-widget-icon{ color:var(--blue); }
-  .home-widget-icon svg{ width:26px; height:26px; }
-  .home-widget.size-2x1 .home-widget-icon svg{ width:22px; height:22px; }
-  .home-widget-label{ font-size:12px; font-weight:700; text-align:center; }
+  .home-widget-icon{ color:#fff; }
+  .home-widget-icon svg{ width:38px; height:38px; }
+  .home-widget.size-2x1 .home-widget-icon svg{ width:32px; height:32px; }
+  .home-widget-label{ font-size:15px; font-weight:700; text-align:center; }
   .home-widget-remove{
-    position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%;
+    position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%;
     background:var(--coral); color:#fff; border:none; cursor:pointer; display:none;
     align-items:center; justify-content:center;
   }
-  .home-widget-remove svg{ width:12px; height:12px; }
+  .home-widget-remove svg{ width:13px; height:13px; }
   body.home-edit-mode .home-widget-remove{ display:flex; }
   body.home-edit-mode .home-widget{ cursor:default; }
   .home-widget-add{
-    border:1.5px dashed var(--line); background:transparent; color:var(--muted);
+    background:transparent; border:2px dashed var(--line); color:var(--muted);
   }
+  .home-widget-add .icon{ width:38px; height:38px; }
   .home-widget-add:hover{ border-color:var(--blue); color:var(--blue); background:var(--blue-soft); transform:none; box-shadow:none; }
   .home-widgets-empty{ color:var(--muted); font-size:13px; text-align:center; padding:24px 0; }
 
@@ -6739,7 +6751,9 @@ function renderHomePage(){
       <div class="home-section-title">Accesos rápidos</div>
       <button type="button" class="home-edit-toggle" id="homeEditToggle">Personalizar</button>
     </div>
-    <div class="home-widget-grid" id="homeWidgetGrid"></div>
+    <div class="home-widgets-canvas">
+      <div class="home-widget-grid" id="homeWidgetGrid"></div>
+    </div>
   `;
 
   document.getElementById('homeProfileCard').onclick = openProfilePage;
