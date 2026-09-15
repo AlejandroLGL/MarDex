@@ -2230,7 +2230,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .pp-banner.pp-banner-dragover .pp-banner-edit{ background:rgba(0,0,0,0.55); }
 </style>
 </head>
-<body>
+<!-- view-home por defecto: sin esto, antes de que termine de cargar la
+     sesión se ve brevemente el hueco de "Explorar" (topbar + rejilla vacía)
+     detrás, ya que body no tiene ninguna clase de vista hasta que el JS
+     decide cuál mostrar. Con Inicio de entrada (el caso más común) no hay
+     nada que corregir después; _alEnterAccount() la cambia enseguida si la
+     vista guardada era otra (logbook/explorar). -->
+<body class="view-home">
 
 <div class="app">
   <aside class="sidebar">
@@ -10261,6 +10267,19 @@ async function _alDoSignup(){
 }
 
 async function _alEnterAccount(user){
+  // La vista se decide lo primero de todo (antes incluso de pedir el
+  // perfil), síncronamente y sin esperar a ningún await: <body
+  // class="view-home"> ya viene puesta de partida en el HTML para que no
+  // se vea "Explorar" ni un instante mientras carga la sesión, así que aquí
+  // solo hay que corregirla si la vista guardada (de un F5 previo) era otra.
+  // Si se dejara para el final de la función, como antes, ese ajuste
+  // llegaba después de varios await (el perfil, loadState()...) y durante
+  // esa espera se llegaba a pintar la vista por defecto equivocada.
+  let savedView = null;
+  try{ savedView = sessionStorage.getItem('mardex:current-view'); }catch(e){}
+  if(savedView === 'logbook'){ document.body.classList.remove('view-home'); document.body.classList.add('view-logbook'); }
+  else if(savedView === 'explore'){ document.body.classList.remove('view-home'); }
+
   const {data:profile}=await _sb.from('profiles').select('*').eq('id',user.id).single();
   currentProfile=profile?.name||user.email;
   currentAccountData={
@@ -10279,13 +10298,8 @@ async function _alEnterAccount(user){
   renderEnvNav();
   renderViewToggle();
   renderGrid();
-  // Un F5 recarga la página entera, así que sin esto siempre se acababa en
-  // Inicio pasara lo que pasara. Restauramos la vista en la que estaba el
-  // usuario (guardada en sessionStorage por syncBottomNavActive) en vez de
-  // abrir Inicio incondicionalmente; 'explore' no necesita nada más porque
-  // renderGrid() de arriba ya la deja lista, solo falta resaltarla en el dock.
-  let savedView = null;
-  try{ savedView = sessionStorage.getItem('mardex:current-view'); }catch(e){}
+  // 'explore' no necesita nada más porque renderGrid() de arriba ya la deja
+  // lista, solo falta resaltarla en el dock.
   if(savedView === 'logbook') openLogbookPanel();
   else if(savedView === 'explore') syncBottomNavActive();
   else openHomePage();
