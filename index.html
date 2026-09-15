@@ -374,21 +374,48 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;
     letter-spacing:.06em; margin:16px 0 8px;
   }
-  .fr-user-row{
-    display:flex; align-items:center; gap:12px; padding:10px 12px;
-    border-radius:12px; transition:background .12s; cursor:pointer;
+  /* Tarjetas de amigos/solicitudes/resultados de búsqueda: mismo lenguaje
+     visual que la propia tarjeta de perfil de Inicio (banner + avatar +
+     nombre superpuestos), pero sin nada editable — solo lectura, con las
+     acciones (Eliminar/Aceptar/Añadir…) en una fila aparte debajo. */
+  .fr-card{
+    border-radius:16px; overflow:hidden; margin-bottom:10px;
+    background:var(--card); box-shadow:0 2px 10px rgba(5,46,74,0.08);
+    transition:box-shadow .15s, transform .15s;
   }
-  .fr-user-row:hover{ background:var(--bg); }
-  .fr-avatar{
-    width:40px; height:40px; border-radius:50%; background:var(--ocean);
-    display:flex; align-items:center; justify-content:center;
-    font-weight:800; font-size:16px; color:#fff; flex-shrink:0;
+  .fr-card-clickable{ cursor:pointer; }
+  .fr-card-clickable:hover{ box-shadow:0 4px 18px rgba(5,46,74,0.14); transform:translateY(-1px); }
+  .fr-card-banner{
+    position:relative; width:100%; aspect-ratio:16/5.5;
+    background:linear-gradient(135deg, #0D7EA6 0%, #052E4A 100%);
   }
-  .fr-user-info{ flex:1; min-width:0; }
-  .fr-user-name{ font-size:14px; font-weight:700; color:var(--ink); }
-  .fr-user-username{ font-size:12px; color:var(--muted); }
-  .fr-user-stats{ font-size:11px; color:var(--faint); margin-top:2px; }
-  .fr-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .fr-card-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; gap:10px; padding:10px 14px;
+    background:
+      linear-gradient(90deg, rgba(5,20,32,0.55) 0%, rgba(5,20,32,0) 60%),
+      linear-gradient(180deg, rgba(5,25,40,0) 40%, rgba(5,20,32,0.55) 100%);
+  }
+  .fr-card-avatar{
+    width:42px; height:42px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background:linear-gradient(135deg,#DCE7EE,#B9C6CF); color:#5B6B75;
+    display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700;
+    border:2px solid rgba(255,255,255,0.85); text-transform:uppercase;
+  }
+  .fr-card-text{ min-width:0; color:#fff; }
+  .fr-card-name{
+    font-size:13.5px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .fr-card-username{
+    font-size:11px; color:rgba(255,255,255,0.85); text-shadow:0 1px 4px rgba(0,0,0,0.35);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .fr-card-footer{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 12px;
+  }
+  .fr-card-stats{ font-size:11px; color:var(--faint); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fr-card-actions{ display:flex; gap:6px; flex-shrink:0; margin-left:auto; }
   .fr-btn{
     padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700;
     cursor:pointer; border:1.5px solid; transition:background .15s, color .15s;
@@ -407,14 +434,28 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     border-radius:8px; background:#e74c3c; color:#fff; font-size:10px;
     font-weight:800; text-align:center; line-height:16px; margin-left:6px;
   }
-  /* Friend profile */
-  .frp-avatar{
-    width:64px; height:64px; border-radius:50%; background:var(--ocean);
-    display:flex; align-items:center; justify-content:center;
-    font-weight:800; font-size:26px; color:#fff; margin:0 auto 10px;
+  /* Friend profile: misma tarjeta de banner+avatar que la de Inicio, pero de
+     solo lectura (sin "cambiar banner" ni click para subir nada). */
+  .frp-banner{
+    position:relative; width:100%; aspect-ratio:16/5; border-radius:22px; overflow:hidden;
+    background:linear-gradient(135deg, #0D7EA6 0%, #052E4A 100%);
+    margin-bottom:20px;
   }
-  .frp-name{ text-align:center; font-size:20px; font-weight:800; color:var(--ink); }
-  .frp-username{ text-align:center; font-size:13px; color:var(--muted); margin-bottom:20px; }
+  .frp-banner-overlay{
+    position:absolute; inset:0; display:flex; align-items:center; gap:14px; padding:14px 20px;
+    background:
+      linear-gradient(90deg, rgba(5,20,32,0.55) 0%, rgba(5,20,32,0) 60%),
+      linear-gradient(180deg, rgba(5,25,40,0) 35%, rgba(5,20,32,0.72) 100%);
+  }
+  .frp-banner-avatar{
+    width:64px; height:64px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background:linear-gradient(135deg,#DCE7EE,#B9C6CF); color:#5B6B75;
+    display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700;
+    border:2.5px solid rgba(255,255,255,0.85); text-transform:uppercase;
+  }
+  .frp-banner-text{ min-width:0; color:#fff; }
+  .frp-banner-name{ font-size:19px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35); }
+  .frp-banner-username{ font-size:13px; color:rgba(255,255,255,0.85); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
   .frp-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
   .frp-stat{ background:var(--bg); border-radius:12px; padding:12px 8px; text-align:center; }
   .frp-stat-num{ font-size:22px; font-weight:800; color:var(--ocean); }
@@ -422,9 +463,9 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .frp-section{ margin-bottom:20px; }
   .frp-section-title{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
   .frp-compare-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-  .frp-compare-col{ background:var(--bg); border-radius:10px; padding:10px; }
-  .frp-compare-col-title{ font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
-  .frp-compare-item{ font-size:11px; color:var(--ink); padding:2px 0; }
+  .frp-compare-col{ background:var(--bg); border-radius:10px; padding:14px 8px; text-align:center; }
+  .frp-compare-col-title{ font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .frp-compare-col-num{ font-size:30px; font-weight:800; margin-top:4px; }
   .frp-map{ height:200px; border-radius:12px; overflow:hidden; margin-top:8px; }
   .frp-species-list{ display:flex; flex-wrap:wrap; gap:6px; }
   .frp-species-chip{
@@ -1994,7 +2035,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-banner-img.loaded{ display:block; }
   .home-profile-overlay{
     position:absolute; inset:0; display:flex; align-items:center; gap:16px; padding:14px 22px;
-    background:linear-gradient(180deg, rgba(5,25,40,0) 35%, rgba(5,20,32,0.72) 100%);
+    /* Degradado a oscuro por la izquierda (mismo tono que el de las flechas
+       del carrusel) para que el avatar y el nombre se lean bien encima de
+       cualquier foto de banner, sumado al degradado inferior de siempre. */
+    background:
+      linear-gradient(90deg, rgba(5,20,32,0.55) 0%, rgba(5,20,32,0) 60%),
+      linear-gradient(180deg, rgba(5,25,40,0) 35%, rgba(5,20,32,0.72) 100%);
   }
   .home-profile-avatar{
     width:84px; height:84px; border-radius:50%; flex-shrink:0; overflow:hidden;
@@ -2016,6 +2062,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-carousel-track{
     position:relative; width:100%; aspect-ratio:16/7.125; overflow:hidden; border-radius:44px;
     touch-action:pan-y; cursor:grab;
+    /* Sin esto, arrastrar para deslizar entre tarjetas también selecciona el
+       texto que hay debajo del dedo/ratón — la selección vivía sobre un
+       elemento en pleno cambio de "transform" por la transición de la
+       tarjeta, y en ese cruce el navegador podía llegar a colgarse. */
+    user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
   }
   /* En móvil el carrusel (y la tarjeta de perfil) quedan algo más altos que
      en escritorio: con menos ancho disponible, la proporción más baja de
@@ -2179,7 +2230,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .pp-banner.pp-banner-dragover .pp-banner-edit{ background:rgba(0,0,0,0.55); }
 </style>
 </head>
-<body>
+<!-- view-home por defecto: sin esto, antes de que termine de cargar la
+     sesión se ve brevemente el hueco de "Explorar" (topbar + rejilla vacía)
+     detrás, ya que body no tiene ninguna clase de vista hasta que el JS
+     decide cuál mostrar. Con Inicio de entrada (el caso más común) no hay
+     nada que corregir después; _alEnterAccount() la cambia enseguida si la
+     vista guardada era otra (logbook/explorar). -->
+<body class="view-home">
 
 <div class="app">
   <aside class="sidebar">
@@ -5679,6 +5736,29 @@ function avatarInner(person){
   const letter = ((person && (person.name || person.username)) || '?')[0].toUpperCase();
   return escapeHtml(letter);
 }
+// CSS inline (en vez de una clase) porque la URL es dinámica por persona;
+// sin banner cae al mismo degradado de siempre en vez de dejarlo en blanco.
+function bannerCardStyle(person){
+  const url = person && person.banner_url;
+  return url
+    ? `background-image:url('${escapeHtml(url)}');background-size:cover;background-position:center;`
+    : '';
+}
+// get_friends/search_users/get_pending_requests/get_friend_data no exponen
+// banner_url (se crearon antes de que existiera ese campo), así que se
+// combina aparte con esta función en vez de tocar esas — no están
+// versionadas en el repo y no vale la pena arriesgar su definición exacta.
+async function fetchBannerUrls(ids){
+  const uniqueIds = [...new Set((ids||[]).filter(Boolean))];
+  if(!uniqueIds.length) return {};
+  try{
+    const {data, error} = await _sb.rpc('get_banner_urls', {user_ids: uniqueIds});
+    if(error || !Array.isArray(data)) return {};
+    const map = {};
+    data.forEach(row=>{ map[row.id] = row.banner_url || ''; });
+    return map;
+  }catch(e){ return {}; }
+}
 
 // ── Identificar especie por foto (Gemini vía Supabase Edge Function) ──────
 // Abre la ficha de la especie identificada con el formulario de avistamiento
@@ -6384,21 +6464,29 @@ async function loadFriendsData(){
     _sb.rpc('get_friends'),
     _sb.rpc('get_pending_requests')
   ]);
+  const friendsList = friends||[];
+  const pendingList = pending||[];
+  const banners = await fetchBannerUrls([...friendsList, ...pendingList].map(p=>p.id||p.sender_id));
 
   // Pending requests
   const pendingEl = document.getElementById('frPendingSection');
-  const pendingList = pending||[];
   if(pendingList.length>0){
     pendingEl.innerHTML = `<div class="fr-section-title">Solicitudes recibidas <span class="fr-pending-badge">${pendingList.length}</span></div>` +
-      pendingList.map(r=>`<div class="fr-user-row">
-        <div class="fr-avatar">${avatarInner(r)}</div>
-        <div class="fr-user-info">
-          <div class="fr-user-name">${escapeHtml(r.name||r.username)}</div>
-          <div class="fr-user-username">@${escapeHtml(r.username||'')}</div>
+      pendingList.map(r=>`<div class="fr-card">
+        <div class="fr-card-banner" style="${bannerCardStyle({banner_url:banners[r.id]})}">
+          <div class="fr-card-overlay">
+            <div class="fr-card-avatar">${avatarInner(r)}</div>
+            <div class="fr-card-text">
+              <div class="fr-card-name">${escapeHtml(r.name||r.username)}</div>
+              <div class="fr-card-username">@${escapeHtml(r.username||'')}</div>
+            </div>
+          </div>
         </div>
-        <div class="fr-actions">
-          <button class="fr-btn fr-btn-accept" data-accept="${r.sender_id}">Aceptar</button>
-          <button class="fr-btn fr-btn-reject" data-reject="${r.id}">Rechazar</button>
+        <div class="fr-card-footer">
+          <div class="fr-card-actions">
+            <button class="fr-btn fr-btn-accept" data-accept="${r.sender_id}">Aceptar</button>
+            <button class="fr-btn fr-btn-reject" data-reject="${r.id}">Rechazar</button>
+          </div>
         </div>
       </div>`).join('');
     pendingEl.querySelectorAll('[data-accept]').forEach(btn=>{
@@ -6411,19 +6499,24 @@ async function loadFriendsData(){
 
   // Friends list
   const listEl = document.getElementById('frFriendsList');
-  const friendsList = friends||[];
   listEl.innerHTML = `<div class="fr-section-title">Mis amigos (${friendsList.length})</div>`;
   if(friendsList.length===0){
     listEl.innerHTML += `<div class="fr-empty">Aún no tienes amigos en MarDex. ¡Búscalos por arriba!</div>`;
   } else {
-    listEl.innerHTML += friendsList.map(f=>`<div class="fr-user-row" data-friend-id="${f.id}" style="cursor:pointer">
-      <div class="fr-avatar">${avatarInner(f)}</div>
-      <div class="fr-user-info">
-        <div class="fr-user-name">${escapeHtml(f.name||f.username)}</div>
-        <div class="fr-user-username">@${escapeHtml(f.username||'')}</div>
-        <div class="fr-user-stats">${f.species_count} especies · ${f.sightings_count} avistamientos · ${f.favorites_count} favoritos</div>
+    listEl.innerHTML += friendsList.map(f=>`<div class="fr-card fr-card-clickable" data-friend-id="${f.id}">
+      <div class="fr-card-banner" style="${bannerCardStyle({banner_url:banners[f.id]})}">
+        <div class="fr-card-overlay">
+          <div class="fr-card-avatar">${avatarInner(f)}</div>
+          <div class="fr-card-text">
+            <div class="fr-card-name">${escapeHtml(f.name||f.username)}</div>
+            <div class="fr-card-username">@${escapeHtml(f.username||'')}</div>
+          </div>
+        </div>
       </div>
-      <button class="fr-btn fr-btn-unfriend" data-unfriend="${f.id}" style="font-size:11px">Eliminar</button>
+      <div class="fr-card-footer">
+        <div class="fr-card-stats">${f.species_count} especies · ${f.sightings_count} avistamientos · ${f.favorites_count} favoritos</div>
+        <div class="fr-card-actions"><button class="fr-btn fr-btn-unfriend" data-unfriend="${f.id}">Eliminar</button></div>
+      </div>
     </div>`).join('');
     listEl.querySelectorAll('[data-friend-id]').forEach(row=>{
       row.onclick = e=>{ if(e.target.closest('[data-unfriend]')) return; openFriendProfile(row.dataset.friendId); };
@@ -6449,6 +6542,7 @@ async function doFriendSearch(query){
     .or(`sender_id.eq.${currentAccountData.id},receiver_id.eq.${currentAccountData.id}`);
   const reqMap = {};
   (requests||[]).forEach(r=>{ const other=r.sender_id===currentAccountData.id?r.receiver_id:r.sender_id; reqMap[other]={status:r.status,isSender:r.sender_id===currentAccountData.id,id:r.id}; });
+  const banners = await fetchBannerUrls(users.map(u=>u.id));
   el.innerHTML = `<div class="fr-section-title">Resultados</div>` + users.map(u=>{
     const rel = reqMap[u.id];
     let btn = '';
@@ -6456,14 +6550,20 @@ async function doFriendSearch(query){
     else if(rel.status==='accepted') btn = `<span style="font-size:11px;color:var(--lagoon);font-weight:700">Amigos</span>`;
     else if(rel.status==='pending'&&rel.isSender) btn = `<button class="fr-btn fr-btn-cancel" data-cancel="${rel.id}">Cancelar</button>`;
     else if(rel.status==='pending'&&!rel.isSender) btn = `<button class="fr-btn fr-btn-accept" data-accept="${u.id}">Aceptar</button>`;
-    return `<div class="fr-user-row">
-      <div class="fr-avatar">${avatarInner(u)}</div>
-      <div class="fr-user-info">
-        <div class="fr-user-name">${escapeHtml(u.name||u.username)}</div>
-        <div class="fr-user-username">@${escapeHtml(u.username||'')}</div>
-        <div class="fr-user-stats">${u.species_count} especies · ${u.sightings_count} avistamientos</div>
+    return `<div class="fr-card">
+      <div class="fr-card-banner" style="${bannerCardStyle({banner_url:banners[u.id]})}">
+        <div class="fr-card-overlay">
+          <div class="fr-card-avatar">${avatarInner(u)}</div>
+          <div class="fr-card-text">
+            <div class="fr-card-name">${escapeHtml(u.name||u.username)}</div>
+            <div class="fr-card-username">@${escapeHtml(u.username||'')}</div>
+          </div>
+        </div>
       </div>
-      <div class="fr-actions">${btn}</div>
+      <div class="fr-card-footer">
+        <div class="fr-card-stats">${u.species_count} especies · ${u.sightings_count} avistamientos</div>
+        <div class="fr-card-actions">${btn}</div>
+      </div>
     </div>`;
   }).join('');
   el.querySelectorAll('[data-add]').forEach(btn=>{
@@ -6485,10 +6585,14 @@ async function openFriendProfile(friendId){
   sheet.innerHTML = `<div class="fr-header"><div class="fr-title">Cargando…</div><button class="fr-close" id="frpCloseBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
   document.getElementById('frpCloseBtn').onclick = closeFriendProfile;
 
-  const {data, error} = await _sb.rpc('get_friend_data',{friend_id:friendId});
+  const [{data, error}, banners] = await Promise.all([
+    _sb.rpc('get_friend_data',{friend_id:friendId}),
+    fetchBannerUrls([friendId])
+  ]);
   if(error||!data){ sheet.innerHTML += `<div class="fr-empty">No se pudo cargar el perfil.</div>`; return; }
 
   const {profile, sightings:fSightings, favorites:fFavs} = data;
+  profile.banner_url = profile.banner_url || banners[friendId] || '';
   const fSightingsArr = fSightings||[];
   const fFavsArr = fFavs||[];
   const fSpeciesIds = [...new Set(fSightingsArr.map(s=>s.species_id))];
@@ -6502,9 +6606,15 @@ async function openFriendProfile(friendId){
     <div class="fr-title">Perfil de ${escapeHtml(profile.name||profile.username)}</div>
     <button class="fr-close" id="frpCloseBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
-  <div class="frp-avatar">${avatarInner(profile)}</div>
-  <div class="frp-name">${escapeHtml(profile.name||profile.username)}</div>
-  <div class="frp-username">@${escapeHtml(profile.username||'')}</div>
+  <div class="frp-banner" style="${bannerCardStyle(profile)}">
+    <div class="frp-banner-overlay">
+      <div class="frp-banner-avatar">${avatarInner(profile)}</div>
+      <div class="frp-banner-text">
+        <div class="frp-banner-name">${escapeHtml(profile.name||profile.username)}</div>
+        <div class="frp-banner-username">@${escapeHtml(profile.username||'')}</div>
+      </div>
+    </div>
+  </div>
   <div class="frp-stats">
     <div class="frp-stat"><div class="frp-stat-num">${fSpeciesIds.length}</div><div class="frp-stat-label">Especies</div></div>
     <div class="frp-stat"><div class="frp-stat-num">${fSightingsArr.length}</div><div class="frp-stat-label">Avistamientos</div></div>
@@ -6514,16 +6624,16 @@ async function openFriendProfile(friendId){
     <div class="frp-section-title">Comparativa de colección</div>
     <div class="frp-compare-grid">
       <div class="frp-compare-col">
-        <div class="frp-compare-col-title" style="color:var(--lagoon)">En común (${common.length})</div>
-        ${common.length?common.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return `<div class="frp-compare-item">${sp?escapeHtml(sp.name):id}</div>`; }).join(''):'<div class="frp-compare-item" style="color:var(--faint)">—</div>'}
+        <div class="frp-compare-col-title" style="color:var(--lagoon)">En común</div>
+        <div class="frp-compare-col-num" style="color:var(--lagoon)">${common.length}</div>
       </div>
       <div class="frp-compare-col">
-        <div class="frp-compare-col-title" style="color:var(--ocean)">Solo tú (${onlyMine.length})</div>
-        ${onlyMine.length?onlyMine.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return `<div class="frp-compare-item">${sp?escapeHtml(sp.name):id}</div>`; }).join(''):'<div class="frp-compare-item" style="color:var(--faint)">—</div>'}
+        <div class="frp-compare-col-title" style="color:var(--ocean)">Solo tú</div>
+        <div class="frp-compare-col-num" style="color:var(--ocean)">${onlyMine.length}</div>
       </div>
       <div class="frp-compare-col">
-        <div class="frp-compare-col-title" style="color:var(--muted)">Solo ${escapeHtml(profile.name||'él')} (${onlyTheirs.length})</div>
-        ${onlyTheirs.length?onlyTheirs.map(id=>{ const sp=SPECIES.find(x=>x.id===id); return `<div class="frp-compare-item">${sp?escapeHtml(sp.name):id}</div>`; }).join(''):'<div class="frp-compare-item" style="color:var(--faint)">—</div>'}
+        <div class="frp-compare-col-title" style="color:var(--muted)">Solo ${escapeHtml(profile.name||'él')}</div>
+        <div class="frp-compare-col-num" style="color:var(--muted)">${onlyTheirs.length}</div>
       </div>
     </div>
   </div>
@@ -7028,7 +7138,16 @@ function wireHomeCarouselSwipe(track){
   track.addEventListener('pointerdown', (e)=>{
     if(e.pointerType === 'mouse' && e.button !== 0) return;
     homeCarouselDragStart = { x:e.clientX, y:e.clientY };
+    // Sin esto, arrastrar con el ratón sobre el texto de la tarjeta inicia
+    // una selección nativa en vez de (o además de) el gesto de deslizar, y
+    // esa selección podía llegar a colgar la página si el arrastre cruzaba
+    // una tarjeta a media transición.
+    e.preventDefault();
   });
+  // También hay que frenar el drag-and-drop nativo (arrastrar una imagen o
+  // texto ya seleccionado), que es un mecanismo aparte de los Pointer Events
+  // y "user-select:none" por sí solo no lo cubre en todos los navegadores.
+  track.addEventListener('dragstart', (e)=> e.preventDefault());
   const finishDrag = (e)=>{
     if(!homeCarouselDragStart) return;
     const dx = e.clientX - homeCarouselDragStart.x;
@@ -10148,6 +10267,19 @@ async function _alDoSignup(){
 }
 
 async function _alEnterAccount(user){
+  // La vista se decide lo primero de todo (antes incluso de pedir el
+  // perfil), síncronamente y sin esperar a ningún await: <body
+  // class="view-home"> ya viene puesta de partida en el HTML para que no
+  // se vea "Explorar" ni un instante mientras carga la sesión, así que aquí
+  // solo hay que corregirla si la vista guardada (de un F5 previo) era otra.
+  // Si se dejara para el final de la función, como antes, ese ajuste
+  // llegaba después de varios await (el perfil, loadState()...) y durante
+  // esa espera se llegaba a pintar la vista por defecto equivocada.
+  let savedView = null;
+  try{ savedView = sessionStorage.getItem('mardex:current-view'); }catch(e){}
+  if(savedView === 'logbook'){ document.body.classList.remove('view-home'); document.body.classList.add('view-logbook'); }
+  else if(savedView === 'explore'){ document.body.classList.remove('view-home'); }
+
   const {data:profile}=await _sb.from('profiles').select('*').eq('id',user.id).single();
   currentProfile=profile?.name||user.email;
   currentAccountData={
@@ -10166,13 +10298,8 @@ async function _alEnterAccount(user){
   renderEnvNav();
   renderViewToggle();
   renderGrid();
-  // Un F5 recarga la página entera, así que sin esto siempre se acababa en
-  // Inicio pasara lo que pasara. Restauramos la vista en la que estaba el
-  // usuario (guardada en sessionStorage por syncBottomNavActive) en vez de
-  // abrir Inicio incondicionalmente; 'explore' no necesita nada más porque
-  // renderGrid() de arriba ya la deja lista, solo falta resaltarla en el dock.
-  let savedView = null;
-  try{ savedView = sessionStorage.getItem('mardex:current-view'); }catch(e){}
+  // 'explore' no necesita nada más porque renderGrid() de arriba ya la deja
+  // lista, solo falta resaltarla en el dock.
   if(savedView === 'logbook') openLogbookPanel();
   else if(savedView === 'explore') syncBottomNavActive();
   else openHomePage();
