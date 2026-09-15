@@ -2096,6 +2096,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     border:none; cursor:pointer; background:none; color:#fff; z-index:5;
     display:flex; align-items:center; opacity:0.55; transition:opacity .2s ease, background .2s ease;
   }
+  /* En móvil dejan menos ancho ocupado sobre la tarjeta (el texto tiene
+     menos sitio ahí que en escritorio), solo las zonas de flecha. */
+  @media(max-width:820px){
+    .home-carousel-arrow{ width:22%; min-width:44px; max-width:70px; }
+  }
   .home-carousel-arrow svg{ width:20px; height:20px; }
   .home-carousel-arrow-prev{
     left:0; justify-content:flex-start; padding-left:10px;
