@@ -2000,7 +2000,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   /* Carrusel: una tarjeta visible a la vez, rota sola. Mismo ancho que las
      tarjetas de arriba/abajo (sin límite propio: ocupa el 100% del contenedor). */
   .home-carousel{ margin-top:14px; }
-  .home-carousel-track{ position:relative; width:100%; aspect-ratio:16/9.5; }
+  .home-carousel-track{ position:relative; width:100%; aspect-ratio:16/7.125; }
   .home-carousel-slide{
     position:absolute; inset:0; border-radius:44px; padding:20px;
     display:flex; flex-direction:column; justify-content:flex-end; gap:4px;
@@ -2013,12 +2013,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-carousel-slide-icon svg{ width:28px; height:28px; }
   .home-carousel-slide-title{ font-size:19px; font-weight:800; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); }
   .home-carousel-slide-sub{ font-size:12.5px; color:rgba(255,255,255,0.85); text-shadow:0 1px 4px rgba(0,0,0,0.2); }
-  /* Zonas de avance/retroceso en los extremos: ~15% del ancho cada una, con
-     una flecha fina (SVG, no el carácter "<"/">"). Siempre visibles a media
-     opacidad (para que se noten también en móvil, sin :hover táctil) y a
-     opacidad completa con el ratón encima. */
+  /* Zonas de avance/retroceso en los extremos, con una flecha fina (SVG, no
+     el carácter "<"/">"). Siempre visibles a media opacidad (para que se
+     noten también en móvil, sin :hover táctil) y a opacidad completa con el
+     ratón encima. */
   .home-carousel-arrow{
-    position:absolute; top:0; bottom:0; width:15%; min-width:34px; max-width:64px;
+    position:absolute; top:0; bottom:0; width:24%; min-width:46px; max-width:100px;
     border:none; cursor:pointer; background:none; color:#fff; z-index:5;
     display:flex; align-items:center; opacity:0.55; transition:opacity .2s ease, background .2s ease;
   }
@@ -6718,6 +6718,7 @@ let homeCarouselTimer = null;
 let homeCarouselLastStart = 0;    // Date.now() de cuando arrancó el tramo actual de 7s
 let homeCarouselRemaining = 7000; // ms que quedaban al pausar, para reanudar sin reiniciar
 let homeCarouselPaused = false;
+let homeCarouselHovering = false; // ratón encima del carrusel ahora mismo (independiente de paused)
 let homeEditMode = false;
 let homeLayout = [];  // [{key,size}] — copia en memoria del layout guardado
 
@@ -6826,8 +6827,8 @@ function renderHomePage(){
   document.getElementById('homeCarouselPrev').onclick = ()=> goToHomeCarouselSlide(homeCarouselIndex - 1);
   document.getElementById('homeCarouselNext').onclick = ()=> goToHomeCarouselSlide(homeCarouselIndex + 1);
   const carouselTrack = document.getElementById('homeCarouselTrack');
-  carouselTrack.addEventListener('mouseenter', pauseHomeCarouselTimer);
-  carouselTrack.addEventListener('mouseleave', resumeHomeCarouselTimer);
+  carouselTrack.addEventListener('mouseenter', ()=>{ homeCarouselHovering = true; pauseHomeCarouselTimer(); });
+  carouselTrack.addEventListener('mouseleave', ()=>{ homeCarouselHovering = false; resumeHomeCarouselTimer(); });
   document.getElementById('homeEditToggle').onclick = ()=>{
     homeEditMode = !homeEditMode;
     document.body.classList.toggle('home-edit-mode', homeEditMode);
@@ -6895,6 +6896,11 @@ function startHomeCarouselTimer(){
   homeCarouselLastStart = Date.now();
   homeCarouselRemaining = 7000;
   homeCarouselTimer = setTimeout(homeCarouselAdvance, 7000);
+  // Si el usuario cambia de tarjeta con una flecha/puntito sin haber salido
+  // del carrusel, el ratón nunca dispara un "mouseenter" nuevo (ya estaba
+  // dentro), así que sin esto el temporizador se pondría en marcha igual.
+  // Comprobamos aquí si sigue encima y, si es así, lo pausamos al momento.
+  if(homeCarouselHovering) pauseHomeCarouselTimer();
 }
 function stopHomeCarouselTimer(){
   if(homeCarouselTimer){ clearTimeout(homeCarouselTimer); homeCarouselTimer = null; }
