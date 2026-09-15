@@ -8497,6 +8497,9 @@ function renderSpeciesForm(){
 
     ${sec('Descripción', `
       <div class="field"><label>Texto de la ficha</label><textarea id="spBlurb" rows="4">${escapeHtml(sp?.blurb||'')}</textarea></div>
+      <div class="field"><label>Nombres locales</label><input type="text" id="spTags" value="${escapeHtml((sp?.tags||[]).join(', '))}" placeholder="separados por comas, p.ej. róbalo, branzino">
+        <div class="dive-species-note">Se muestran como etiquetas en la ficha de la especie, para quien la conozca por otro nombre.</div>
+      </div>
     `)}
 
     ${sec('Foto', `
@@ -8599,6 +8602,7 @@ async function saveSpeciesAdmin(){
     diet: document.getElementById('spDiet').value.trim() || null,
     rarity: rarityVal ? Number(rarityVal) : null,
     blurb: document.getElementById('spBlurb').value.trim() || null,
+    tags: document.getElementById('spTags').value.split(',').map(t=>t.trim()).filter(Boolean),
   };
 
   const saveBtn = document.getElementById('spSaveBtn');
