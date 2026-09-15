@@ -1997,7 +1997,8 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-profile-name{ font-size:23px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35); }
   .home-profile-username{ font-size:15px; color:rgba(255,255,255,0.8); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
 
-  /* Carrusel: una tarjeta visible a la vez en móvil, rota sola */
+  /* Carrusel: una tarjeta visible a la vez, rota sola. Mismo ancho que las
+     tarjetas de arriba/abajo (sin límite propio: ocupa el 100% del contenedor). */
   .home-carousel{ margin-top:14px; }
   .home-carousel-track{ position:relative; width:100%; aspect-ratio:16/9.5; }
   .home-carousel-slide{
@@ -2012,6 +2013,27 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-carousel-slide-icon svg{ width:28px; height:28px; }
   .home-carousel-slide-title{ font-size:19px; font-weight:800; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); }
   .home-carousel-slide-sub{ font-size:12.5px; color:rgba(255,255,255,0.85); text-shadow:0 1px 4px rgba(0,0,0,0.2); }
+  /* Zonas de avance/retroceso en los extremos: ~15% del ancho cada una, con
+     una flecha fina (SVG, no el carácter "<"/">"). Siempre visibles a media
+     opacidad (para que se noten también en móvil, sin :hover táctil) y a
+     opacidad completa con el ratón encima. */
+  .home-carousel-arrow{
+    position:absolute; top:0; bottom:0; width:15%; min-width:34px; max-width:64px;
+    border:none; cursor:pointer; background:none; color:#fff; z-index:5;
+    display:flex; align-items:center; opacity:0.55; transition:opacity .2s ease, background .2s ease;
+  }
+  .home-carousel-arrow svg{ width:20px; height:20px; }
+  .home-carousel-arrow-prev{
+    left:0; justify-content:flex-start; padding-left:10px;
+    background:linear-gradient(90deg, rgba(5,20,32,0.30), transparent);
+    border-top-left-radius:44px; border-bottom-left-radius:44px;
+  }
+  .home-carousel-arrow-next{
+    right:0; justify-content:flex-end; padding-right:10px;
+    background:linear-gradient(270deg, rgba(5,20,32,0.30), transparent);
+    border-top-right-radius:44px; border-bottom-right-radius:44px;
+  }
+  .home-carousel-track:hover .home-carousel-arrow{ opacity:1; }
   .home-carousel-dots{ display:flex; justify-content:center; gap:6px; margin-top:12px; }
   .home-carousel-dot{
     width:7px; height:7px; border-radius:50%; background:var(--line); border:none; cursor:pointer;
@@ -2020,13 +2042,6 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-carousel-dot.active{ background:var(--blue); transform:scale(1.25); }
   .home-carousel-progress{ height:3px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:8px; max-width:120px; margin-left:auto; margin-right:auto; }
   .home-carousel-progress-bar{ height:100%; width:0%; background:var(--blue); border-radius:2px; }
-  .home-carousel-progress-bar.animate{ width:100%; transition:width 7s linear; }
-
-  /* En web/PC sigue siendo un carrusel real (una tarjeta visible, rotando
-     sola): solo se limita el ancho máximo para que no ocupe toda la pantalla. */
-  @media(min-width:821px){
-    .home-carousel{ max-width:520px; margin-left:auto; margin-right:auto; }
-  }
 
   /* Widgets personalizables: rejilla tipo dashboard, 1x1 cuadrado pequeño,
      2x1 rectángulo horizontal, 2x2 cuadrado grande. `grid-auto-rows:1fr`
@@ -2125,6 +2140,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     position:relative; z-index:1; display:flex; align-items:center; gap:6px; color:#fff;
     background:rgba(0,0,0,0.35); border-radius:14px; padding:6px 12px; font-size:11.5px; font-weight:700;
   }
+  .pp-banner.pp-banner-dragover{ outline:3px dashed rgba(255,255,255,0.85); outline-offset:-3px; }
+  .pp-banner.pp-banner-dragover::after{
+    content:''; position:absolute; inset:0; background:rgba(13,46,64,0.35); pointer-events:none;
+  }
+  .pp-banner.pp-banner-dragover .pp-banner-edit{ background:rgba(0,0,0,0.55); }
 </style>
 </head>
 <body>
@@ -4379,15 +4399,12 @@ async function renderProfilePage(){
     bannerImg.src = currentAccountData.banner_url;
     bannerImg.classList.add('loaded');
   }
-  document.getElementById('ppBanner').addEventListener('click', ()=> bannerInput.click());
-  bannerInput.addEventListener('change', async ()=>{
-    const file = bannerInput.files[0];
+  async function handleBannerFile(file){
     if(!file) return;
-    if(!file.type.startsWith('image/')){ showToast('Elige un archivo de imagen.', true); bannerInput.value=''; return; }
-    if(file.size > 8*1024*1024){ showToast('La imagen no puede superar los 8 MB.', true); bannerInput.value=''; return; }
+    if(!file.type.startsWith('image/')){ showToast('Elige un archivo de imagen.', true); return; }
+    if(file.size > 8*1024*1024){ showToast('La imagen no puede superar los 8 MB.', true); return; }
 
     const resized = await resizeImageFileToBlob(file, 1400);
-    bannerInput.value = '';
 
     const previewUrl = URL.createObjectURL(resized);
     bannerImg.src = previewUrl;
@@ -4408,6 +4425,40 @@ async function renderProfilePage(){
       console.error('[banner]', err);
       showToast('No se pudo subir el banner: ' + (err.message||'error desconocido'), true);
     }
+  }
+
+  const ppBanner = document.getElementById('ppBanner');
+  ppBanner.addEventListener('click', ()=> bannerInput.click());
+  bannerInput.addEventListener('change', ()=>{
+    const file = bannerInput.files[0];
+    bannerInput.value = ''; // permite volver a elegir el mismo archivo
+    handleBannerFile(file);
+  });
+
+  // Arrastrar y soltar una foto directamente sobre el banner, sin pasar
+  // por el selector de archivos. dragenter/dragover deben cancelar su
+  // comportamiento por defecto (si no, el navegador abre la imagen en vez
+  // de disparar el evento "drop"); un contador de profundidad evita que el
+  // resaltado parpadee al pasar por encima de los hijos del banner (la
+  // imagen, el texto "Cambiar banner"...) ya que esos también disparan
+  // dragenter/dragleave.
+  let bannerDragDepth = 0;
+  ppBanner.addEventListener('dragenter', (e)=>{
+    e.preventDefault();
+    bannerDragDepth++;
+    ppBanner.classList.add('pp-banner-dragover');
+  });
+  ppBanner.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+  ppBanner.addEventListener('dragleave', ()=>{
+    bannerDragDepth = Math.max(0, bannerDragDepth - 1);
+    if(bannerDragDepth === 0) ppBanner.classList.remove('pp-banner-dragover');
+  });
+  ppBanner.addEventListener('drop', (e)=>{
+    e.preventDefault();
+    bannerDragDepth = 0;
+    ppBanner.classList.remove('pp-banner-dragover');
+    const file = e.dataTransfer?.files?.[0];
+    handleBannerFile(file);
   });
 
   initActivityCalendar();
@@ -6653,6 +6704,9 @@ function syncBottomNavActive(){
   document.querySelectorAll('#bottomNav [data-bnav]').forEach(b=>{
     b.classList.toggle('active', b.dataset.bnav === tab);
   });
+  // Recordamos la vista actual (home/logbook/explore) durante la sesión de
+  // la pestaña para que un F5 la conserve en vez de volver siempre a Inicio.
+  try{ sessionStorage.setItem('mardex:current-view', isLogbookView() ? 'logbook' : (isHomeView() ? 'home' : 'explore')); }catch(e){}
 }
 
 // ── Inicio ───────────────────────────────────────────────────────────────
@@ -6661,6 +6715,9 @@ function syncBottomNavActive(){
 // pantalla de arranque por defecto tras iniciar sesión.
 let homeCarouselIndex = 0;
 let homeCarouselTimer = null;
+let homeCarouselLastStart = 0;    // Date.now() de cuando arrancó el tramo actual de 7s
+let homeCarouselRemaining = 7000; // ms que quedaban al pausar, para reanudar sin reiniciar
+let homeCarouselPaused = false;
 let homeEditMode = false;
 let homeLayout = [];  // [{key,size}] — copia en memoria del layout guardado
 
@@ -6740,6 +6797,12 @@ function renderHomePage(){
             <div class="home-carousel-slide-sub">${escapeHtml(s.sub)}</div>
           </div>
         `).join('')}
+        <button type="button" class="home-carousel-arrow home-carousel-arrow-prev" id="homeCarouselPrev" aria-label="Tarjeta anterior">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
+        </button>
+        <button type="button" class="home-carousel-arrow home-carousel-arrow-next" id="homeCarouselNext" aria-label="Tarjeta siguiente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
       </div>
       <div class="home-carousel-dots" id="homeCarouselDots">
         ${HOME_CAROUSEL_SLIDES.map((s,i)=>`<button type="button" class="home-carousel-dot" data-slide="${i}" title="${escapeHtml(s.title)}" aria-label="${escapeHtml(s.title)}"></button>`).join('')}
@@ -6748,7 +6811,7 @@ function renderHomePage(){
     </div>
 
     <div class="home-widgets-header">
-      <div class="home-section-title">Accesos rápidos</div>
+      <div class="home-section-title">WIDGETS</div>
       <button type="button" class="home-edit-toggle" id="homeEditToggle">Personalizar</button>
     </div>
     <div class="home-widgets-canvas">
@@ -6758,12 +6821,13 @@ function renderHomePage(){
 
   document.getElementById('homeProfileCard').onclick = openProfilePage;
   document.querySelectorAll('#homeCarouselDots [data-slide]').forEach(btn=>{
-    btn.onclick = ()=>{
-      homeCarouselIndex = Number(btn.dataset.slide);
-      renderHomeCarouselActive();
-      startHomeCarouselTimer();
-    };
+    btn.onclick = ()=> goToHomeCarouselSlide(Number(btn.dataset.slide));
   });
+  document.getElementById('homeCarouselPrev').onclick = ()=> goToHomeCarouselSlide(homeCarouselIndex - 1);
+  document.getElementById('homeCarouselNext').onclick = ()=> goToHomeCarouselSlide(homeCarouselIndex + 1);
+  const carouselTrack = document.getElementById('homeCarouselTrack');
+  carouselTrack.addEventListener('mouseenter', pauseHomeCarouselTimer);
+  carouselTrack.addEventListener('mouseleave', resumeHomeCarouselTimer);
   document.getElementById('homeEditToggle').onclick = ()=>{
     homeEditMode = !homeEditMode;
     document.body.classList.toggle('home-edit-mode', homeEditMode);
@@ -6787,30 +6851,76 @@ function renderHomeCarouselActive(){
     el.classList.toggle('active', Number(el.dataset.slide) === homeCarouselIndex);
   });
 }
-// Reinicia la animación de la barra quitando y volviendo a poner la clase:
-// forzar un reflow entre medias (leer offsetWidth) es lo que hace que el
-// navegador trate el segundo cambio como una transición nueva en vez de
-// ignorarlo por ser "la misma regla de siempre".
+// La barra de progreso se anima con "transition" fijado por JS (en vez de
+// una clase CSS con una duración fija) porque al reanudar tras una pausa
+// necesita completar solo el tiempo que quedaba, no los 7s enteros.
 function restartHomeCarouselProgress(){
   const bar = document.getElementById('homeCarouselProgressBar');
   if(!bar) return;
-  bar.classList.remove('animate');
+  bar.style.transition = 'none';
   bar.style.width = '0%';
-  void bar.offsetWidth;
-  bar.classList.add('animate');
+  void bar.offsetWidth; // forzar reflow: si no, el navegador funde este cambio con el siguiente
+  bar.style.transition = 'width 7000ms linear';
   bar.style.width = '100%';
 }
+// Congela la barra donde esté (sin volver a 0%) para retomarla luego desde
+// ahí en vez de reiniciarla, al pasar el ratón por encima del carrusel.
+function freezeHomeCarouselProgress(){
+  const bar = document.getElementById('homeCarouselProgressBar');
+  if(!bar) return;
+  const w = getComputedStyle(bar).width;
+  bar.style.transition = 'none';
+  bar.style.width = w;
+  void bar.offsetWidth;
+}
+function resumeHomeCarouselProgress(remainingMs){
+  const bar = document.getElementById('homeCarouselProgressBar');
+  if(!bar) return;
+  bar.style.transition = `width ${remainingMs}ms linear`;
+  void bar.offsetWidth;
+  bar.style.width = '100%';
+}
+function homeCarouselAdvance(){
+  homeCarouselIndex = (homeCarouselIndex + 1) % HOME_CAROUSEL_SLIDES.length;
+  renderHomeCarouselActive();
+  startHomeCarouselTimer();
+}
+// Arranca (o reinicia del todo, a los 7s completos) el temporizador de
+// rotación automática. Se usa tanto al abrir Inicio como al cambiar de
+// tarjeta a mano (puntito o flecha), que es cuando "el tiempo se reinicia".
 function startHomeCarouselTimer(){
   stopHomeCarouselTimer();
+  homeCarouselPaused = false;
   restartHomeCarouselProgress();
-  homeCarouselTimer = setInterval(()=>{
-    homeCarouselIndex = (homeCarouselIndex + 1) % HOME_CAROUSEL_SLIDES.length;
-    renderHomeCarouselActive();
-    restartHomeCarouselProgress();
-  }, 7000);
+  homeCarouselLastStart = Date.now();
+  homeCarouselRemaining = 7000;
+  homeCarouselTimer = setTimeout(homeCarouselAdvance, 7000);
 }
 function stopHomeCarouselTimer(){
-  if(homeCarouselTimer){ clearInterval(homeCarouselTimer); homeCarouselTimer = null; }
+  if(homeCarouselTimer){ clearTimeout(homeCarouselTimer); homeCarouselTimer = null; }
+}
+// Pausa real (no reinicio): mientras el ratón esté encima del carrusel el
+// tiempo se para donde estaba, y al salir continúa por el tiempo que
+// quedaba en vez de volver a contar 7s enteros.
+function pauseHomeCarouselTimer(){
+  if(homeCarouselPaused || !homeCarouselTimer) return;
+  homeCarouselPaused = true;
+  const elapsed = Date.now() - homeCarouselLastStart;
+  homeCarouselRemaining = Math.max(300, 7000 - elapsed);
+  stopHomeCarouselTimer();
+  freezeHomeCarouselProgress();
+}
+function resumeHomeCarouselTimer(){
+  if(!homeCarouselPaused) return;
+  homeCarouselPaused = false;
+  homeCarouselLastStart = Date.now();
+  resumeHomeCarouselProgress(homeCarouselRemaining);
+  homeCarouselTimer = setTimeout(homeCarouselAdvance, homeCarouselRemaining);
+}
+function goToHomeCarouselSlide(i){
+  homeCarouselIndex = ((i % HOME_CAROUSEL_SLIDES.length) + HOME_CAROUSEL_SLIDES.length) % HOME_CAROUSEL_SLIDES.length;
+  renderHomeCarouselActive();
+  startHomeCarouselTimer();
 }
 
 // Los widgets con botón de quitar son <div> (no <button>) porque no se
@@ -9937,7 +10047,16 @@ async function _alEnterAccount(user){
   renderEnvNav();
   renderViewToggle();
   renderGrid();
-  openHomePage();
+  // Un F5 recarga la página entera, así que sin esto siempre se acababa en
+  // Inicio pasara lo que pasara. Restauramos la vista en la que estaba el
+  // usuario (guardada en sessionStorage por syncBottomNavActive) en vez de
+  // abrir Inicio incondicionalmente; 'explore' no necesita nada más porque
+  // renderGrid() de arriba ya la deja lista, solo falta resaltarla en el dock.
+  let savedView = null;
+  try{ savedView = sessionStorage.getItem('mardex:current-view'); }catch(e){}
+  if(savedView === 'logbook') openLogbookPanel();
+  else if(savedView === 'explore') syncBottomNavActive();
+  else openHomePage();
 }
 
 
