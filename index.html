@@ -1998,17 +1998,20 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-profile-username{ font-size:15px; color:rgba(255,255,255,0.8); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
 
   /* Carrusel: una tarjeta visible a la vez, rota sola. Mismo ancho que las
-     tarjetas de arriba/abajo (sin límite propio: ocupa el 100% del contenedor). */
+     tarjetas de arriba/abajo (sin límite propio: ocupa el 100% del contenedor).
+     `overflow:hidden` es necesario para el deslizamiento: las tarjetas que no
+     están activas se colocan fuera de la vista (translateX ±100%) en vez de
+     desaparecer, y así entran/salen deslizándose en vez de con un corte. */
   .home-carousel{ margin-top:14px; }
-  .home-carousel-track{ position:relative; width:100%; aspect-ratio:16/7.125; }
+  .home-carousel-track{ position:relative; width:100%; aspect-ratio:16/7.125; overflow:hidden; border-radius:44px; }
   .home-carousel-slide{
-    position:absolute; inset:0; border-radius:44px; padding:20px;
+    position:absolute; inset:0; padding:20px;
     display:flex; flex-direction:column; justify-content:flex-end; gap:4px;
     background:linear-gradient(150deg, #90A4AE 0%, #78909C 100%);
     box-shadow:5px 5px 18px rgba(7,59,92,0.14),2px 2px 6px rgba(7,59,92,0.08);
-    opacity:0; pointer-events:none; transition:opacity .4s ease;
+    transform:translateX(100%);
+    transition:transform .5s cubic-bezier(0.45,0,0.2,1);
   }
-  .home-carousel-slide.active{ opacity:1; pointer-events:auto; }
   .home-carousel-slide-icon{ opacity:0.5; margin-bottom:6px; }
   .home-carousel-slide-icon svg{ width:28px; height:28px; }
   .home-carousel-slide-title{ font-size:19px; font-weight:800; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); }
@@ -2018,7 +2021,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
      noten también en móvil, sin :hover táctil) y a opacidad completa con el
      ratón encima. */
   .home-carousel-arrow{
-    position:absolute; top:0; bottom:0; width:24%; min-width:46px; max-width:100px;
+    position:absolute; top:0; bottom:0; width:48%; min-width:92px; max-width:200px;
     border:none; cursor:pointer; background:none; color:#fff; z-index:5;
     display:flex; align-items:center; opacity:0.55; transition:opacity .2s ease, background .2s ease;
   }
@@ -2026,12 +2029,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-carousel-arrow-prev{
     left:0; justify-content:flex-start; padding-left:10px;
     background:linear-gradient(90deg, rgba(5,20,32,0.30), transparent);
-    border-top-left-radius:44px; border-bottom-left-radius:44px;
   }
   .home-carousel-arrow-next{
     right:0; justify-content:flex-end; padding-right:10px;
     background:linear-gradient(270deg, rgba(5,20,32,0.30), transparent);
-    border-top-right-radius:44px; border-bottom-right-radius:44px;
   }
   .home-carousel-track:hover .home-carousel-arrow{ opacity:1; }
   .home-carousel-dots{ display:flex; justify-content:center; gap:6px; margin-top:12px; }
@@ -2040,8 +2041,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     padding:0; transition:background .2s, transform .2s;
   }
   .home-carousel-dot.active{ background:var(--blue); transform:scale(1.25); }
-  .home-carousel-progress{ height:3px; background:var(--line); border-radius:2px; overflow:hidden; margin-top:8px; max-width:120px; margin-left:auto; margin-right:auto; }
-  .home-carousel-progress-bar{ height:100%; width:0%; background:var(--blue); border-radius:2px; }
+  /* La línea de progreso vive dentro del propio carrusel (pegada a su borde
+     inferior, a todo lo ancho), no como un elemento aparte debajo. */
+  .home-carousel-progress{
+    position:absolute; left:0; right:0; bottom:0; height:3px;
+    background:rgba(255,255,255,0.28); z-index:6;
+  }
+  .home-carousel-progress-bar{ height:100%; width:0%; background:#fff; }
 
   /* Widgets personalizables: rejilla tipo dashboard, 1x1 cuadrado pequeño,
      2x1 rectángulo horizontal, 2x2 cuadrado grande. `grid-auto-rows:1fr`
@@ -6804,11 +6810,11 @@ function renderHomePage(){
         <button type="button" class="home-carousel-arrow home-carousel-arrow-next" id="homeCarouselNext" aria-label="Tarjeta siguiente">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
         </button>
+        <div class="home-carousel-progress"><div class="home-carousel-progress-bar" id="homeCarouselProgressBar"></div></div>
       </div>
       <div class="home-carousel-dots" id="homeCarouselDots">
         ${HOME_CAROUSEL_SLIDES.map((s,i)=>`<button type="button" class="home-carousel-dot" data-slide="${i}" title="${escapeHtml(s.title)}" aria-label="${escapeHtml(s.title)}"></button>`).join('')}
       </div>
-      <div class="home-carousel-progress"><div class="home-carousel-progress-bar" id="homeCarouselProgressBar"></div></div>
     </div>
 
     <div class="home-widgets-header">
@@ -6824,8 +6830,8 @@ function renderHomePage(){
   document.querySelectorAll('#homeCarouselDots [data-slide]').forEach(btn=>{
     btn.onclick = ()=> goToHomeCarouselSlide(Number(btn.dataset.slide));
   });
-  document.getElementById('homeCarouselPrev').onclick = ()=> goToHomeCarouselSlide(homeCarouselIndex - 1);
-  document.getElementById('homeCarouselNext').onclick = ()=> goToHomeCarouselSlide(homeCarouselIndex + 1);
+  document.getElementById('homeCarouselPrev').onclick = ()=> stepHomeCarousel(-1);
+  document.getElementById('homeCarouselNext').onclick = ()=> stepHomeCarousel(1);
   const carouselTrack = document.getElementById('homeCarouselTrack');
   carouselTrack.addEventListener('mouseenter', ()=>{ homeCarouselHovering = true; pauseHomeCarouselTimer(); });
   carouselTrack.addEventListener('mouseleave', ()=>{ homeCarouselHovering = false; resumeHomeCarouselTimer(); });
@@ -6839,15 +6845,61 @@ function renderHomePage(){
   };
 
   homeCarouselIndex = 0;
-  renderHomeCarouselActive();
+  initHomeCarouselPositions();
   startHomeCarouselTimer();
   renderHomeWidgetGrid();
 }
 
-function renderHomeCarouselActive(){
+// Coloca las tres tarjetas según el índice activo, sin animar: la activa en
+// el centro, su vecina "siguiente" aparcada fuera por la derecha y su
+// vecina "anterior" aparcada fuera por la izquierda — listas para
+// deslizarse la próxima vez que se avance o retroceda.
+function initHomeCarouselPositions(){
+  const N = HOME_CAROUSEL_SLIDES.length;
   document.querySelectorAll('#homeCarouselTrack .home-carousel-slide').forEach(el=>{
+    const i = Number(el.dataset.slide);
+    el.style.transition = 'none';
+    el.classList.toggle('active', i === homeCarouselIndex);
+    if(i === homeCarouselIndex) el.style.transform = 'translateX(0%)';
+    else if(i === (homeCarouselIndex + 1) % N) el.style.transform = 'translateX(100%)';
+    else el.style.transform = 'translateX(-100%)';
+    void el.offsetWidth; // fuerza el reflow antes de reactivar la transición
+    el.style.transition = '';
+  });
+  document.querySelectorAll('#homeCarouselDots .home-carousel-dot').forEach(el=>{
     el.classList.toggle('active', Number(el.dataset.slide) === homeCarouselIndex);
   });
+}
+// Con solo 3 tarjetas, cualquier destino distinto del actual es siempre una
+// vecina en un sentido u otro: se compara el salto "hacia adelante" con el
+// salto "hacia atrás" y se toma el más corto para decidir por dónde entra.
+function homeCarouselNeighborDirection(from, to, N){
+  const forward = ((to - from) % N + N) % N;
+  return forward <= N - forward ? 1 : -1;
+}
+// Desliza de la tarjeta activa actual a `newIndex`, entrando desde la
+// derecha (direction=1) o desde la izquierda (direction=-1).
+function slideHomeCarouselTo(newIndex, direction){
+  const oldIndex = homeCarouselIndex;
+  if(newIndex === oldIndex) return;
+  const track = document.getElementById('homeCarouselTrack');
+  // La tercera tarjeta (ni la que sale ni la que entra) no participa en esta
+  // animación: se recoloca al instante, sin transición, al lado por el que
+  // le tocaría entrar la próxima vez — como está fuera de la vista, el
+  // salto no se ve.
+  const silentIndex = HOME_CAROUSEL_SLIDES.map((_,i)=>i).find(i=>i!==oldIndex && i!==newIndex);
+  const silentEl = silentIndex!==undefined ? track.querySelector(`.home-carousel-slide[data-slide="${silentIndex}"]`) : null;
+  if(silentEl){
+    silentEl.style.transition = 'none';
+    silentEl.style.transform = direction === 1 ? 'translateX(100%)' : 'translateX(-100%)';
+    void silentEl.offsetWidth;
+    silentEl.style.transition = '';
+  }
+  const oldEl = track.querySelector(`.home-carousel-slide[data-slide="${oldIndex}"]`);
+  const newEl = track.querySelector(`.home-carousel-slide[data-slide="${newIndex}"]`);
+  if(oldEl){ oldEl.classList.remove('active'); oldEl.style.transform = direction === 1 ? 'translateX(-100%)' : 'translateX(100%)'; }
+  if(newEl){ newEl.classList.add('active'); newEl.style.transform = 'translateX(0%)'; }
+  homeCarouselIndex = newIndex;
   document.querySelectorAll('#homeCarouselDots .home-carousel-dot').forEach(el=>{
     el.classList.toggle('active', Number(el.dataset.slide) === homeCarouselIndex);
   });
@@ -6882,8 +6934,8 @@ function resumeHomeCarouselProgress(remainingMs){
   bar.style.width = '100%';
 }
 function homeCarouselAdvance(){
-  homeCarouselIndex = (homeCarouselIndex + 1) % HOME_CAROUSEL_SLIDES.length;
-  renderHomeCarouselActive();
+  const N = HOME_CAROUSEL_SLIDES.length;
+  slideHomeCarouselTo((homeCarouselIndex + 1) % N, 1);
   startHomeCarouselTimer();
 }
 // Arranca (o reinicia del todo, a los 7s completos) el temporizador de
@@ -6924,8 +6976,15 @@ function resumeHomeCarouselTimer(){
   homeCarouselTimer = setTimeout(homeCarouselAdvance, homeCarouselRemaining);
 }
 function goToHomeCarouselSlide(i){
-  homeCarouselIndex = ((i % HOME_CAROUSEL_SLIDES.length) + HOME_CAROUSEL_SLIDES.length) % HOME_CAROUSEL_SLIDES.length;
-  renderHomeCarouselActive();
+  const N = HOME_CAROUSEL_SLIDES.length;
+  const newIndex = ((i % N) + N) % N;
+  if(newIndex === homeCarouselIndex) return;
+  slideHomeCarouselTo(newIndex, homeCarouselNeighborDirection(homeCarouselIndex, newIndex, N));
+  startHomeCarouselTimer();
+}
+function stepHomeCarousel(direction){
+  const N = HOME_CAROUSEL_SLIDES.length;
+  slideHomeCarouselTo(((homeCarouselIndex + direction) % N + N) % N, direction);
   startHomeCarouselTimer();
 }
 
