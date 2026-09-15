@@ -2003,10 +2003,14 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
      están activas se colocan fuera de la vista (translateX ±100%) en vez de
      desaparecer, y así entran/salen deslizándose en vez de con un corte. */
   .home-carousel{ margin-top:14px; }
-  .home-carousel-track{ position:relative; width:100%; aspect-ratio:16/7.125; overflow:hidden; border-radius:44px; }
+  .home-carousel-track{
+    position:relative; width:100%; aspect-ratio:16/7.125; overflow:hidden; border-radius:44px;
+    touch-action:pan-y; cursor:grab;
+  }
+  .home-carousel-track:active{ cursor:grabbing; }
   .home-carousel-slide{
     position:absolute; inset:0; padding:20px;
-    display:flex; flex-direction:column; justify-content:flex-end; gap:4px;
+    display:flex; flex-direction:column; justify-content:flex-start; gap:4px;
     background:linear-gradient(150deg, #90A4AE 0%, #78909C 100%);
     box-shadow:5px 5px 18px rgba(7,59,92,0.14),2px 2px 6px rgba(7,59,92,0.08);
     transform:translateX(100%);
@@ -6835,6 +6839,7 @@ function renderHomePage(){
   const carouselTrack = document.getElementById('homeCarouselTrack');
   carouselTrack.addEventListener('mouseenter', ()=>{ homeCarouselHovering = true; pauseHomeCarouselTimer(); });
   carouselTrack.addEventListener('mouseleave', ()=>{ homeCarouselHovering = false; resumeHomeCarouselTimer(); });
+  wireHomeCarouselSwipe(carouselTrack);
   document.getElementById('homeEditToggle').onclick = ()=>{
     homeEditMode = !homeEditMode;
     document.body.classList.toggle('home-edit-mode', homeEditMode);
@@ -6986,6 +6991,33 @@ function stepHomeCarousel(direction){
   const N = HOME_CAROUSEL_SLIDES.length;
   slideHomeCarouselTo(((homeCarouselIndex + direction) % N + N) % N, direction);
   startHomeCarouselTimer();
+}
+
+// Deslizar con el dedo (o el ratón) para avanzar/retroceder. Se usan
+// Pointer Events porque cubren táctil y ratón con el mismo código; solo se
+// mide el gesto completo (dónde empezó, dónde acabó) en vez de seguirlo en
+// vivo, así que no compite con el scroll vertical nativo de la página. Un
+// gesto se cuenta como deslizamiento solo si es predominantemente horizontal
+// y supera un umbral mínimo — así un simple clic en una flecha o un puntito
+// (que también pasan por aquí, al estar dentro del track) no dispara nada.
+let homeCarouselDragStart = null;
+const HOME_CAROUSEL_SWIPE_THRESHOLD = 40;
+function wireHomeCarouselSwipe(track){
+  track.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    homeCarouselDragStart = { x:e.clientX, y:e.clientY };
+  });
+  const finishDrag = (e)=>{
+    if(!homeCarouselDragStart) return;
+    const dx = e.clientX - homeCarouselDragStart.x;
+    const dy = e.clientY - homeCarouselDragStart.y;
+    homeCarouselDragStart = null;
+    if(Math.abs(dx) > HOME_CAROUSEL_SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)){
+      stepHomeCarousel(dx < 0 ? 1 : -1); // deslizar hacia la izquierda avanza, hacia la derecha retrocede
+    }
+  };
+  track.addEventListener('pointerup', finishDrag);
+  track.addEventListener('pointercancel', ()=>{ homeCarouselDragStart = null; });
 }
 
 // Los widgets con botón de quitar son <div> (no <button>) porque no se
