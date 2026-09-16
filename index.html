@@ -256,14 +256,22 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .profile-page-overlay.open{ display:flex; }
   @media(min-width:600px){
     .profile-page-overlay{ align-items:center; }
-    .profile-page-sheet{ max-height:88vh; border-radius:var(--r-lg) !important; }
+    .profile-page-sheet{ border-radius:var(--r-lg) !important; }
+    .pp-scroll{ max-height:88vh; }
   }
   .profile-page-sheet{
     background:var(--card); width:100%; max-width:520px; border-radius:var(--r-lg) var(--r-lg) 0 0;
-    max-height:92vh; overflow-y:auto; padding:28px 24px 40px;
-    box-shadow:0 -8px 48px rgba(5,46,74,0.22);
+    overflow:hidden; box-shadow:0 -8px 48px rgba(5,46,74,0.22);
     position:relative;
   }
+  /* El scroll vive en un contenedor propio, separado de la tarjeta que
+     redondea las esquinas: un scrollbar nativo sobre un elemento con
+     overflow-y:auto no se recorta a su propio border-radius en todos los
+     navegadores, y sobresalía por la derecha rompiendo la esquina. Con
+     overflow:hidden en la tarjeta exterior (sin scroll propio) alrededor de
+     este contenedor interior sí que se recorta todo lo que pinte, barra de
+     scroll incluida. */
+  .pp-scroll{ max-height:92vh; overflow-y:auto; padding:28px 24px 40px; }
   .pp-close{
     position:absolute; top:16px; right:16px; width:32px; height:32px;
     border-radius:50%; border:none; background:rgba(0,0,0,0.06);
@@ -4346,6 +4354,7 @@ async function renderProfilePage(){
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
     </button>
 
+    <div class="pp-scroll">
     <div class="pp-banner-wrap">
       <div class="pp-banner" id="ppBanner">
         <img class="pp-banner-img" id="ppBannerImg" alt="">
@@ -4437,6 +4446,7 @@ async function renderProfilePage(){
     </div>
 
     <button class="pp-logout" id="ppLogoutBtn">Cerrar sesión</button>
+    </div>
   `;
 
   // Lógica de avatar con foto
