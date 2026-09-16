@@ -2216,8 +2216,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-picker-size-shape.shape-2x1{ width:34px; height:16px; }
   .home-picker-size-shape.shape-2x2{ width:30px; height:30px; }
 
-  /* Banner de perfil, en la página de Perfil */
-  .pp-banner-wrap{ position:relative; margin:-4px -4px 20px; border-radius:var(--r-md); overflow:hidden; }
+  /* Banner de perfil, en la página de Perfil. El margen superior deja hueco
+     para el botón de cerrar (absoluto, top:16px, 32px de alto): sin él, el
+     banner (que va después en el HTML) se pinta encima y lo tapa. */
+  .pp-banner-wrap{ position:relative; margin:28px -4px 20px; border-radius:var(--r-md); overflow:hidden; }
   .pp-banner{
     width:100%; aspect-ratio:16/6; background:linear-gradient(135deg, #0D7EA6 0%, #052E4A 100%);
     display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative;
