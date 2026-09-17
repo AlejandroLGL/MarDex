@@ -2269,7 +2269,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
      exterior a 45º. Esquinas superiores muy redondeadas, inferiores rectas
      (apoyan en el "suelo"). Dentro va el #puesto y, debajo, la puntuación. */
   /* Rise-up: la barra CRECE desde el suelo hasta su altura (no se desplaza
-     como un bloque entero), con ease-out y escalonado 3º→2º→1º; el avatar y
+     como un bloque entero), las tres a la vez y con ease-out; el avatar y
      el nombre van apoyados encima y suben con ella. La altura final vive en
      --rk-h para que los keyframes la lean por puesto. Como el podio se
      repinta entero al cambiar de métrica, la animación se repite sola. */
@@ -2279,11 +2279,11 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:2px;
     padding:12px 8px 8px; color:rgba(255,255,255,0.97); text-shadow:0 2px 6px rgba(0,0,0,0.25);
     box-shadow:5px 6px 18px rgba(0,0,0,0.28), inset 0 -10px 18px rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.55);
-    animation:rkGrow .6s cubic-bezier(0.16,1,0.3,1) both;
+    /* Las tres a la vez, más lentas y con un ease-out muy marcado: arrancan
+       rápido y llegan frenando (la curva pasa casi todo el tramo final a
+       poca velocidad). */
+    animation:rkGrow 1.2s cubic-bezier(0.08,0.85,0.15,1) both;
   }
-  .rk-slot.pos-3 .rk-bar{ animation-delay:0s; }
-  .rk-slot.pos-2 .rk-bar{ animation-delay:.1s; }
-  .rk-slot.pos-1 .rk-bar{ animation-delay:.2s; }
   /* El padding también parte de 0: con box-sizing:border-box la altura no
      puede bajar de padding-top+padding-bottom, y la barra arrancaría como
      un tocón de 20px en vez de desde el suelo. */
