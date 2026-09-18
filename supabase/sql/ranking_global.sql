@@ -11,6 +11,11 @@
 -- Igual que get_leaderboard(), asume que `sightings` y `dives` tienen una
 -- columna `user_id` con el dueño de cada fila. La rareza sale de la tabla
 -- `species` (columna `rarity`, 1–5) uniendo por `species_id`.
+--
+-- sightings_count y las rarity*_count solo cuentan avistamientos en libertad
+-- (environment = 'libre'): los vistos en acuario no cuentan para el ranking.
+-- species_count no se toca (sigue contando especies distintas vistas donde
+-- sea), porque eso no es lo que se pidió cambiar.
 -- ============================================================================
 
 create or replace function public.get_global_ranking()
@@ -55,13 +60,13 @@ as $$
   left join (
     select
       s.user_id,
-      count(*)                                        as sightings_count,
+      count(*) filter (where s.environment = 'libre') as sightings_count,
       count(distinct s.species_id)                    as species_count,
-      count(*) filter (where sp.rarity = 1)           as rarity1_count,
-      count(*) filter (where sp.rarity = 2)           as rarity2_count,
-      count(*) filter (where sp.rarity = 3)           as rarity3_count,
-      count(*) filter (where sp.rarity = 4)           as rarity4_count,
-      count(*) filter (where sp.rarity = 5)           as rarity5_count,
+      count(*) filter (where sp.rarity = 1 and s.environment = 'libre') as rarity1_count,
+      count(*) filter (where sp.rarity = 2 and s.environment = 'libre') as rarity2_count,
+      count(*) filter (where sp.rarity = 3 and s.environment = 'libre') as rarity3_count,
+      count(*) filter (where sp.rarity = 4 and s.environment = 'libre') as rarity4_count,
+      count(*) filter (where sp.rarity = 5 and s.environment = 'libre') as rarity5_count,
       max(s.depth_observed)                           as max_depth_m
     from public.sightings s
     left join public.species sp on sp.id = s.species_id
