@@ -2200,6 +2200,19 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-widget-remove svg{ width:13px; height:13px; }
   body.home-edit-mode .home-widget-remove{ display:flex; }
   body.home-edit-mode .home-widget{ cursor:default; }
+  /* Reordenar arrastrando, como los iconos de la pantalla de inicio de un
+     iPhone: en modo edición, cada widget (no el tile de "Añadir") se puede
+     arrastrar sobre otro para intercambiarse. touch-action:none evita que
+     el navegador intente hacer scroll con el mismo gesto. */
+  body.home-edit-mode .home-widget[data-key]{ cursor:grab; touch-action:none; }
+  /* El "fantasma" es un clon fijo que sigue al puntero durante el arrastre;
+     el tile real de la rejilla se queda oculto (visibility:hidden) en su
+     sitio de siempre para no desbaratar la colocación de CSS Grid. */
+  .home-widget-ghost{
+    position:fixed; cursor:grabbing; z-index:999; opacity:0.94; pointer-events:none;
+    box-shadow:8px 14px 32px rgba(0,0,0,0.35); transform:scale(1.05);
+    transition:none !important; margin:0;
+  }
   .home-widget-add{
     background:transparent; border:2px dashed var(--line); color:var(--muted);
   }
@@ -6984,6 +6997,9 @@ function initMobileFAB(){
 // "Ranking" de Inicio. Los datos vienen de get_global_ranking()
 // (supabase/sql/ranking_global.sql): una fila por usuario con todas las
 // métricas ya agregadas, y aquí se ordena por la que esté seleccionada.
+// "Avistamientos" y "Por rareza" solo cuentan avistamientos en libertad
+// (los de acuario no cuentan para el ranking) — ese filtro vive en la
+// función SQL, no aquí.
 const RANKING_RARITY_LABELS = ['Frecuente','Ocasional','Poco común','Raro','Excepcional'];
 const RANKING_METRICS = [
   { key:'sightings', label:'Avistamientos', unit:'avistamientos', field:r=>r.sightings_count },
@@ -7515,6 +7531,7 @@ function renderHomeWidgetGrid(){
 
   grid.querySelectorAll('.home-widget[data-key]').forEach(el=>{
     el.addEventListener('click', ()=>{ if(!homeEditMode) navigateHomeWidget(el.dataset.key); });
+    if(homeEditMode) wireHomeWidgetDragStart(el);
   });
   grid.querySelectorAll('[data-remove]').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
@@ -7526,6 +7543,120 @@ function renderHomeWidgetGrid(){
   });
   const addBtn = document.getElementById('homeAddWidgetBtn');
   if(addBtn) addBtn.onclick = openHomeWidgetPicker;
+
+  // Si esta rejilla se repinta A MITAD de un arrastre (porque acaba de
+  // intercambiar de sitio con otro widget, ver onHomeWidgetDragMove), el
+  // elemento de antes ya no existe: hay que retomar el arrastre sobre su
+  // reemplazo, en el mismo punto bajo el dedo/ratón, sin que se note el salto.
+  if(homeDragState){
+    const el = grid.querySelector(`.home-widget[data-key="${homeDragState.key}"]`);
+    if(el) resumeHomeWidgetDrag(el);
+    else homeDragState = null; // se quitó el propio widget que se arrastraba
+  }
+}
+
+// ── Arrastrar para reordenar (como los iconos de la pantalla de inicio de
+// un iPhone): en modo edición, cada widget se puede arrastrar sobre otro
+// para intercambiar sus posiciones en homeLayout. Se usan Pointer Events
+// (cubren ratón y táctil con el mismo código) más setPointerCapture, para
+// que el arrastre siga funcionando aunque el puntero salga del propio tile.
+//
+// El tile que se arrastra NO se pone en position:fixed directamente: eso lo
+// sacaría del flujo de la rejilla (CSS Grid) al instante, y el resto de
+// widgets se recolocarían de golpe para rellenar el hueco — con lo que las
+// coordenadas de los demás tiles cambian nada más empezar a arrastrar y el
+// gesto pierde toda referencia. En vez de eso se clona un "fantasma" fijo
+// que sigue al puntero, mientras el tile real se queda en su sitio de
+// siempre (con visibility:hidden, que no participa en elementFromPoint pero
+// sigue reservando su hueco en la rejilla).
+let homeDragState = null; // { key, pointerId, offsetX, offsetY, clientX, clientY, lastSwapKey, ghost }
+
+function wireHomeWidgetDragStart(el){
+  el.addEventListener('pointerdown', (e)=>{
+    if(e.target.closest('.home-widget-remove')) return;
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    const rect = el.getBoundingClientRect();
+    const ghost = el.cloneNode(true);
+    ghost.removeAttribute('id');
+    ghost.classList.add('home-widget-ghost');
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    document.body.appendChild(ghost);
+
+    homeDragState = {
+      key: el.dataset.key, pointerId: e.pointerId,
+      offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      clientX: e.clientX, clientY: e.clientY,
+      lastSwapKey: null, ghost,
+    };
+    beginHomeWidgetDragVisual(el);
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+  });
+}
+function beginHomeWidgetDragVisual(el){
+  el.style.visibility = 'hidden';
+  positionHomeWidgetGhost();
+  el.addEventListener('pointermove', onHomeWidgetDragMove);
+  el.addEventListener('pointerup', onHomeWidgetDragEnd);
+  el.addEventListener('pointercancel', onHomeWidgetDragEnd);
+}
+function resumeHomeWidgetDrag(el){
+  beginHomeWidgetDragVisual(el);
+  try{ el.setPointerCapture(homeDragState.pointerId); }catch(err){}
+}
+function positionHomeWidgetGhost(){
+  const { clientX, clientY, offsetX, offsetY, ghost } = homeDragState;
+  ghost.style.left = (clientX - offsetX) + 'px';
+  ghost.style.top = (clientY - offsetY) + 'px';
+}
+function onHomeWidgetDragMove(e){
+  if(!homeDragState || e.pointerId !== homeDragState.pointerId) return;
+  homeDragState.clientX = e.clientX;
+  homeDragState.clientY = e.clientY;
+  positionHomeWidgetGhost();
+
+  // El tile real está visibility:hidden (no pinta nada, así que
+  // elementFromPoint pasa a través de él) y el fantasma tiene
+  // pointer-events:none — por eso esto detecta el tile que hay DEBAJO del
+  // puntero en vez de detectar cualquiera de los dos.
+  const overEl = document.elementFromPoint(e.clientX, e.clientY);
+  const target = overEl && overEl.closest ? overEl.closest('.home-widget[data-key]') : null;
+  const targetKey = target ? target.dataset.key : null;
+
+  if(!targetKey || targetKey === homeDragState.key){
+    // Encima del propio hueco (reservado aunque esté oculto) o de sí mismo:
+    // nada que intercambiar, y se libera el bloqueo de abajo para el
+    // próximo target real.
+    homeDragState.lastSwapKey = null;
+    return;
+  }
+  // Sin este bloqueo, cada widget que no es 1x1 provoca un vaivén infinito:
+  // al intercambiar dos tiles de tamaño distinto (p.ej. 1x1 con 2x1), la
+  // rejilla se reordena y el mismo píxel bajo el puntero pasa a caer otra
+  // vez sobre el tile con el que se acaba de intercambiar, así que un
+  // "onHomeWidgetDragMove" disparado por el siguiente evento de movimiento
+  // (aunque el puntero apenas se haya movido) lo deshacía en el acto.
+  // Solo se vuelve a intercambiar con ese mismo target cuando el puntero
+  // haya pasado antes por otro sitio (lo que lo resetea, arriba).
+  if(targetKey === homeDragState.lastSwapKey) return;
+
+  const fromIdx = homeLayout.findIndex(w=>w.key===homeDragState.key);
+  const toIdx = homeLayout.findIndex(w=>w.key===targetKey);
+  if(fromIdx===-1 || toIdx===-1 || fromIdx===toIdx) return;
+  const [item] = homeLayout.splice(fromIdx, 1);
+  homeLayout.splice(toIdx, 0, item);
+  homeDragState.lastSwapKey = targetKey;
+  renderHomeWidgetGrid();
+}
+function onHomeWidgetDragEnd(e){
+  if(!homeDragState || e.pointerId !== homeDragState.pointerId) return;
+  homeDragState.ghost.remove();
+  homeDragState = null;
+  saveHomeLayout();
+  renderHomeWidgetGrid();
 }
 
 // Reutiliza el botón real y ya cableado del dock (aunque esté oculto por
