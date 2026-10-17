@@ -7804,6 +7804,7 @@ async function loadDives(){
   const sheet = document.getElementById('logbookSheet');
   sheet.innerHTML = `<div class="page-header"><div class="page-header-text"><h2>Logbook</h2></div></div><div class="zones-empty">Cargando…</div>`;
   const { data, error } = await _sb.from('dives').select('*').order('date', { ascending:false });
+  if(error) showToast('Error al cargar el logbook: ' + error.message, true);
   dives = error ? [] : (data || []);
   renderLogbookPanel();
 }
