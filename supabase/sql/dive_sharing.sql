@@ -77,28 +77,76 @@ alter table public.dive_tags enable row level security;
 alter table public.dive_collaborators enable row level security;
 alter table public.dive_invites enable row level security;
 
+-- Dos funciones SECURITY DEFINER para comprobar propiedad/colaboración de
+-- una inmersión SIN pasar por las políticas RLS de `dives`/`dive_
+-- collaborators` al hacerlo.
+--
+-- Son imprescindibles: las políticas de más abajo en `dives` consultan
+-- dive_tags/dive_collaborators, y las de dive_tags/dive_collaborators
+-- consultaban antes `dives` directamente — eso es una referencia circular
+-- entre las políticas de dos tablas (dives → dive_tags → dives → ...) que
+-- Postgres corta con el error "infinite recursion detected in policy for
+-- relation dives", y que PostgREST/supabase-js reportan como un error de
+-- red normal y corriente en vez de explicarlo. Como loadDives() en el
+-- frontend trata cualquier error como "no hay inmersiones" (dives = []),
+-- el síntoma visible era que el logbook se veía vacío, como si se hubieran
+-- borrado — no se borró nada, solo se volvió ilegible por este bucle.
+--
+-- Al pasar por una función SECURITY DEFINER, cuyo propietario (el rol que
+-- la crea desde el SQL Editor) es también el propietario de las tablas,
+-- Postgres la exime de RLS automáticamente (así es como admin_delete_
+-- species(), en species_admin.sql, ya puede contar avistamientos de todos
+-- los usuarios aunque la RLS de `sightings` los limite a los propios). Eso
+-- corta el ciclo: dive_tags/dive_collaborators ya no vuelven a disparar la
+-- RLS de `dives` al consultarla.
+create or replace function public.is_dive_owner(p_dive_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists(select 1 from public.dives d where d.id = p_dive_id and d.user_id = auth.uid());
+$$;
+revoke all on function public.is_dive_owner(uuid) from public;
+revoke all on function public.is_dive_owner(uuid) from anon;
+grant execute on function public.is_dive_owner(uuid) to authenticated;
+
+create or replace function public.is_dive_collaborator(p_dive_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists(select 1 from public.dive_collaborators c where c.dive_id = p_dive_id and c.user_id = auth.uid());
+$$;
+revoke all on function public.is_dive_collaborator(uuid) from public;
+revoke all on function public.is_dive_collaborator(uuid) from anon;
+grant execute on function public.is_dive_collaborator(uuid) to authenticated;
+
 -- ── dive_tags ────────────────────────────────────────────────────────────
 drop policy if exists "dive_tags_select" on public.dive_tags;
 create policy "dive_tags_select" on public.dive_tags
   for select using (
     tagged_user_id = auth.uid()
-    or exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
-    or exists(select 1 from public.dive_collaborators c where c.dive_id = dive_tags.dive_id and c.user_id = auth.uid())
+    or public.is_dive_owner(dive_id)
+    or public.is_dive_collaborator(dive_id)
   );
 
 drop policy if exists "dive_tags_insert" on public.dive_tags;
 create policy "dive_tags_insert" on public.dive_tags
   for insert with check (
     created_by = auth.uid()
-    and exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+    and public.is_dive_owner(dive_id)
   );
 
 drop policy if exists "dive_tags_update" on public.dive_tags;
 create policy "dive_tags_update" on public.dive_tags
   for update using (
-    exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+    public.is_dive_owner(dive_id)
   ) with check (
-    exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+    public.is_dive_owner(dive_id)
   );
 
 -- Borrar un tag lo puede hacer el propietario de la inmersión, o la propia
@@ -107,7 +155,7 @@ drop policy if exists "dive_tags_delete" on public.dive_tags;
 create policy "dive_tags_delete" on public.dive_tags
   for delete using (
     tagged_user_id = auth.uid()
-    or exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+    or public.is_dive_owner(dive_id)
   );
 
 -- ── dive_collaborators ──────────────────────────────────────────────────
@@ -117,7 +165,7 @@ drop policy if exists "dive_collaborators_select" on public.dive_collaborators;
 create policy "dive_collaborators_select" on public.dive_collaborators
   for select using (
     user_id = auth.uid()
-    or exists(select 1 from public.dives d where d.id = dive_collaborators.dive_id and d.user_id = auth.uid())
+    or public.is_dive_owner(dive_id)
   );
 
 -- ── dive_invites ────────────────────────────────────────────────────────
@@ -136,7 +184,7 @@ drop policy if exists "dive_invites_insert" on public.dive_invites;
 create policy "dive_invites_insert" on public.dive_invites
   for insert with check (
     from_user_id = auth.uid()
-    and exists(select 1 from public.dives d where d.id = dive_invites.dive_id and d.user_id = auth.uid())
+    and public.is_dive_owner(dive_id)
   );
 
 -- El estado (aceptada/rechazada) solo lo cambia accept_dive_invite(); lo
