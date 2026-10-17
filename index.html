@@ -1608,7 +1608,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
     flex-shrink:0;
   }
   .dv-tag-remove:hover{ background:rgba(231,76,60,0.12); color:#e74c3c; }
-  .dv-tag-role-select{ flex-shrink:0; }
+  .dv-tag-role-select{
+    flex-shrink:0; width:92px; font-size:11px; padding:4px 18px 4px 8px;
+    border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--ink);
+  }
   .share-mode-option{
     display:flex; align-items:flex-start; gap:10px; padding:14px; border-radius:14px;
     border:1.5px solid rgba(10,70,100,0.14); margin-bottom:10px; cursor:pointer; text-align:left;
@@ -3284,6 +3287,12 @@ let saveInFlight = false;
 // cargan sus dive_tags reales) como si se está creando (se sincronizan con
 // syncDiveTags() justo después de insertarla).
 let pendingDiveTags = [];
+// Compañeros sin cuenta en MarDex, solo nombre libre (lo que antes era el
+// campo de texto "Compañero") — se fusionan con pendingDiveTags en una
+// sola lista en el formulario (ver renderCompanionEditList()), pero se
+// guardan en sitios distintos: esto en dives.buddy (unidos por coma, igual
+// que siempre), pendingDiveTags en la tabla dive_tags.
+let pendingDiveBuddyNames = [];
 let shareDiveMode = 'live'; // 'live' | 'copy' — elegido en el selector de compartir
 
 // ── Editor de especies (solo admins) ────────────────────────────────────
@@ -7892,7 +7901,7 @@ function renderLogbookList(){
     <button type="button" class="btn" id="newDiveBtn" style="margin-bottom:16px;">${icon('plus','icon-sm')} Nueva inmersión</button>
     <div class="dive-card-list" id="diveCardList"></div>
   `;
-  document.getElementById('newDiveBtn').onclick = ()=>{ editingDive = null; pendingDiveSpecies = []; pendingDiveTags = []; pendingDiveTagsLoadedFor = null; logbookView = 'form'; renderLogbookPanel(); };
+  document.getElementById('newDiveBtn').onclick = ()=>{ editingDive = null; pendingDiveSpecies = []; pendingDiveTags = []; pendingDiveBuddyNames = []; pendingDiveTagsLoadedFor = null; logbookView = 'form'; renderLogbookPanel(); };
   loadPendingDiveInvites();
 
   const listEl = document.getElementById('diveCardList');
@@ -8217,7 +8226,7 @@ async function loadDiveDetailTags(dive, isOwner){
   ]);
   if(!error){
     pendingDiveTags = tags || [];
-    renderDiveTagChips(true);
+    renderDiveTagChips();
     // Fusionado con "Compañero": si hay alguien etiquetado, sus chips
     // sustituyen a la fila de texto libre; si no, se deja el texto tal cual.
     const companionRow = document.getElementById('dvCompanionRow');
@@ -8458,48 +8467,73 @@ let pendingDiveTagsLoadedFor = null;
 async function loadDiveTags(diveId){
   const { data, error } = await _sb.from('dive_tags').select('*').eq('dive_id', diveId);
   if(!error) pendingDiveTags = data || [];
-  renderDiveTagChips();
+  renderCompanionEditList();
 }
 
-// readonly=true → detalle de inmersión (solo lectura, pinta en dvCompanionChips,
-//   fusionado con la fila "Compañero" — ver loadDiveDetailTags()).
-// readonly=false/omitido → formulario (con rol editable y botón de quitar, en dvTagChipList).
-function renderDiveTagChips(readonly){
-  const list = document.getElementById(readonly ? 'dvCompanionChips' : 'dvTagChipList');
+// Detalle de inmersión (solo lectura): pinta en dvCompanionChips, fusionado
+// con la fila "Compañero" — ver loadDiveDetailTags(). El formulario usa
+// renderCompanionEditList() en su lugar (más abajo), que combina esto con
+// los nombres sueltos en una sola lista editable.
+function renderDiveTagChips(){
+  const list = document.getElementById('dvCompanionChips');
   if(!list) return;
-  if(!pendingDiveTags.length){
-    list.innerHTML = readonly ? '' : `<div class="dive-species-note" style="margin:0 0 8px;">Nadie etiquetado todavía.</div>`;
-    return;
-  }
+  if(!pendingDiveTags.length){ list.innerHTML = ''; return; }
   list.innerHTML = pendingDiveTags.map(t=>`<div class="dv-tag-chip" data-tag="${t.tagged_user_id}">
     <div class="dv-tag-avatar">${avatarInner({name:t.tagged_name, avatar_url:t.tagged_avatar_url})}</div>
     <div class="dv-tag-text">
       <div class="dv-tag-name">${escapeHtml(t.tagged_name)}</div>
-      ${readonly ? `<div class="dv-tag-role">${escapeHtml(DIVE_TAG_ROLE_LABEL[t.role] || t.role)}</div>` : ''}
+      <div class="dv-tag-role">${escapeHtml(DIVE_TAG_ROLE_LABEL[t.role] || t.role)}</div>
     </div>
-    ${readonly ? '' : `
-      <select class="dv-tag-role-select" data-role-for="${t.tagged_user_id}">
-        ${Object.entries(DIVE_TAG_ROLE_LABEL).map(([v,l])=>`<option value="${v}"${t.role===v?' selected':''}>${l}</option>`).join('')}
-      </select>
-      <button type="button" class="dv-tag-remove" data-remove-tag="${t.tagged_user_id}" title="Quitar" aria-label="Quitar">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    `}
   </div>`).join('');
-  if(!readonly){
-    list.querySelectorAll('[data-role-for]').forEach(sel=>{
-      sel.onchange = ()=>{
-        const t = pendingDiveTags.find(x=>x.tagged_user_id === sel.dataset.roleFor);
-        if(t) t.role = sel.value;
-      };
-    });
-    list.querySelectorAll('[data-remove-tag]').forEach(btn=>{
-      btn.onclick = ()=>{
-        pendingDiveTags = pendingDiveTags.filter(t=>t.tagged_user_id !== btn.dataset.removeTag);
-        renderDiveTagChips();
-      };
-    });
+}
+
+// Lista editable de "Compañeros" del formulario: fusiona los nombres
+// sueltos (pendingDiveBuddyNames, sin cuenta en MarDex) con los etiquetados
+// (pendingDiveTags, con rol) en una sola lista de chips. Los primeros solo
+// llevan nombre + quitar; los etiquetados llevan además el selector de rol.
+function renderCompanionEditList(){
+  const list = document.getElementById('dvCompanionEditList');
+  if(!list) return;
+  if(!pendingDiveBuddyNames.length && !pendingDiveTags.length){
+    list.innerHTML = `<div class="dive-species-note" style="margin:0 0 8px;">Añade a quien estuvo contigo en esta inmersión.</div>`;
+    return;
   }
+  const textChips = pendingDiveBuddyNames.map((name, idx)=>`<div class="dv-tag-chip">
+    <div class="dv-tag-avatar">${avatarInner({name})}</div>
+    <div class="dv-tag-text"><div class="dv-tag-name">${escapeHtml(name)}</div></div>
+    <button type="button" class="dv-tag-remove" data-remove-buddy="${idx}" title="Quitar" aria-label="Quitar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>`).join('');
+  const tagChips = pendingDiveTags.map(t=>`<div class="dv-tag-chip" data-tag="${t.tagged_user_id}">
+    <div class="dv-tag-avatar">${avatarInner({name:t.tagged_name, avatar_url:t.tagged_avatar_url})}</div>
+    <div class="dv-tag-text"><div class="dv-tag-name">${escapeHtml(t.tagged_name)}</div></div>
+    <select class="dv-tag-role-select" data-role-for="${t.tagged_user_id}">
+      ${Object.entries(DIVE_TAG_ROLE_LABEL).map(([v,l])=>`<option value="${v}"${t.role===v?' selected':''}>${l}</option>`).join('')}
+    </select>
+    <button type="button" class="dv-tag-remove" data-remove-tag="${t.tagged_user_id}" title="Quitar" aria-label="Quitar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>`).join('');
+  list.innerHTML = textChips + tagChips;
+  list.querySelectorAll('[data-remove-buddy]').forEach(btn=>{
+    btn.onclick = ()=>{
+      pendingDiveBuddyNames.splice(Number(btn.dataset.removeBuddy), 1);
+      renderCompanionEditList();
+    };
+  });
+  list.querySelectorAll('[data-role-for]').forEach(sel=>{
+    sel.onchange = ()=>{
+      const t = pendingDiveTags.find(x=>x.tagged_user_id === sel.dataset.roleFor);
+      if(t) t.role = sel.value;
+    };
+  });
+  list.querySelectorAll('[data-remove-tag]').forEach(btn=>{
+    btn.onclick = ()=>{
+      pendingDiveTags = pendingDiveTags.filter(t=>t.tagged_user_id !== btn.dataset.removeTag);
+      renderCompanionEditList();
+    };
+  });
 }
 
 function openDiveTagPicker(){
@@ -8516,11 +8550,19 @@ function renderDiveTagPicker(){
   sheet.innerHTML = `
     <div class="admin-header">
       <div>
-        <div class="admin-title">Etiquetar a alguien</div>
-        <div class="admin-subtitle">Busca a quien estuvo contigo en esta inmersión</div>
+        <div class="admin-title">Añadir compañero</div>
+        <div class="admin-subtitle">Busca a quien estuvo contigo, o escribe su nombre si no tiene cuenta</div>
       </div>
       <button class="admin-close" id="diveTagPickerCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
+    <div class="field">
+      <label>¿No tiene cuenta en MarDex?</label>
+      <div class="row2" style="gap:8px;align-items:flex-end;">
+        <input type="text" id="diveCompanionNameInput" placeholder="Escribe su nombre" autocomplete="off" style="flex:1;">
+        <button type="button" class="btn secondary" id="diveCompanionNameAddBtn" style="width:auto;padding:0 16px;">Añadir</button>
+      </div>
+    </div>
+    <div class="dvs-head" style="margin:16px 0 8px;">O búscala en MarDex</div>
     <div class="search-wrap" style="position:relative;margin-bottom:16px;">
       <span class="icon" id="diveTagSearchIcon"></span>
       <input type="search" id="diveTagSearchInput" placeholder="Buscar por nombre o usuario..." autocomplete="off" data-form-type="other">
@@ -8529,6 +8571,17 @@ function renderDiveTagPicker(){
   `;
   document.getElementById('diveTagSearchIcon').innerHTML = ICONS.search;
   document.getElementById('diveTagPickerCloseBtn').onclick = closeDiveTagPicker;
+
+  const nameInput = document.getElementById('diveCompanionNameInput');
+  const addName = ()=>{
+    const name = nameInput.value.trim();
+    if(!name) return;
+    pendingDiveBuddyNames = [...pendingDiveBuddyNames, name];
+    closeDiveTagPicker();
+    renderCompanionEditList();
+  };
+  document.getElementById('diveCompanionNameAddBtn').onclick = addName;
+  nameInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addName(); } });
 
   const input = document.getElementById('diveTagSearchInput');
   const resultsEl = document.getElementById('diveTagResults');
@@ -8571,7 +8624,7 @@ function renderDiveTagPicker(){
           tagged_avatar_url: u.avatar_url || null,
         }];
         closeDiveTagPicker();
-        renderDiveTagChips();
+        renderCompanionEditList();
       };
     });
   }
@@ -8997,11 +9050,10 @@ function renderDiveForm(){
           <div class="field"><label>Centro de buceo</label><input type="text" id="dv-center" value="${escapeHtml(d.dive_center||'')}"></div>
           <div class="field"><label>Club de buceo</label><input type="text" id="dv-club" value="${escapeHtml(d.dive_club||'')}"></div>
         </div>
-        <div class="field"><label>Compañero</label><input type="text" id="dv-buddy" value="${escapeHtml(d.buddy||'')}" placeholder="Nombre libre, por si no tiene cuenta en MarDex"></div>
         <div class="field">
-          <label>Compañeros en MarDex</label>
-          <div id="dvTagChipList"></div>
-          <button type="button" class="btn secondary" id="dvAddTagBtn" style="width:100%;">${icon('plus','icon-sm')} Etiquetar a alguien</button>
+          <label>Compañeros</label>
+          <div id="dvCompanionEditList"></div>
+          <button type="button" class="btn secondary" id="dvAddCompanionBtn" style="width:100%;">${icon('plus','icon-sm')} Añadir compañero</button>
         </div>
       `)}
 
@@ -9047,7 +9099,7 @@ function wireDiveForm(){
   diveLeafletMarker = null;
 
   document.getElementById('dvCancelBtn').onclick = ()=>{
-    if(!editingDive) pendingDiveSpecies = [];
+    if(!editingDive){ pendingDiveSpecies = []; pendingDiveBuddyNames = []; pendingDiveTags = []; }
     pendingDiveTagsLoadedFor = null;
     logbookView = editingDive ? 'detail' : 'list';
     renderLogbookPanel();
@@ -9057,14 +9109,15 @@ function wireDiveForm(){
     if(pendingDiveTagsLoadedFor !== editingDive.id){
       pendingDiveTagsLoadedFor = editingDive.id;
       pendingDiveTags = [];
+      pendingDiveBuddyNames = (editingDive.buddy || '').split(',').map(s=>s.trim()).filter(Boolean);
       loadDiveTags(editingDive.id);
     } else {
-      renderDiveTagChips();
+      renderCompanionEditList();
     }
   } else {
-    renderDiveTagChips();
+    renderCompanionEditList();
   }
-  document.getElementById('dvAddTagBtn').onclick = openDiveTagPicker;
+  document.getElementById('dvAddCompanionBtn').onclick = openDiveTagPicker;
 
   const addPendingBtn = document.getElementById('dvAddPendingSpeciesBtn');
   if(addPendingBtn){
@@ -9353,7 +9406,7 @@ function readDiveForm(){
     seabed_type: document.getElementById('dv-seabed').value.trim() || null,
     dive_club: document.getElementById('dv-club').value.trim() || null,
     dive_center: document.getElementById('dv-center').value.trim() || null,
-    buddy: document.getElementById('dv-buddy').value.trim() || null,
+    buddy: pendingDiveBuddyNames.length ? pendingDiveBuddyNames.join(', ') : null,
     suit_type: document.getElementById('dv-suit').value.trim() || null,
     air_type: document.getElementById('dv-air-type').value.trim() || null,
     tank_liters: document.getElementById('dv-tank-liters').value === '' ? null : Number(document.getElementById('dv-tank-liters').value),
