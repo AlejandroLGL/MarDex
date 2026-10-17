@@ -8109,11 +8109,6 @@ function renderDiveDetail(){
       ['Visibilidad', d.visibility_m!=null ? d.visibility_m+' m' : null],
       ['Corriente', d.current],
     ]],
-    ['Centro y compañía', [
-      ['Centro', d.dive_center],
-      ['Club', d.dive_club],
-      ['Compañero', d.buddy],
-    ]],
   ];
 
   const groupHtml = groups.map(([title, items])=>{
@@ -8129,6 +8124,24 @@ function renderDiveDetail(){
     </div>`;
   }).join('');
 
+  // "Centro y compañía" se pinta aparte (no en el loop de arriba) porque la
+  // fila de "Compañero" se fusiona con los compañeros etiquetados: de
+  // entrada muestra el texto libre (si lo hay), y en cuanto
+  // loadDiveDetailTags() resuelve, si hay alguno etiquetado sustituye esa
+  // fila por sus chips (nombre+rol) — si no hay ninguno etiquetado, se deja
+  // el texto tal cual, sin dos secciones redundantes para lo mismo.
+  const centroClubItems = [['Centro', d.dive_center], ['Club', d.dive_club]].filter(([,v])=>v!=null && v!=='');
+  const centroClubGrid = centroClubItems.length
+    ? `<div class="dvs-grid">${centroClubItems.map(([l,v])=>`<div class="dvs-item"><span class="dvs-item-label">${escapeHtml(l)}</span><span class="dvs-item-value">${escapeHtml(String(v))}</span></div>`).join('')}</div>`
+    : '';
+  const companionHtml = `
+    <div class="dvs-item" id="dvCompanionRow">
+      <span class="dvs-item-label">Compañero</span>
+      <span class="dvs-item-value" id="dvCompanionText">${d.buddy ? escapeHtml(d.buddy) : '—'}</span>
+    </div>
+    <div id="dvCompanionChips"></div>
+  `;
+
   const notesPhotos = Array.isArray(d.notes_photos) ? d.notes_photos : [];
   const profile = diveProfileSvg(d);
   const isOwner = d.user_id === currentAccountData.id;
@@ -8143,10 +8156,11 @@ function renderDiveDetail(){
     ${groupHtml}
 
     <div class="dvs-section">
-      <div class="dvs-head">Compañeros etiquetados</div>
-      <div class="dvs-body plain">
-        <div id="dvDetailTagList"></div>
-        ${isOwner ? `<button type="button" class="btn secondary" id="dvShareBtn" style="width:100%;margin-top:4px;">${icon('plus','icon-sm')} Compartir inmersión</button>` : ''}
+      <div class="dvs-head">Centro y compañía</div>
+      <div class="dvs-body">
+        ${centroClubGrid}
+        ${companionHtml}
+        ${isOwner ? `<button type="button" class="btn secondary" id="dvShareBtn" style="width:100%;margin-top:12px;">${icon('plus','icon-sm')} Compartir inmersión</button>` : ''}
       </div>
     </div>
 
@@ -8204,6 +8218,10 @@ async function loadDiveDetailTags(dive, isOwner){
   if(!error){
     pendingDiveTags = tags || [];
     renderDiveTagChips(true);
+    // Fusionado con "Compañero": si hay alguien etiquetado, sus chips
+    // sustituyen a la fila de texto libre; si no, se deja el texto tal cual.
+    const companionRow = document.getElementById('dvCompanionRow');
+    if(companionRow) companionRow.style.display = pendingDiveTags.length ? 'none' : '';
   }
   if(!isOwner && collabCheck && collabCheck.data){
     const editBtn = document.getElementById('dvEditBtn');
@@ -8443,10 +8461,11 @@ async function loadDiveTags(diveId){
   renderDiveTagChips();
 }
 
-// readonly=true → detalle de inmersión (solo lectura, pinta en dvDetailTagList).
+// readonly=true → detalle de inmersión (solo lectura, pinta en dvCompanionChips,
+//   fusionado con la fila "Compañero" — ver loadDiveDetailTags()).
 // readonly=false/omitido → formulario (con rol editable y botón de quitar, en dvTagChipList).
 function renderDiveTagChips(readonly){
-  const list = document.getElementById(readonly ? 'dvDetailTagList' : 'dvTagChipList');
+  const list = document.getElementById(readonly ? 'dvCompanionChips' : 'dvTagChipList');
   if(!list) return;
   if(!pendingDiveTags.length){
     list.innerHTML = readonly ? '' : `<div class="dive-species-note" style="margin:0 0 8px;">Nadie etiquetado todavía.</div>`;
