@@ -8590,9 +8590,16 @@ function renderShareDiveChooser(){
     </button>
     <div class="dvs-head" style="margin-top:16px;">Enviar a</div>
     <div style="margin-bottom:10px;">${taggedOptions}</div>
+    <div class="dvs-head">Buscar a alguien</div>
+    <div class="search-wrap" style="position:relative;margin-bottom:10px;">
+      <span class="icon" id="shareDiveSearchIcon"></span>
+      <input type="search" id="shareDiveSearchInput" placeholder="Nombre o usuario..." autocomplete="off" data-form-type="other">
+    </div>
+    <div id="shareDiveSearchResults" style="margin-bottom:10px;"></div>
     <button type="button" class="btn secondary" id="shareDiveLinkBtn" style="width:100%;">${icon('plus','icon-sm')} Generar enlace para compartir</button>
   `;
   document.getElementById('shareDiveCloseBtn').onclick = closeShareDiveOverlay;
+  document.getElementById('shareDiveSearchIcon').innerHTML = ICONS.search;
   sheet.querySelectorAll('[data-mode]').forEach(btn=>{
     btn.onclick = ()=>{ shareDiveMode = btn.dataset.mode; renderShareDiveChooser(); };
   });
@@ -8600,6 +8607,42 @@ function renderShareDiveChooser(){
     btn.onclick = ()=>sendDiveInvite(dive, btn.dataset.sendTo);
   });
   document.getElementById('shareDiveLinkBtn').onclick = ()=>sendDiveInvite(dive, null);
+
+  const searchInput = document.getElementById('shareDiveSearchInput');
+  const searchResults = document.getElementById('shareDiveSearchResults');
+  let searchTimer = null, lastResults = [];
+  async function doShareSearch(q){
+    const query = q.trim();
+    if(query.length < 2){ searchResults.innerHTML = ''; return; }
+    searchResults.innerHTML = `<div class="zones-empty">Buscando…</div>`;
+    const { data: users, error } = await _sb.rpc('search_users', { query });
+    lastResults = (users||[]).filter(u=>u.id !== currentAccountData.id);
+    if(error || !lastResults.length){ searchResults.innerHTML = `<div class="zones-empty">Sin resultados para "${escapeHtml(q)}"</div>`; return; }
+    searchResults.innerHTML = lastResults.map(u=>`<div class="fr-card">
+      <div class="fr-card-banner" style="${bannerCardStyle(u)}">
+        <div class="fr-card-overlay">
+          <div class="fr-card-avatar">${avatarInner(u)}</div>
+          <div class="fr-card-text">
+            <div class="fr-card-name">${escapeHtml(u.name||u.username)}</div>
+            <div class="fr-card-username">@${escapeHtml(u.username||'')}</div>
+          </div>
+        </div>
+      </div>
+      <div class="fr-card-footer">
+        <button type="button" class="fr-btn fr-btn-add" data-share-pick="${u.id}">Compartir</button>
+      </div>
+    </div>`).join('');
+    searchResults.querySelectorAll('[data-share-pick]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const u = lastResults.find(x=>x.id === btn.dataset.sharePick);
+        if(u) sendDiveInvite(dive, u.id);
+      };
+    });
+  }
+  searchInput.addEventListener('input', ()=>{
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(()=>doShareSearch(searchInput.value), 300);
+  });
 }
 
 async function sendDiveInvite(dive, toUserId){
