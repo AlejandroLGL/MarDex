@@ -1555,6 +1555,37 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .dive-profile-svg{ width:100%; height:auto; display:block; }
   .dive-profile-note{ font-size:10.5px; color:#3C5A78; margin-top:8px; line-height:1.4; }
   .dive-species-note{ font-size:10.5px; color:var(--muted); margin-top:10px; line-height:1.4; }
+  /* Chips de compañeros etiquetados (form y detalle): avatar circular +
+     nombre + rol, con una X para quitar solo en el formulario. */
+  .dv-tag-chip{
+    display:flex; align-items:center; gap:8px; padding:6px 10px 6px 6px;
+    border-radius:20px; background:var(--card2, rgba(10,70,100,0.06));
+    margin-bottom:8px;
+  }
+  .dv-tag-avatar{
+    width:30px; height:30px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background:linear-gradient(135deg,#DCE7EE,#B9C6CF); color:#5B6B75;
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;
+    text-transform:uppercase;
+  }
+  .dv-tag-text{ min-width:0; flex:1; }
+  .dv-tag-name{ font-size:13px; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dv-tag-role{ font-size:11px; color:var(--muted); }
+  .dv-tag-remove{
+    width:22px; height:22px; border-radius:50%; border:none; background:none;
+    color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .dv-tag-remove:hover{ background:rgba(231,76,60,0.12); color:#e74c3c; }
+  .dv-tag-role-select{ flex-shrink:0; }
+  .share-mode-option{
+    display:flex; align-items:flex-start; gap:10px; padding:14px; border-radius:14px;
+    border:1.5px solid rgba(10,70,100,0.14); margin-bottom:10px; cursor:pointer; text-align:left;
+    background:none; width:100%;
+  }
+  .share-mode-option.active{ border-color:var(--ocean); background:rgba(0,120,190,0.08); }
+  .share-mode-title{ font-size:13.5px; font-weight:800; color:var(--ink); margin-bottom:3px; }
+  .share-mode-desc{ font-size:11.5px; color:var(--muted); line-height:1.4; }
   .loc-input-wrap{ position:relative; }
   .loc-input-wrap .icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); }
   .loc-input-wrap input{ padding-left:36px !important; }
@@ -2634,6 +2665,24 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   </div>
 </div>
 
+<div class="admin-overlay" id="diveTagPickerOverlay">
+  <div class="admin-sheet" id="diveTagPickerSheet">
+    <!-- populated by renderDiveTagPicker() -->
+  </div>
+</div>
+
+<div class="admin-overlay" id="shareDiveOverlay">
+  <div class="admin-sheet" id="shareDiveSheet">
+    <!-- populated by renderShareDiveChooser() -->
+  </div>
+</div>
+
+<div class="admin-overlay" id="diveInviteOverlay">
+  <div class="admin-sheet" id="diveInviteSheet">
+    <!-- populated by renderDiveInviteScreen() -->
+  </div>
+</div>
+
 <div class="tree-overlay" id="treeOverlay">
   <div class="tree-sheet">
     <div class="tree-header">
@@ -3185,6 +3234,14 @@ let diveSpeciesPickerMode = 'sighting'; // 'sighting' (inmersión ya guardada) |
 let pendingDiveMainPhoto = null;   // data URL de la foto principal
 let pendingDiveNotesPhotos = [];   // data URLs de las fotos de observaciones
 let saveInFlight = false;
+
+// Compañeros etiquetados en la inmersión que se está viendo/editando:
+// {id, dive_id, tagged_user_id, role, tagged_name, tagged_username, tagged_avatar_url}.
+// Igual que pendingDiveSpecies, se usa tanto si la inmersión ya existe (se
+// cargan sus dive_tags reales) como si se está creando (se sincronizan con
+// syncDiveTags() justo después de insertarla).
+let pendingDiveTags = [];
+let shareDiveMode = 'live'; // 'live' | 'copy' — elegido en el selector de compartir
 
 // ── Editor de especies (solo admins) ────────────────────────────────────
 let adminView = 'stats';        // 'stats' | 'species' | 'speciesForm'
@@ -7787,10 +7844,12 @@ function renderLogbookPanel(){
 function renderLogbookList(){
   const body = document.getElementById('logbookBody');
   body.innerHTML = `
+    <div id="logbookPendingInvites" style="margin-bottom:16px;"></div>
     <button type="button" class="btn" id="newDiveBtn" style="margin-bottom:16px;">${icon('plus','icon-sm')} Nueva inmersión</button>
     <div class="dive-card-list" id="diveCardList"></div>
   `;
-  document.getElementById('newDiveBtn').onclick = ()=>{ editingDive = null; pendingDiveSpecies = []; logbookView = 'form'; renderLogbookPanel(); };
+  document.getElementById('newDiveBtn').onclick = ()=>{ editingDive = null; pendingDiveSpecies = []; pendingDiveTags = []; pendingDiveTagsLoadedFor = null; logbookView = 'form'; renderLogbookPanel(); };
+  loadPendingDiveInvites();
 
   const listEl = document.getElementById('diveCardList');
   if(!dives.length){
@@ -7802,6 +7861,7 @@ function renderLogbookList(){
     const subParts = [d.site_name, d.dive_center].filter(Boolean);
     const diveName = escapeHtml(d.dive_name || d.site_name || dateLabel || 'Inmersión');
     const numLabel = d.dive_number!=null ? '#'+d.dive_number : '';
+    const isShared = d.user_id !== currentAccountData.id;
     const metaParts = [dateLabel, ...subParts.map(p=>escapeHtml(p))].filter(Boolean);
     const cover = d.main_photo
       ? `<div class="dive-card-cover">
@@ -7819,6 +7879,7 @@ function renderLogbookList(){
         <div class="dive-card-header">
           ${numLabel ? `<span class="dive-card-num">${numLabel}</span>` : ''}
           <span class="dive-card-title">${diveName}</span>
+          ${isShared ? `<span class="fr-pending-badge" style="background:var(--ocean);">Compartida</span>` : ''}
         </div>
         <div class="dive-card-sub">${metaParts.join(' · ')}</div>
       </div>
@@ -7826,7 +7887,7 @@ function renderLogbookList(){
         ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : '<div></div>'}
         <div class="dive-card-actions">
           <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>
-          <button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>
+          ${isShared ? '' : `<button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>`}
         </div>
       </div>
     </div>`;
@@ -7849,6 +7910,50 @@ function renderLogbookList(){
   });
   listEl.querySelectorAll('[data-delete]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); deleteDive(btn.dataset.delete); };
+  });
+}
+
+// Invitaciones a inmersiones compartidas que me han enviado y aún no he
+// resuelto. Se resuelven con la misma resolveDiveInvite() que usa la
+// pantalla a la que se llega desde el enlace (?diveInvite=<id>) — esa
+// función ya refresca dives y vuelve a pintar el logbook al terminar, así
+// que no hace falta repetir ese trabajo aquí.
+async function loadPendingDiveInvites(){
+  const el = document.getElementById('logbookPendingInvites');
+  if(!el) return;
+  const { data, error } = await _sb.from('dive_invites').select('*')
+    .eq('to_user_id', currentAccountData.id).eq('status', 'pending');
+  if(error || !data || !data.length){ el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="fr-section-title">Invitaciones a inmersiones <span class="fr-pending-badge">${data.length}</span></div>` +
+    data.map(inv=>{
+      const s = inv.dive_summary || {};
+      const label = s.dive_name || s.site_name || 'Una inmersión';
+      const dateLabel = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString('es-ES') : '';
+      const modeLabel = inv.mode === 'live' ? 'Compartida (edición conjunta)' : 'Copia independiente';
+      return `<div class="fr-card">
+        <div class="fr-card-banner">
+          <div class="fr-card-overlay">
+            <div class="fr-card-avatar">${avatarInner({name:s.from_name})}</div>
+            <div class="fr-card-text">
+              <div class="fr-card-name">${escapeHtml(s.from_name || 'Alguien')}</div>
+              <div class="fr-card-username">${escapeHtml(label)}${dateLabel?' · '+dateLabel:''}</div>
+            </div>
+          </div>
+        </div>
+        <div class="fr-card-footer">
+          <div class="fr-card-stats">${escapeHtml(modeLabel)}</div>
+          <div class="fr-card-actions">
+            <button class="fr-btn fr-btn-accept" data-invite-accept="${inv.id}">Aceptar</button>
+            <button class="fr-btn fr-btn-reject" data-invite-reject="${inv.id}">Rechazar</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  el.querySelectorAll('[data-invite-accept]').forEach(btn=>{
+    btn.onclick = ()=>resolveDiveInvite(btn.dataset.inviteAccept, 'accept');
+  });
+  el.querySelectorAll('[data-invite-reject]').forEach(btn=>{
+    btn.onclick = ()=>resolveDiveInvite(btn.dataset.inviteReject, 'decline');
   });
 }
 
@@ -7982,15 +8087,24 @@ function renderDiveDetail(){
 
   const notesPhotos = Array.isArray(d.notes_photos) ? d.notes_photos : [];
   const profile = diveProfileSvg(d);
+  const isOwner = d.user_id === currentAccountData.id;
 
   body.innerHTML = `
     <div class="row2" style="margin-bottom:10px;">
       <button type="button" class="btn secondary" id="dvBackBtn">‹ Volver</button>
-      <button type="button" class="btn" id="dvEditBtn">Editar</button>
+      <button type="button" class="btn" id="dvEditBtn" style="${isOwner?'':'display:none;'}">Editar</button>
     </div>
-    <button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>
+    ${isOwner ? `<button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>` : ''}
     ${d.main_photo ? `<img class="dive-main-photo" id="dvMainPhotoView" src="${d.main_photo}" alt="">` : ''}
     ${groupHtml}
+
+    <div class="dvs-section">
+      <div class="dvs-head">Compañeros etiquetados</div>
+      <div class="dvs-body plain">
+        <div id="dvDetailTagList"></div>
+        ${isOwner ? `<button type="button" class="btn secondary" id="dvShareBtn" style="width:100%;margin-top:4px;">${icon('plus','icon-sm')} Compartir inmersión</button>` : ''}
+      </div>
+    </div>
 
     <div class="dvs-section">
       <div class="dvs-head">Gráfico</div>
@@ -8023,13 +8137,34 @@ function renderDiveDetail(){
 
   document.getElementById('dvBackBtn').onclick = ()=>{ logbookView='list'; editingDive=null; renderLogbookPanel(); };
   document.getElementById('dvEditBtn').onclick = ()=>{ logbookView='form'; renderLogbookPanel(); };
-  document.getElementById('dvDetailDeleteBtn').onclick = ()=>deleteDive(d.id);
+  document.getElementById('dvDetailDeleteBtn')?.addEventListener('click', ()=>deleteDive(d.id));
+  document.getElementById('dvShareBtn')?.addEventListener('click', ()=>openShareDiveOverlay(d));
   document.getElementById('addDiveSpeciesBtn').onclick = ()=>startAddDiveSighting(d);
   document.getElementById('dvMainPhotoView')?.addEventListener('click', e=>openLightbox(e.target.src));
   body.querySelectorAll('[data-zoom]').forEach(img=>{
     img.addEventListener('click', ()=>openLightbox(img.src));
   });
   renderDiveSpeciesGrid(d);
+  loadDiveDetailTags(d, isOwner);
+}
+
+// Compañeros etiquetados en el detalle (solo lectura) + si quien mira no es
+// el propietario, comprueba si es colaborador (modo "tal cual") para
+// mostrarle también el botón Editar — RLS ya le deja editar la fila, pero
+// sin esto no vería el botón para hacerlo.
+async function loadDiveDetailTags(dive, isOwner){
+  const [{data:tags, error}, collabCheck] = await Promise.all([
+    _sb.from('dive_tags').select('*').eq('dive_id', dive.id),
+    isOwner ? Promise.resolve(null) : _sb.from('dive_collaborators').select('id').eq('dive_id', dive.id).eq('user_id', currentAccountData.id).maybeSingle(),
+  ]);
+  if(!error){
+    pendingDiveTags = tags || [];
+    renderDiveTagChips(true);
+  }
+  if(!isOwner && collabCheck && collabCheck.data){
+    const editBtn = document.getElementById('dvEditBtn');
+    if(editBtn) editBtn.style.display = '';
+  }
 }
 
 // Especies vistas: cualquier avistamiento cuyo dive_id apunte a esta
@@ -8246,6 +8381,345 @@ function renderDiveSpeciesPicker(){
   input.addEventListener('input', ()=>renderResults(input.value));
 }
 
+// ══════════════════════════════════════════════════════════════════
+// COMPAÑEROS ETIQUETADOS — buscar usuarios de MarDex y etiquetarlos en una
+// inmersión del logbook, con un rol (compañero/instructor/divemaster/otro).
+// ══════════════════════════════════════════════════════════════════
+const DIVE_TAG_ROLE_LABEL = { companero:'Compañero', instructor:'Instructor', divemaster:'Divemaster', otro:'Otro' };
+
+// Recuerda de qué inmersión son los pendingDiveTags actualmente cargados,
+// para no repetir la consulta a dive_tags en cada repintado del formulario
+// (p. ej. al volver de añadir una especie vista) y perder así lo que el
+// usuario llevara etiquetado sin guardar aún.
+let pendingDiveTagsLoadedFor = null;
+
+async function loadDiveTags(diveId){
+  const { data, error } = await _sb.from('dive_tags').select('*').eq('dive_id', diveId);
+  if(!error) pendingDiveTags = data || [];
+  renderDiveTagChips();
+}
+
+// readonly=true → detalle de inmersión (solo lectura, pinta en dvDetailTagList).
+// readonly=false/omitido → formulario (con rol editable y botón de quitar, en dvTagChipList).
+function renderDiveTagChips(readonly){
+  const list = document.getElementById(readonly ? 'dvDetailTagList' : 'dvTagChipList');
+  if(!list) return;
+  if(!pendingDiveTags.length){
+    list.innerHTML = readonly ? '' : `<div class="dive-species-note" style="margin:0 0 8px;">Nadie etiquetado todavía.</div>`;
+    return;
+  }
+  list.innerHTML = pendingDiveTags.map(t=>`<div class="dv-tag-chip" data-tag="${t.tagged_user_id}">
+    <div class="dv-tag-avatar">${avatarInner({name:t.tagged_name, avatar_url:t.tagged_avatar_url})}</div>
+    <div class="dv-tag-text">
+      <div class="dv-tag-name">${escapeHtml(t.tagged_name)}</div>
+      ${readonly ? `<div class="dv-tag-role">${escapeHtml(DIVE_TAG_ROLE_LABEL[t.role] || t.role)}</div>` : ''}
+    </div>
+    ${readonly ? '' : `
+      <select class="dv-tag-role-select" data-role-for="${t.tagged_user_id}">
+        ${Object.entries(DIVE_TAG_ROLE_LABEL).map(([v,l])=>`<option value="${v}"${t.role===v?' selected':''}>${l}</option>`).join('')}
+      </select>
+      <button type="button" class="dv-tag-remove" data-remove-tag="${t.tagged_user_id}" title="Quitar" aria-label="Quitar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `}
+  </div>`).join('');
+  if(!readonly){
+    list.querySelectorAll('[data-role-for]').forEach(sel=>{
+      sel.onchange = ()=>{
+        const t = pendingDiveTags.find(x=>x.tagged_user_id === sel.dataset.roleFor);
+        if(t) t.role = sel.value;
+      };
+    });
+    list.querySelectorAll('[data-remove-tag]').forEach(btn=>{
+      btn.onclick = ()=>{
+        pendingDiveTags = pendingDiveTags.filter(t=>t.tagged_user_id !== btn.dataset.removeTag);
+        renderDiveTagChips();
+      };
+    });
+  }
+}
+
+function openDiveTagPicker(){
+  document.getElementById('diveTagPickerOverlay').classList.add('open');
+  renderDiveTagPicker();
+}
+function closeDiveTagPicker(){
+  document.getElementById('diveTagPickerOverlay').classList.remove('open');
+}
+onBackdropClose('diveTagPickerOverlay', closeDiveTagPicker);
+
+function renderDiveTagPicker(){
+  const sheet = document.getElementById('diveTagPickerSheet');
+  sheet.innerHTML = `
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">Etiquetar a alguien</div>
+        <div class="admin-subtitle">Busca a quien estuvo contigo en esta inmersión</div>
+      </div>
+      <button class="admin-close" id="diveTagPickerCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="search-wrap" style="position:relative;margin-bottom:16px;">
+      <span class="icon" id="diveTagSearchIcon"></span>
+      <input type="search" id="diveTagSearchInput" placeholder="Buscar por nombre o usuario..." autocomplete="off" data-form-type="other">
+    </div>
+    <div id="diveTagResults"></div>
+  `;
+  document.getElementById('diveTagSearchIcon').innerHTML = ICONS.search;
+  document.getElementById('diveTagPickerCloseBtn').onclick = closeDiveTagPicker;
+
+  const input = document.getElementById('diveTagSearchInput');
+  const resultsEl = document.getElementById('diveTagResults');
+  let searchTimer = null, lastList = [];
+  async function doRender(q){
+    const query = q.trim();
+    if(query.length < 2){
+      resultsEl.innerHTML = `<div class="zones-empty">Escribe al menos 2 letras para buscar</div>`;
+      return;
+    }
+    resultsEl.innerHTML = `<div class="zones-empty">Buscando…</div>`;
+    const { data: users, error } = await _sb.rpc('search_users', { query });
+    const already = new Set(pendingDiveTags.map(t=>t.tagged_user_id));
+    lastList = (users||[]).filter(u=>u.id !== currentAccountData.id);
+    if(error || !lastList.length){ resultsEl.innerHTML = `<div class="zones-empty">Sin resultados para "${escapeHtml(q)}"</div>`; return; }
+    resultsEl.innerHTML = lastList.map(u=>`<div class="fr-card">
+      <div class="fr-card-banner" style="${bannerCardStyle(u)}">
+        <div class="fr-card-overlay">
+          <div class="fr-card-avatar">${avatarInner(u)}</div>
+          <div class="fr-card-text">
+            <div class="fr-card-name">${escapeHtml(u.name||u.username)}</div>
+            <div class="fr-card-username">@${escapeHtml(u.username||'')}</div>
+          </div>
+        </div>
+      </div>
+      <div class="fr-card-footer">
+        ${already.has(u.id)
+          ? `<span style="font-size:11px;color:var(--lagoon);font-weight:700">Ya etiquetado</span>`
+          : `<button type="button" class="fr-btn fr-btn-add" data-pick="${u.id}">Etiquetar</button>`}
+      </div>
+    </div>`).join('');
+    resultsEl.querySelectorAll('[data-pick]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const u = lastList.find(x=>x.id === btn.dataset.pick);
+        if(!u) return;
+        pendingDiveTags = [...pendingDiveTags, {
+          id: null, tagged_user_id: u.id, role: 'companero',
+          tagged_name: u.name || u.username || 'Sin nombre',
+          tagged_username: u.username || null,
+          tagged_avatar_url: u.avatar_url || null,
+        }];
+        closeDiveTagPicker();
+        renderDiveTagChips();
+      };
+    });
+  }
+  input.addEventListener('input', ()=>{
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(()=>doRender(input.value), 300);
+  });
+  doRender('');
+}
+
+// Sustituye en bloque los dive_tags de la inmersión por lo que haya en
+// pendingDiveTags (borrar + reinsertar en vez de calcular un diff: son como
+// mucho un puñado de filas por inmersión, así que no compensa la
+// complejidad de comparar altas/bajas/cambios de rol uno a uno).
+async function syncDiveTags(dive){
+  await _sb.from('dive_tags').delete().eq('dive_id', dive.id);
+  if(!pendingDiveTags.length) return;
+  const rows = pendingDiveTags.map(t=>({
+    dive_id: dive.id,
+    tagged_user_id: t.tagged_user_id,
+    role: t.role,
+    tagged_name: t.tagged_name,
+    tagged_username: t.tagged_username,
+    tagged_avatar_url: t.tagged_avatar_url,
+  }));
+  const { error } = await _sb.from('dive_tags').insert(rows);
+  if(error) showToast('Error al guardar compañeros etiquetados: ' + error.message, true);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COMPARTIR INMERSIÓN — el propietario elige compartirla "tal cual"
+// (edición compartida, dive_collaborators) o "copiarla" (independiente,
+// con sus especies vistas), y a quién: a un compañero ya etiquetado, o
+// por enlace abierto (el primero que lo acepte). El envío en sí usa
+// navigator.share(), que en iOS incluye AirDrop automáticamente en el
+// panel de compartir junto con WhatsApp/Mail/etc.; sin soporte, se copia
+// el enlace al portapapeles.
+// ══════════════════════════════════════════════════════════════════
+let shareDiveContext = null;
+
+function openShareDiveOverlay(dive){
+  shareDiveContext = dive;
+  shareDiveMode = 'live';
+  document.getElementById('shareDiveOverlay').classList.add('open');
+  renderShareDiveChooser();
+}
+function closeShareDiveOverlay(){
+  document.getElementById('shareDiveOverlay').classList.remove('open');
+  shareDiveContext = null;
+}
+onBackdropClose('shareDiveOverlay', closeShareDiveOverlay);
+
+function renderShareDiveChooser(){
+  const dive = shareDiveContext;
+  const sheet = document.getElementById('shareDiveSheet');
+  const taggedOptions = pendingDiveTags.length
+    ? pendingDiveTags.map(t=>`<button type="button" class="fr-btn fr-btn-add" data-send-to="${t.tagged_user_id}" style="margin:0 6px 8px 0;">${escapeHtml(t.tagged_name)}</button>`).join('')
+    : `<div class="dive-species-note" style="margin:0 0 8px;">No has etiquetado a nadie en esta inmersión todavía — puedes compartirla igualmente por enlace.</div>`;
+  sheet.innerHTML = `
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">Compartir inmersión</div>
+        <div class="admin-subtitle">${escapeHtml(dive.dive_name || dive.site_name || 'Esta inmersión')}</div>
+      </div>
+      <button class="admin-close" id="shareDiveCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <button type="button" class="share-mode-option ${shareDiveMode==='live'?'active':''}" data-mode="live">
+      <div>
+        <div class="share-mode-title">Compartir tal cual</div>
+        <div class="share-mode-desc">Una sola inmersión, editable por todas las partes: los cambios de cualquiera se ven en la inmersión de todos.</div>
+      </div>
+    </button>
+    <button type="button" class="share-mode-option ${shareDiveMode==='copy'?'active':''}" data-mode="copy">
+      <div>
+        <div class="share-mode-title">Copiar</div>
+        <div class="share-mode-desc">Cada quien tendrá su propia copia independiente (con las especies vistas incluidas), editable sin afectar a la del otro.</div>
+      </div>
+    </button>
+    <div class="dvs-head" style="margin-top:16px;">Enviar a</div>
+    <div style="margin-bottom:10px;">${taggedOptions}</div>
+    <button type="button" class="btn secondary" id="shareDiveLinkBtn" style="width:100%;">${icon('plus','icon-sm')} Generar enlace para compartir</button>
+  `;
+  document.getElementById('shareDiveCloseBtn').onclick = closeShareDiveOverlay;
+  sheet.querySelectorAll('[data-mode]').forEach(btn=>{
+    btn.onclick = ()=>{ shareDiveMode = btn.dataset.mode; renderShareDiveChooser(); };
+  });
+  sheet.querySelectorAll('[data-send-to]').forEach(btn=>{
+    btn.onclick = ()=>sendDiveInvite(dive, btn.dataset.sendTo);
+  });
+  document.getElementById('shareDiveLinkBtn').onclick = ()=>sendDiveInvite(dive, null);
+}
+
+async function sendDiveInvite(dive, toUserId){
+  const summary = {
+    dive_name: dive.dive_name || null,
+    site_name: dive.site_name || null,
+    date: dive.date || null,
+    max_depth_m: dive.max_depth_m ?? null,
+    from_name: currentAccountData.name || currentAccountData.username || '',
+  };
+  const { data, error } = await _sb.from('dive_invites').insert({
+    dive_id: dive.id, to_user_id: toUserId, mode: shareDiveMode, dive_summary: summary,
+  }).select().single();
+  if(error){ showToast('Error al compartir: ' + error.message, true); return; }
+  closeShareDiveOverlay();
+  const url = `${location.origin}${location.pathname}?diveInvite=${data.id}`;
+  const label = summary.dive_name || summary.site_name || 'una inmersión';
+  const shareText = `Te comparto ${label} en MarDex`;
+  try{
+    if(navigator.share){
+      await navigator.share({ title: 'MarDex', text: shareText, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      showToast('Enlace copiado al portapapeles');
+    }
+  } catch(e){
+    // AbortError: el usuario cerró el panel de compartir sin elegir nada — no es un error real.
+    if(e && e.name !== 'AbortError'){
+      try{ await navigator.clipboard.writeText(url); showToast('Enlace copiado al portapapeles'); }
+      catch(e2){ showToast('No se pudo compartir ni copiar el enlace', true); }
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACEPTAR INVITACIÓN — pantalla abierta desde ?diveInvite=<id>, antes de
+// que quien la recibe tenga ningún otro acceso a esa inmersión (por eso se
+// apoya en get_dive_invite()/accept_dive_invite(), no en leer `dives`
+// directamente).
+// ══════════════════════════════════════════════════════════════════
+function closeDiveInviteScreen(){
+  document.getElementById('diveInviteOverlay').classList.remove('open');
+}
+onBackdropClose('diveInviteOverlay', closeDiveInviteScreen);
+
+async function showDiveInviteScreen(inviteId){
+  const sheet = document.getElementById('diveInviteSheet');
+  sheet.innerHTML = `<div class="zones-empty">Cargando invitación…</div>`;
+  document.getElementById('diveInviteOverlay').classList.add('open');
+  const { data: invite, error } = await _sb.rpc('get_dive_invite', { p_invite_id: inviteId });
+  if(error || !invite){
+    sheet.innerHTML = `
+      <div class="admin-header">
+        <div><div class="admin-title">Invitación no disponible</div></div>
+        <button class="admin-close" id="diveInviteCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="zones-empty">${escapeHtml(error?.message || 'Este enlace ya no es válido.')}</div>
+    `;
+    document.getElementById('diveInviteCloseBtn').onclick = closeDiveInviteScreen;
+    return;
+  }
+  renderDiveInviteScreen(invite);
+}
+
+function renderDiveInviteScreen(invite){
+  const sheet = document.getElementById('diveInviteSheet');
+  const s = invite.dive_summary || {};
+  const label = s.dive_name || s.site_name || 'Una inmersión';
+  const dateLabel = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString('es-ES') : '';
+
+  if(invite.status !== 'pending'){
+    sheet.innerHTML = `
+      <div class="admin-header"><div><div class="admin-title">Invitación ya resuelta</div></div>
+        <button class="admin-close" id="diveInviteCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="zones-empty">${invite.status==='accepted' ? 'Esta invitación ya se aceptó.' : 'Esta invitación ya se rechazó.'}</div>
+    `;
+    document.getElementById('diveInviteCloseBtn').onclick = closeDiveInviteScreen;
+    return;
+  }
+
+  const modeLabel = invite.mode === 'live'
+    ? 'Se compartirá tal cual: podréis editarla los dos y los cambios se verán en la misma inmersión.'
+    : 'Se copiará: tendrás tu propia copia independiente, con las especies vistas incluidas, sin afectar a la original.';
+
+  sheet.innerHTML = `
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">${escapeHtml(s.from_name || 'Alguien')} te comparte una inmersión</div>
+        <div class="admin-subtitle">${escapeHtml(label)}${dateLabel?' · '+dateLabel:''}</div>
+      </div>
+      <button class="admin-close" id="diveInviteCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="dive-species-note" style="margin:0 0 16px;font-size:12.5px;">${escapeHtml(modeLabel)}</div>
+    <div class="row2">
+      <button type="button" class="btn secondary" id="diveInviteDeclineBtn">Rechazar</button>
+      <button type="button" class="btn" id="diveInviteAcceptBtn">Aceptar</button>
+    </div>
+  `;
+  document.getElementById('diveInviteCloseBtn').onclick = closeDiveInviteScreen;
+  document.getElementById('diveInviteDeclineBtn').onclick = ()=>resolveDiveInvite(invite.id, 'decline');
+  document.getElementById('diveInviteAcceptBtn').onclick = ()=>resolveDiveInvite(invite.id, 'accept');
+}
+
+async function resolveDiveInvite(inviteId, action){
+  const { data: newDiveId, error } = await _sb.rpc('accept_dive_invite', { p_invite_id: inviteId, p_action: action });
+  if(error){ showToast('Error: ' + error.message, true); return; }
+  closeDiveInviteScreen();
+  // Quita el parámetro de la URL para que un F5 no vuelva a intentar resolverla.
+  history.replaceState(null, '', location.pathname + location.hash);
+  if(action === 'decline'){ showToast('Invitación rechazada'); return; }
+  showToast('Inmersión añadida a tu logbook');
+  await loadDives();
+  openLogbookPanel();
+  if(newDiveId){
+    editingDive = dives.find(x=>x.id===newDiveId) || null;
+    logbookView = editingDive ? 'detail' : 'list';
+    renderLogbookPanel();
+  }
+}
+
 function renderDiveForm(){
   const body = document.getElementById('logbookBody');
   const d = editingDive || {};
@@ -8337,7 +8811,12 @@ function renderDiveForm(){
           <div class="field"><label>Centro de buceo</label><input type="text" id="dv-center" value="${escapeHtml(d.dive_center||'')}"></div>
           <div class="field"><label>Club de buceo</label><input type="text" id="dv-club" value="${escapeHtml(d.dive_club||'')}"></div>
         </div>
-        <div class="field"><label>Compañero</label><input type="text" id="dv-buddy" value="${escapeHtml(d.buddy||'')}"></div>
+        <div class="field"><label>Compañero</label><input type="text" id="dv-buddy" value="${escapeHtml(d.buddy||'')}" placeholder="Nombre libre, por si no tiene cuenta en MarDex"></div>
+        <div class="field">
+          <label>Compañeros en MarDex</label>
+          <div id="dvTagChipList"></div>
+          <button type="button" class="btn secondary" id="dvAddTagBtn" style="width:100%;">${icon('plus','icon-sm')} Etiquetar a alguien</button>
+        </div>
       `)}
 
       ${sec('Comentarios', `
@@ -8383,9 +8862,23 @@ function wireDiveForm(){
 
   document.getElementById('dvCancelBtn').onclick = ()=>{
     if(!editingDive) pendingDiveSpecies = [];
+    pendingDiveTagsLoadedFor = null;
     logbookView = editingDive ? 'detail' : 'list';
     renderLogbookPanel();
   };
+
+  if(editingDive){
+    if(pendingDiveTagsLoadedFor !== editingDive.id){
+      pendingDiveTagsLoadedFor = editingDive.id;
+      pendingDiveTags = [];
+      loadDiveTags(editingDive.id);
+    } else {
+      renderDiveTagChips();
+    }
+  } else {
+    renderDiveTagChips();
+  }
+  document.getElementById('dvAddTagBtn').onclick = openDiveTagPicker;
 
   const addPendingBtn = document.getElementById('dvAddPendingSpeciesBtn');
   if(addPendingBtn){
@@ -8703,6 +9196,8 @@ async function saveDive(){
     if(error){ showToast('Error al guardar: ' + error.message, true); return; }
     dives = dives.map(x=>x.id===editingDive.id ? {...x, ...payload} : x);
     editingDive = dives.find(x=>x.id===editingDive.id) || null;
+    await syncDiveTags(editingDive);
+    pendingDiveTagsLoadedFor = null;
     logbookView = 'detail';
     showToast('Inmersión actualizada');
   } else {
@@ -8712,6 +9207,8 @@ async function saveDive(){
     dives = [newDive, ...dives];
     if(pendingDiveSpecies.length) await savePendingDiveSightings(newDive);
     pendingDiveSpecies = [];
+    await syncDiveTags(newDive);
+    pendingDiveTagsLoadedFor = null;
     // Se abre el detalle de la inmersión recién creada: así se ven ya las
     // especies registradas y se pueden retocar (foto, talla, profundidad).
     editingDive = newDive;
@@ -10764,6 +11261,12 @@ async function _alEnterAccount(user){
   if(savedView === 'logbook') openLogbookPanel();
   else if(savedView === 'explore') syncBottomNavActive();
   else openHomePage();
+
+  // Enlace de invitación a una inmersión compartida (?diveInvite=<id>):
+  // se comprueba aquí, ya con sesión y currentAccountData listos, sea cual
+  // sea la vista con la que se haya abierto la app.
+  const inviteId = new URLSearchParams(location.search).get('diveInvite');
+  if(inviteId) showDiveInviteScreen(inviteId);
 }
 
 

@@ -1,0 +1,296 @@
+-- ============================================================================
+-- MarDex — Etiquetar compañeros y compartir inmersiones del logbook
+-- Ejecutar en Supabase Studio → SQL Editor. Idempotente (CREATE TABLE IF NOT
+-- EXISTS / CREATE OR REPLACE / políticas con DROP previo).
+--
+-- Tres tablas nuevas:
+--   - dive_tags: etiqueta a otro usuario de MarDex en una inmersión, con un
+--     rol (compañero/instructor/divemaster/otro). Solo informativa — no da
+--     acceso por sí sola a la inmersión más que para quien está etiquetado
+--     (lectura, para que vea que le han mencionado).
+--   - dive_collaborators: representa el modo "compartir tal cual" (edición
+--     compartida). Se rellena desde accept_dive_invite(), nunca a mano desde
+--     el cliente, por eso no tiene políticas de insert/update/delete para
+--     `authenticated` — solo la función (SECURITY DEFINER) puede escribir.
+--   - dive_invites: la invitación en sí (pendiente/aceptada/rechazada). El
+--     snapshot `dive_summary` (nombre, fecha, lugar...) se guarda en el
+--     momento de compartir para poder mostrar una vista previa en la
+--     pantalla de invitación SIN necesitar que quien la recibe pueda leer ya
+--     la fila de `dives` (que, hasta aceptar, no le pertenece ni está
+--     etiquetado ni es colaborador).
+--
+-- Guardamos también en `dive_tags` el nombre/username/avatar del usuario
+-- etiquetado tal cual los devolvió search_users() en el momento de etiquetar
+-- (tagged_name/tagged_username/tagged_avatar_url), en vez de hacer un JOIN
+-- contra `profiles` al leer: `profiles` de otras personas no es legible por
+-- select directo en este proyecto (search_users/get_friend_data/
+-- get_banner_urls son RPC aparte para eso), así que un JOIN fallaría o
+-- devolvería null bajo RLS. Es una foto fija: si esa persona cambia de
+-- nombre después, el tag no se actualiza solo, pero evita tener que crear
+-- una RPC nueva solo para esto.
+--
+-- Las políticas nuevas en `dives` (select/update) se SUMAN a las 4 ya
+-- existentes en logbook.sql (dives_select_own, dives_insert_own,
+-- dives_update_own, dives_delete_own): Postgres combina con OR varias
+-- políticas PERMISSIVE del mismo comando, así que esto amplía el acceso sin
+-- debilitar el de los propietarios.
+-- ============================================================================
+
+create table if not exists public.dive_tags (
+  id uuid primary key default gen_random_uuid(),
+  dive_id uuid not null references public.dives(id) on delete cascade,
+  tagged_user_id uuid not null references public.profiles(id) on delete cascade,
+  role text not null default 'companero' check (role in ('companero','instructor','divemaster','otro')),
+  tagged_name text not null,
+  tagged_username text,
+  tagged_avatar_url text,
+  created_by uuid not null default auth.uid(),
+  created_at timestamptz not null default now(),
+  unique(dive_id, tagged_user_id)
+);
+create index if not exists dive_tags_dive_id_idx on public.dive_tags(dive_id);
+create index if not exists dive_tags_tagged_user_id_idx on public.dive_tags(tagged_user_id);
+
+create table if not exists public.dive_collaborators (
+  id uuid primary key default gen_random_uuid(),
+  dive_id uuid not null references public.dives(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique(dive_id, user_id)
+);
+create index if not exists dive_collaborators_dive_id_idx on public.dive_collaborators(dive_id);
+
+create table if not exists public.dive_invites (
+  id uuid primary key default gen_random_uuid(),
+  dive_id uuid not null references public.dives(id) on delete cascade,
+  from_user_id uuid not null default auth.uid() references public.profiles(id) on delete cascade,
+  to_user_id uuid references public.profiles(id) on delete cascade,
+  mode text not null check (mode in ('live','copy')),
+  status text not null default 'pending' check (status in ('pending','accepted','declined')),
+  dive_summary jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists dive_invites_to_user_id_idx on public.dive_invites(to_user_id);
+create index if not exists dive_invites_from_user_id_idx on public.dive_invites(from_user_id);
+
+alter table public.dive_tags enable row level security;
+alter table public.dive_collaborators enable row level security;
+alter table public.dive_invites enable row level security;
+
+-- ── dive_tags ────────────────────────────────────────────────────────────
+drop policy if exists "dive_tags_select" on public.dive_tags;
+create policy "dive_tags_select" on public.dive_tags
+  for select using (
+    tagged_user_id = auth.uid()
+    or exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+    or exists(select 1 from public.dive_collaborators c where c.dive_id = dive_tags.dive_id and c.user_id = auth.uid())
+  );
+
+drop policy if exists "dive_tags_insert" on public.dive_tags;
+create policy "dive_tags_insert" on public.dive_tags
+  for insert with check (
+    created_by = auth.uid()
+    and exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+  );
+
+drop policy if exists "dive_tags_update" on public.dive_tags;
+create policy "dive_tags_update" on public.dive_tags
+  for update using (
+    exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+  ) with check (
+    exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+  );
+
+-- Borrar un tag lo puede hacer el propietario de la inmersión, o la propia
+-- persona etiquetada (para "desetiquetarse" si no quiere figurar).
+drop policy if exists "dive_tags_delete" on public.dive_tags;
+create policy "dive_tags_delete" on public.dive_tags
+  for delete using (
+    tagged_user_id = auth.uid()
+    or exists(select 1 from public.dives d where d.id = dive_tags.dive_id and d.user_id = auth.uid())
+  );
+
+-- ── dive_collaborators ──────────────────────────────────────────────────
+-- Solo lectura por RLS: la fila la crea accept_dive_invite() (SECURITY
+-- DEFINER), nunca el cliente directamente.
+drop policy if exists "dive_collaborators_select" on public.dive_collaborators;
+create policy "dive_collaborators_select" on public.dive_collaborators
+  for select using (
+    user_id = auth.uid()
+    or exists(select 1 from public.dives d where d.id = dive_collaborators.dive_id and d.user_id = auth.uid())
+  );
+
+-- ── dive_invites ────────────────────────────────────────────────────────
+-- Un enlace de invitación "abierto" (to_user_id null) NO es legible por
+-- select directo aquí a propósito: si lo fuera, cualquier usuario podría
+-- listar TODAS las invitaciones abiertas de todo el mundo con un simple
+-- `select * from dive_invites`, no solo la suya. Para esas, el cliente usa
+-- get_dive_invite(uuid) más abajo, que solo devuelve la fila pedida por id
+-- (igual que un enlace "cualquiera con el enlace" normal: hace falta
+-- conocer el id, no se puede enumerar).
+drop policy if exists "dive_invites_select" on public.dive_invites;
+create policy "dive_invites_select" on public.dive_invites
+  for select using (from_user_id = auth.uid() or to_user_id = auth.uid());
+
+drop policy if exists "dive_invites_insert" on public.dive_invites;
+create policy "dive_invites_insert" on public.dive_invites
+  for insert with check (
+    from_user_id = auth.uid()
+    and exists(select 1 from public.dives d where d.id = dive_invites.dive_id and d.user_id = auth.uid())
+  );
+
+-- El estado (aceptada/rechazada) solo lo cambia accept_dive_invite(); lo
+-- único que el cliente puede hacer directamente es retirar una invitación
+-- que él mismo envió y sigue pendiente.
+drop policy if exists "dive_invites_delete" on public.dive_invites;
+create policy "dive_invites_delete" on public.dive_invites
+  for delete using (from_user_id = auth.uid());
+
+-- ── dives: acceso ampliado a etiquetados/colaboradores ─────────────────
+drop policy if exists "dives_select_tagged_or_collab" on public.dives;
+create policy "dives_select_tagged_or_collab" on public.dives
+  for select using (
+    exists(select 1 from public.dive_tags t where t.dive_id = dives.id and t.tagged_user_id = auth.uid())
+    or exists(select 1 from public.dive_collaborators c where c.dive_id = dives.id and c.user_id = auth.uid())
+  );
+
+-- Edición compartida real: solo en modo "live" (dive_collaborators), nunca
+-- solo por estar etiquetado.
+drop policy if exists "dives_update_collab" on public.dives;
+create policy "dives_update_collab" on public.dives
+  for update using (
+    exists(select 1 from public.dive_collaborators c where c.dive_id = dives.id and c.user_id = auth.uid())
+  ) with check (
+    exists(select 1 from public.dive_collaborators c where c.dive_id = dives.id and c.user_id = auth.uid())
+  );
+
+-- ── RPCs ────────────────────────────────────────────────────────────────
+
+-- Lee una invitación por id sin permitir enumerarlas todas (ver comentario
+-- de dive_invites_select más arriba). Usada por la pantalla que se abre al
+-- tocar un enlace de invitación (?diveInvite=<id>), incluidas las abiertas
+-- (to_user_id null), antes de que quien la recibe tenga ningún otro acceso
+-- a esa inmersión.
+create or replace function public.get_dive_invite(p_invite_id uuid)
+returns public.dive_invites
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_invite public.dive_invites;
+begin
+  select * into v_invite from public.dive_invites where id = p_invite_id;
+  if v_invite.id is null then
+    raise exception 'Invitación no encontrada';
+  end if;
+  if v_invite.to_user_id is not null
+     and v_invite.to_user_id <> auth.uid()
+     and v_invite.from_user_id <> auth.uid() then
+    raise exception 'No autorizado';
+  end if;
+  return v_invite;
+end;
+$$;
+
+revoke all on function public.get_dive_invite(uuid) from public;
+revoke all on function public.get_dive_invite(uuid) from anon;
+grant execute on function public.get_dive_invite(uuid) to authenticated;
+
+-- Acepta o rechaza una invitación. SECURITY DEFINER + `for update` sobre la
+-- fila para que, en un enlace abierto, dos personas no puedan "ganar" la
+-- misma invitación a la vez (la segunda en llegar encuentra status ya
+-- distinto de 'pending' y falla con una excepción clara).
+--
+-- Modo 'live': añade a quien acepta como colaborador (dive_collaborators) —
+-- la inmersión sigue siendo la misma fila, ahora editable por ambos.
+-- Modo 'copy': clona la fila de `dives` (nueva, propiedad de quien acepta)
+-- y también sus `sightings` vía dive_id, para que queden dos registros
+-- totalmente independientes.
+--
+-- Devuelve el id de la inmersión resultante (la original en modo 'live', la
+-- copia nueva en modo 'copy'), o null si se rechaza.
+create or replace function public.accept_dive_invite(p_invite_id uuid, p_action text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_invite public.dive_invites;
+  v_acceptor_id uuid := auth.uid();
+  v_new_dive_id uuid;
+begin
+  if p_action not in ('accept','decline') then
+    raise exception 'Acción no válida: %', p_action;
+  end if;
+
+  select * into v_invite from public.dive_invites where id = p_invite_id for update;
+  if v_invite.id is null then
+    raise exception 'Invitación no encontrada';
+  end if;
+  if v_invite.status <> 'pending' then
+    raise exception 'Esta invitación ya se resolvió';
+  end if;
+  if v_invite.to_user_id is not null and v_invite.to_user_id <> v_acceptor_id then
+    raise exception 'Esta invitación no es para ti';
+  end if;
+  if v_invite.from_user_id = v_acceptor_id then
+    raise exception 'No puedes aceptar tu propia invitación';
+  end if;
+
+  if p_action = 'decline' then
+    update public.dive_invites
+      set status = 'declined', to_user_id = coalesce(to_user_id, v_acceptor_id)
+      where id = p_invite_id;
+    return null;
+  end if;
+
+  if v_invite.mode = 'live' then
+    insert into public.dive_collaborators (dive_id, user_id)
+    values (v_invite.dive_id, v_acceptor_id)
+    on conflict (dive_id, user_id) do nothing;
+    v_new_dive_id := v_invite.dive_id;
+  else
+    insert into public.dives (
+      user_id, dive_number, date, entry_time, exit_time, duration_min,
+      site_name, dive_name, location_text, lat, lng,
+      approach_type, dive_club, dive_center, seabed_type,
+      water_temp, air_temp, entry_pressure, exit_pressure,
+      buddy, notes, suit_type, air_type, current, visibility_m,
+      max_depth_m, safety_stop_m, deco_stop_m, weight_kg, tank_liters, tank_material,
+      main_photo, notes_photos
+    )
+    select
+      v_acceptor_id, dive_number, date, entry_time, exit_time, duration_min,
+      site_name, dive_name, location_text, lat, lng,
+      approach_type, dive_club, dive_center, seabed_type,
+      water_temp, air_temp, entry_pressure, exit_pressure,
+      buddy, notes, suit_type, air_type, current, visibility_m,
+      max_depth_m, safety_stop_m, deco_stop_m, weight_kg, tank_liters, tank_material,
+      main_photo, notes_photos
+    from public.dives where id = v_invite.dive_id
+    returning id into v_new_dive_id;
+
+    insert into public.sightings (
+      species_id, title, location_text, comment, lat, lng, date, environment,
+      photo, size_observed, depth_observed, dive_id, user_id
+    )
+    select
+      species_id, title, location_text, comment, lat, lng, date, environment,
+      photo, size_observed, depth_observed, v_new_dive_id, v_acceptor_id
+    from public.sightings where dive_id = v_invite.dive_id;
+  end if;
+
+  update public.dive_invites
+    set status = 'accepted', to_user_id = coalesce(to_user_id, v_acceptor_id)
+    where id = p_invite_id;
+
+  return v_new_dive_id;
+end;
+$$;
+
+revoke all on function public.accept_dive_invite(uuid, text) from public;
+revoke all on function public.accept_dive_invite(uuid, text) from anon;
+grant execute on function public.accept_dive_invite(uuid, text) to authenticated;
