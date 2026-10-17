@@ -103,9 +103,40 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .sidebar::-webkit-scrollbar-track{ background:transparent; }
   .sidebar::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.1); border-radius:3px; }
   .brand{ margin-bottom:28px; }
-  .brand-mark{ display:flex; align-items:center; gap:8px; }
+  .brand-mark{ display:flex; align-items:center; gap:8px; justify-content:space-between; }
   .brand h1{ margin:0; font-family:var(--serif); font-size:26px; font-weight:400; color:#fff; letter-spacing:-0.2px; }
   .brand-accent{ color:var(--lagoon); }
+  .notif-bell-btn{
+    position:relative; border:none; background:rgba(255,255,255,0.08); cursor:pointer;
+    color:rgba(255,255,255,0.85); width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:background .15s;
+  }
+  .notif-bell-btn:hover{ background:rgba(255,255,255,0.18); color:#fff; }
+  .notif-bell-btn svg{ width:17px; height:17px; }
+  .notif-bell-badge{
+    position:absolute; top:-3px; right:-3px; min-width:16px; height:16px; padding:0 4px;
+    border-radius:8px; background:#e74c3c; color:#fff; font-size:10px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  /* Lista de notificaciones (invitaciones a inmersiones, de momento): las
+     no vistas aún quedan destacadas con fondo/borde de color y nombre en
+     negrita; dejan de estarlo la próxima vez que se abra la campana. */
+  .notif-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px;
+    background:var(--bg); margin-bottom:8px; border:1px solid var(--line);
+  }
+  .notif-item.unseen{ background:var(--blue-soft); border-color:var(--blue); }
+  .notif-item-avatar{
+    width:38px; height:38px; border-radius:50%; flex-shrink:0; overflow:hidden;
+    background:linear-gradient(135deg,#DCE7EE,#B9C6CF); color:#5B6B75;
+    display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; text-transform:uppercase;
+  }
+  .notif-item-text{ flex:1; min-width:0; }
+  .notif-item-title{ font-size:12.5px; color:var(--ink); line-height:1.4; }
+  .notif-item.unseen .notif-item-title{ font-weight:700; }
+  .notif-item-sub{ font-size:11px; color:var(--muted); margin-top:1px; }
+  .notif-item-actions{ display:flex; gap:6px; flex-shrink:0; }
   .brand small{ color:rgba(255,255,255,0.3); font-size:9px; font-weight:500; display:block; margin-top:4px; letter-spacing:1.4px; text-transform:uppercase; }
   .profile-badge{
     display:flex; flex-direction:column; align-items:center; gap:8px;
@@ -2447,7 +2478,13 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark"><h1>Mar<span class="brand-accent">Dex</span></h1></div>
+      <div class="brand-mark">
+        <h1>Mar<span class="brand-accent">Dex</span></h1>
+        <button type="button" class="notif-bell-btn" id="notifBellBtn" title="Notificaciones" aria-label="Notificaciones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-bell-badge" id="notifBellBadge" style="display:none;"></span>
+        </button>
+      </div>
       <small>Guía de buceo · tiburones, rayas y peces</small>
       <div class="profile-badge">
         <div class="profile-avatar" id="profileAvatar"></div>
@@ -2680,6 +2717,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 <div class="admin-overlay" id="diveInviteOverlay">
   <div class="admin-sheet" id="diveInviteSheet">
     <!-- populated by renderDiveInviteScreen() -->
+  </div>
+</div>
+
+<div class="admin-overlay" id="notifOverlay">
+  <div class="admin-sheet" id="notifSheet">
+    <!-- populated by renderNotifPanel() -->
   </div>
 </div>
 
@@ -8590,9 +8633,16 @@ function renderShareDiveChooser(){
     </button>
     <div class="dvs-head" style="margin-top:16px;">Enviar a</div>
     <div style="margin-bottom:10px;">${taggedOptions}</div>
+    <div class="dvs-head">Buscar a alguien</div>
+    <div class="search-wrap" style="position:relative;margin-bottom:10px;">
+      <span class="icon" id="shareDiveSearchIcon"></span>
+      <input type="search" id="shareDiveSearchInput" placeholder="Nombre o usuario..." autocomplete="off" data-form-type="other">
+    </div>
+    <div id="shareDiveSearchResults" style="margin-bottom:10px;"></div>
     <button type="button" class="btn secondary" id="shareDiveLinkBtn" style="width:100%;">${icon('plus','icon-sm')} Generar enlace para compartir</button>
   `;
   document.getElementById('shareDiveCloseBtn').onclick = closeShareDiveOverlay;
+  document.getElementById('shareDiveSearchIcon').innerHTML = ICONS.search;
   sheet.querySelectorAll('[data-mode]').forEach(btn=>{
     btn.onclick = ()=>{ shareDiveMode = btn.dataset.mode; renderShareDiveChooser(); };
   });
@@ -8600,6 +8650,42 @@ function renderShareDiveChooser(){
     btn.onclick = ()=>sendDiveInvite(dive, btn.dataset.sendTo);
   });
   document.getElementById('shareDiveLinkBtn').onclick = ()=>sendDiveInvite(dive, null);
+
+  const searchInput = document.getElementById('shareDiveSearchInput');
+  const searchResults = document.getElementById('shareDiveSearchResults');
+  let searchTimer = null, lastResults = [];
+  async function doShareSearch(q){
+    const query = q.trim();
+    if(query.length < 2){ searchResults.innerHTML = ''; return; }
+    searchResults.innerHTML = `<div class="zones-empty">Buscando…</div>`;
+    const { data: users, error } = await _sb.rpc('search_users', { query });
+    lastResults = (users||[]).filter(u=>u.id !== currentAccountData.id);
+    if(error || !lastResults.length){ searchResults.innerHTML = `<div class="zones-empty">Sin resultados para "${escapeHtml(q)}"</div>`; return; }
+    searchResults.innerHTML = lastResults.map(u=>`<div class="fr-card">
+      <div class="fr-card-banner" style="${bannerCardStyle(u)}">
+        <div class="fr-card-overlay">
+          <div class="fr-card-avatar">${avatarInner(u)}</div>
+          <div class="fr-card-text">
+            <div class="fr-card-name">${escapeHtml(u.name||u.username)}</div>
+            <div class="fr-card-username">@${escapeHtml(u.username||'')}</div>
+          </div>
+        </div>
+      </div>
+      <div class="fr-card-footer">
+        <button type="button" class="fr-btn fr-btn-add" data-share-pick="${u.id}">Compartir</button>
+      </div>
+    </div>`).join('');
+    searchResults.querySelectorAll('[data-share-pick]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const u = lastResults.find(x=>x.id === btn.dataset.sharePick);
+        if(u) sendDiveInvite(dive, u.id);
+      };
+    });
+  }
+  searchInput.addEventListener('input', ()=>{
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(()=>doShareSearch(searchInput.value), 300);
+  });
 }
 
 async function sendDiveInvite(dive, toUserId){
@@ -8710,6 +8796,7 @@ async function resolveDiveInvite(inviteId, action){
   closeDiveInviteScreen();
   // Quita el parámetro de la URL para que un F5 no vuelva a intentar resolverla.
   history.replaceState(null, '', location.pathname + location.hash);
+  refreshNotifBadge();
   if(action === 'decline'){ showToast('Invitación rechazada'); return; }
   showToast('Inmersión añadida a tu logbook');
   await loadDives();
@@ -8719,6 +8806,85 @@ async function resolveDiveInvite(inviteId, action){
     logbookView = editingDive ? 'detail' : 'list';
     renderLogbookPanel();
   }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CAMPANA DE NOTIFICACIONES — de momento solo invitaciones a inmersiones
+// pendientes, mostradas con las no vistas destacadas. Vive junto al logo
+// (brand-mark), no en la barra inferior, así siempre está visible sin
+// competir por sitio con sus 5 iconos en pantallas estrechas.
+// ══════════════════════════════════════════════════════════════════
+async function refreshNotifBadge(){
+  const badge = document.getElementById('notifBellBadge');
+  if(!badge || !currentAccountData) return;
+  const { count, error } = await _sb.from('dive_invites')
+    .select('id', { count:'exact', head:true })
+    .eq('to_user_id', currentAccountData.id).eq('status', 'pending').is('seen_at', null);
+  if(error || !count){ badge.style.display = 'none'; return; }
+  badge.textContent = count > 9 ? '9+' : String(count);
+  badge.style.display = 'flex';
+}
+
+function openNotifPanel(){
+  document.getElementById('notifOverlay').classList.add('open');
+  renderNotifPanel();
+}
+function closeNotifPanel(){
+  document.getElementById('notifOverlay').classList.remove('open');
+}
+onBackdropClose('notifOverlay', closeNotifPanel);
+document.getElementById('notifBellBtn').onclick = openNotifPanel;
+
+async function renderNotifPanel(){
+  const sheet = document.getElementById('notifSheet');
+  sheet.innerHTML = `
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">Notificaciones</div>
+        <div class="admin-subtitle">Invitaciones a inmersiones compartidas</div>
+      </div>
+      <button class="admin-close" id="notifCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div id="notifList"><div class="zones-empty">Cargando…</div></div>
+  `;
+  document.getElementById('notifCloseBtn').onclick = closeNotifPanel;
+
+  const { data, error } = await _sb.from('dive_invites').select('*')
+    .eq('to_user_id', currentAccountData.id).eq('status', 'pending')
+    .order('created_at', { ascending:false });
+  const listEl = document.getElementById('notifList');
+  if(error || !data || !data.length){
+    listEl.innerHTML = `<div class="zones-empty">No tienes notificaciones pendientes.</div>`;
+    return;
+  }
+  // Se pinta ANTES de marcar como vistas, para que esta misma apertura
+  // todavía las muestre destacadas — la próxima ya no.
+  listEl.innerHTML = data.map(inv=>{
+    const s = inv.dive_summary || {};
+    const label = s.dive_name || s.site_name || 'Una inmersión';
+    const dateLabel = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString('es-ES') : '';
+    const modeLabel = inv.mode === 'live' ? 'Inmersión compartida' : 'Envío de copia';
+    return `<div class="notif-item ${inv.seen_at ? '' : 'unseen'}">
+      <div class="notif-item-avatar">${avatarInner({name:s.from_name})}</div>
+      <div class="notif-item-text">
+        <div class="notif-item-title">${escapeHtml(s.from_name || 'Alguien')} te comparte "${escapeHtml(label)}"</div>
+        <div class="notif-item-sub">${escapeHtml(modeLabel)}${dateLabel?' · '+dateLabel:''}</div>
+      </div>
+      <div class="notif-item-actions">
+        <button class="fr-btn fr-btn-accept" data-notif-accept="${inv.id}">Aceptar</button>
+        <button class="fr-btn fr-btn-reject" data-notif-reject="${inv.id}">Rechazar</button>
+      </div>
+    </div>`;
+  }).join('');
+  listEl.querySelectorAll('[data-notif-accept]').forEach(btn=>{
+    btn.onclick = ()=>{ closeNotifPanel(); resolveDiveInvite(btn.dataset.notifAccept, 'accept'); };
+  });
+  listEl.querySelectorAll('[data-notif-reject]').forEach(btn=>{
+    btn.onclick = ()=>{ closeNotifPanel(); resolveDiveInvite(btn.dataset.notifReject, 'decline'); };
+  });
+
+  await _sb.rpc('mark_dive_invites_seen');
+  refreshNotifBadge();
 }
 
 function renderDiveForm(){
@@ -11262,6 +11428,8 @@ async function _alEnterAccount(user){
   if(savedView === 'logbook') openLogbookPanel();
   else if(savedView === 'explore') syncBottomNavActive();
   else openHomePage();
+
+  refreshNotifBadge();
 
   // Enlace de invitación a una inmersión compartida (?diveInvite=<id>):
   // se comprueba aquí, ya con sesión y currentAccountData listos, sea cual

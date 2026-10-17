@@ -73,6 +73,11 @@ create table if not exists public.dive_invites (
 create index if not exists dive_invites_to_user_id_idx on public.dive_invites(to_user_id);
 create index if not exists dive_invites_from_user_id_idx on public.dive_invites(from_user_id);
 
+-- Marca si quien recibe la invitación ya la ha visto en la campana de
+-- notificaciones — independiente de `status`: una invitación puede llevar
+-- días "vista" y seguir "pending" hasta que se acepte o rechace.
+alter table public.dive_invites add column if not exists seen_at timestamptz;
+
 alter table public.dive_tags enable row level security;
 alter table public.dive_collaborators enable row level security;
 alter table public.dive_invites enable row level security;
@@ -342,3 +347,22 @@ $$;
 revoke all on function public.accept_dive_invite(uuid, text) from public;
 revoke all on function public.accept_dive_invite(uuid, text) from anon;
 grant execute on function public.accept_dive_invite(uuid, text) to authenticated;
+
+-- Marca como vistas todas las invitaciones pendientes dirigidas a quien
+-- llama. Se usa SECURITY DEFINER para no tener que añadir una política de
+-- UPDATE a dive_invites solo para esto — así `status`/`mode`/etc. siguen
+-- sin poder tocarse desde el cliente más que a través de
+-- accept_dive_invite(), y esta función solo puede cambiar seen_at.
+create or replace function public.mark_dive_invites_seen()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.dive_invites set seen_at = now()
+  where to_user_id = auth.uid() and status = 'pending' and seen_at is null;
+$$;
+
+revoke all on function public.mark_dive_invites_seen() from public;
+revoke all on function public.mark_dive_invites_seen() from anon;
+grant execute on function public.mark_dive_invites_seen() to authenticated;
