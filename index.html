@@ -3408,6 +3408,12 @@ let shareDiveMode = 'live'; // 'live' | 'copy' — elegido en el selector de com
 // es colaborador. Se rellena en loadDiveDetailTags() y se usa tanto para
 // mostrarlo en el detalle como para precargarlo/guardarlo en el formulario.
 let myCollabDiveNumber = null;
+// dive_id -> nº propio, para TODAS las inmersiones compartidas en las que
+// colaboro (no solo la que estoy viendo) — se carga una vez junto con
+// loadDives() y se usa en la lista (renderLogbookList) para distinguir una
+// colaboración real (acceso de edición, con nº propio) de una simplemente
+// etiquetada (solo lectura, sin nº propio: ver dive_tags en dive_sharing.sql).
+let myCollabByDiveId = {};
 
 // ── Editor de especies (solo admins) ────────────────────────────────────
 let adminView = 'stats';        // 'stats' | 'species' | 'speciesForm'
@@ -8048,9 +8054,14 @@ function renderHomeWidgetPickerStep2(){
 async function loadDives(){
   const sheet = document.getElementById('logbookSheet');
   sheet.innerHTML = `<div class="page-header"><div class="page-header-text"><h2>Logbook</h2></div></div><div class="zones-empty">Cargando…</div>`;
-  const { data, error } = await _sb.from('dives').select('*').order('date', { ascending:false });
+  const [{ data, error }, { data: collabRows }] = await Promise.all([
+    _sb.from('dives').select('*').order('date', { ascending:false }),
+    _sb.from('dive_collaborators').select('dive_id, dive_number').eq('user_id', currentAccountData.id),
+  ]);
   if(error) showToast('Error al cargar el logbook: ' + error.message, true);
   dives = error ? [] : (data || []);
+  myCollabByDiveId = {};
+  (collabRows||[]).forEach(r=>{ myCollabByDiveId[r.dive_id] = r.dive_number; });
   renderLogbookPanel();
 }
 
@@ -8194,8 +8205,19 @@ function renderLogbookList(){
     const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : '';
     const subParts = [d.site_name, d.dive_center].filter(Boolean);
     const diveName = escapeHtml(d.dive_name || d.site_name || dateLabel || 'Inmersión');
-    const numLabel = d.dive_number!=null ? '#'+d.dive_number : '';
-    const isShared = d.user_id !== currentAccountData.id;
+    const isOwner = d.user_id === currentAccountData.id;
+    // "Compartida" cubre dos accesos muy distintos: colaborador real (fila
+    // en dive_collaborators, con Nº propio y permiso de edición por RLS) o
+    // solo etiquetado (dive_tags, solo lectura — ver dive_sharing.sql). Sin
+    // distinguirlos aquí, "Editar" aparecía igual para los dos y, para un
+    // etiquetado sin colaboración, el guardado fallaba en silencio (RLS
+    // bloqueaba el update sin devolver error visible).
+    const isCollaborator = !isOwner && Object.prototype.hasOwnProperty.call(myCollabByDiveId, d.id);
+    const isTagOnly = !isOwner && !isCollaborator;
+    const myNum = isCollaborator ? myCollabByDiveId[d.id] : null;
+    const numLabel = isCollaborator
+      ? (myNum!=null ? '#'+myNum : '')
+      : (d.dive_number!=null ? '#'+d.dive_number : '');
     const metaParts = [dateLabel, ...subParts.map(p=>escapeHtml(p))].filter(Boolean);
     const cover = d.main_photo
       ? `<div class="dive-card-cover">
@@ -8207,28 +8229,34 @@ function renderLogbookList(){
           ${icon('anchor','icon-sm')}
           ${numLabel ? `<div class="dive-card-cover-num">${numLabel}</div>` : ''}
         </div>`;
+    const editBtn = (isOwner || isCollaborator)
+      ? `<button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>`
+      : '';
+    const removeBtn = isOwner
+      ? `<button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>`
+      : `<button type="button" class="dive-card-delete" data-leave="${d.id}" title="Quitar de mi logbook" aria-label="Quitar de mi logbook">${ICONS.trash}</button>`;
     return `<div class="dive-card" data-id="${d.id}">
       ${cover}
       <div class="dive-card-content">
         <div class="dive-card-header">
           ${numLabel ? `<span class="dive-card-num">${numLabel}</span>` : ''}
           <span class="dive-card-title">${diveName}</span>
-          ${isShared ? `<span class="fr-pending-badge" style="background:var(--ocean);">Compartida</span>` : ''}
+          ${!isOwner ? `<span class="fr-pending-badge" style="background:var(--ocean);">${isTagOnly?'Etiquetado':'Compartida'}</span>` : ''}
         </div>
         <div class="dive-card-sub">${metaParts.join(' · ')}</div>
       </div>
       <div class="dive-card-side">
         ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : '<div></div>'}
         <div class="dive-card-actions">
-          <button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>
-          ${isShared ? '' : `<button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>`}
+          ${editBtn}
+          ${removeBtn}
         </div>
       </div>
     </div>`;
   }).join('');
   listEl.querySelectorAll('.dive-card').forEach(card=>{
     card.onclick = (e)=>{
-      if(e.target.closest('[data-edit]') || e.target.closest('[data-delete]')) return;
+      if(e.target.closest('[data-edit]') || e.target.closest('[data-delete]') || e.target.closest('[data-leave]')) return;
       editingDive = dives.find(d=>d.id===card.dataset.id) || null;
       logbookView = 'detail';
       renderLogbookPanel();
@@ -8245,6 +8273,31 @@ function renderLogbookList(){
   listEl.querySelectorAll('[data-delete]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); deleteDive(btn.dataset.delete); };
   });
+  listEl.querySelectorAll('[data-leave]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); leaveSharedDive(btn.dataset.leave); };
+  });
+}
+
+// Quitar una inmersión compartida de mi propio logbook, sin tocar la del
+// propietario: se borra únicamente mi vínculo con ella (mi fila en
+// dive_tags si solo estoy etiquetado, o en dive_collaborators si soy
+// colaborador real) — nunca la fila de `dives` en sí, que no es mía. Se
+// intentan los dos borrados a la vez en vez de comprobar antes cuál aplica:
+// el que no me corresponde simplemente no afecta a ninguna fila (0 filas
+// borradas no es un error), así que es más simple que mirarlo primero.
+async function leaveSharedDive(diveId){
+  const ok = await askConfirm('¿Quitar esta inmersión de tu logbook? Solo desaparece de tu vista — la persona que la creó sigue teniendo la suya.');
+  if(!ok) return;
+  const [{error: tagErr}, {error: collabErr}] = await Promise.all([
+    _sb.from('dive_tags').delete().eq('dive_id', diveId).eq('tagged_user_id', currentAccountData.id),
+    _sb.from('dive_collaborators').delete().eq('dive_id', diveId).eq('user_id', currentAccountData.id),
+  ]);
+  if(tagErr && collabErr){ showToast('Error al quitarla: ' + (collabErr.message||tagErr.message), true); return; }
+  dives = dives.filter(x=>x.id!==diveId);
+  delete myCollabByDiveId[diveId];
+  if(editingDive && editingDive.id===diveId){ editingDive = null; logbookView = 'list'; }
+  renderLogbookPanel();
+  showToast('Inmersión quitada de tu logbook');
 }
 
 // Invitaciones a inmersiones compartidas que me han enviado y aún no he
@@ -8443,7 +8496,7 @@ function renderDiveDetail(){
       <button type="button" class="btn secondary" id="dvBackBtn">‹ Volver</button>
       <button type="button" class="btn" id="dvEditBtn" style="${isOwner?'':'display:none;'}">Editar</button>
     </div>
-    ${isOwner ? `<button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>` : ''}
+    ${isOwner ? `<button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>` : `<button type="button" class="pp-logout" id="dvDetailLeaveBtn" style="margin:0 0 16px;">Quitar de mi logbook</button>`}
     ${d.main_photo ? `<img class="dive-main-photo" id="dvMainPhotoView" src="${d.main_photo}" alt="">` : ''}
     ${groupHtml}
 
@@ -8488,6 +8541,7 @@ function renderDiveDetail(){
   document.getElementById('dvBackBtn').onclick = ()=>{ logbookView='list'; editingDive=null; renderLogbookPanel(); };
   document.getElementById('dvEditBtn').onclick = ()=>{ logbookView='form'; renderLogbookPanel(); };
   document.getElementById('dvDetailDeleteBtn')?.addEventListener('click', ()=>deleteDive(d.id));
+  document.getElementById('dvDetailLeaveBtn')?.addEventListener('click', ()=>leaveSharedDive(d.id));
   document.getElementById('dvShareBtn')?.addEventListener('click', ()=>openShareDiveOverlay(d));
   document.getElementById('addDiveSpeciesBtn').onclick = ()=>startAddDiveSighting(d);
   document.getElementById('dvMainPhotoView')?.addEventListener('click', e=>openLightbox(e.target.src));
@@ -9847,14 +9901,26 @@ async function saveDive(){
   if(isCollabEdit) delete payload.dive_number;
 
   if(editingDive){
-    const { error } = await _sb.from('dives').update(payload).eq('id', editingDive.id);
+    // .select() + comprobar filas devueltas: si no soy ni propietario ni
+    // colaborador real (solo etiquetado, dive_tags), RLS bloquea el update
+    // y PostgREST lo devuelve como éxito con 0 filas — sin esto parecía
+    // guardarse ("Inmersión actualizada") pero no persistía nada, y al
+    // volver a entrar se veía el dato de siempre (caso real: un etiquetado
+    // sin colaboración real poniendo su propio Nº, que nunca llegaba a
+    // guardarse en ningún sitio).
+    const { data: updRows, error } = await _sb.from('dives').update(payload).eq('id', editingDive.id).select();
     if(error){ showToast('Error al guardar: ' + error.message, true); return; }
+    if(!updRows || !updRows.length){
+      showToast('No tienes permiso para editar esta inmersión — puede que solo estés etiquetado, no seas colaborador', true);
+      return;
+    }
     dives = dives.map(x=>x.id===editingDive.id ? {...x, ...payload} : x);
     editingDive = dives.find(x=>x.id===editingDive.id) || null;
     if(isCollabEdit){
       const { error: numErr } = await _sb.rpc('set_my_collab_dive_number', { p_dive_id: editingDive.id, p_number: myNumber });
       if(numErr) showToast('Error al guardar tu número de inmersión: ' + numErr.message, true);
       myCollabDiveNumber = myNumber;
+      myCollabByDiveId[editingDive.id] = myNumber;
     } else {
       await syncDiveTags(editingDive);
     }

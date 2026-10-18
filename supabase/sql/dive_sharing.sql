@@ -183,6 +183,19 @@ create policy "dive_collaborators_select" on public.dive_collaborators
     or public.is_dive_owner(dive_id)
   );
 
+-- Un colaborador puede dejar de serlo (quitar la inmersión compartida de su
+-- propio logbook) sin tocar la fila de `dives`, que sigue siendo del
+-- propietario — igual que dive_tags_delete deja "desetiquetarse" a quien
+-- está etiquetado. El propietario no necesita una política aparte para
+-- esto: ya puede borrar la fila de `dives` entera si quiere (dives_delete_own
+-- en logbook.sql), lo que arrastra sus dive_collaborators por el ON DELETE
+-- CASCADE de más arriba.
+drop policy if exists "dive_collaborators_delete" on public.dive_collaborators;
+create policy "dive_collaborators_delete" on public.dive_collaborators
+  for delete using (
+    user_id = auth.uid()
+  );
+
 -- ── dive_invites ────────────────────────────────────────────────────────
 -- Un enlace de invitación "abierto" (to_user_id null) NO es legible por
 -- select directo aquí a propósito: si lo fuera, cualquier usuario podría
