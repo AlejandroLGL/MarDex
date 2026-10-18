@@ -25,6 +25,14 @@ alter table public.profiles add column if not exists cert_level text;
 -- dive_collaborators.dive_number — ahí el Nº es el suyo propio, no el del
 -- propietario de la fila). Por eso se mira lo más reciente por fecha entre
 -- sus propias inmersiones Y sus colaboraciones, no solo `dives`.
+--
+-- `where n is not null` (añadido tras un caso real): una colaboración
+-- compartida puede tener fecha más reciente que cualquier inmersión propia
+-- pero sin que el colaborador haya puesto aún su propio número (campo "tu
+-- propio número" al editar una inmersión compartida) — si esa fila sin
+-- número "ganara" por ser la más reciente, total_dives saldría NULL aunque
+-- la persona sí tenga inmersiones numeradas. Se ignoran las filas sin
+-- número y se cae a la más reciente que sí lo tenga.
 create or replace function public.get_profile_dive_stats(user_ids uuid[])
 returns table(id uuid, cert_level text, total_dives integer)
 language sql
@@ -45,6 +53,7 @@ as $$
         join public.dives d2 on d2.id = dc.dive_id
         where dc.user_id = p.id
       ) all_dives
+      where n is not null
       order by dt desc, ca desc
       limit 1
     ) as total_dives
