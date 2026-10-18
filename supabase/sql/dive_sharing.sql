@@ -276,6 +276,24 @@ create policy "dives_update_collab" on public.dives
     exists(select 1 from public.dive_collaborators c where c.dive_id = dives.id and c.user_id = auth.uid())
   );
 
+-- Pestaña "Amigos" del logbook: un amigo ve el detalle COMPLETO de tus
+-- inmersiones aunque no esté etiquetado ni sea colaborador (decisión
+-- confirmada con el usuario — no es un resumen). "Amigo" = fila aceptada
+-- en friend_requests en cualquiera de los dos sentidos (sender/receiver),
+-- mismo criterio que ya usa el frontend para "Mis amigos". Solo SELECT:
+-- un amigo nunca puede editar ni borrar tu inmersión por esta vía — para
+-- eso sigue haciendo falta etiqueta+aceptar o "Compartir inmersión".
+drop policy if exists "dives_select_friends" on public.dives;
+create policy "dives_select_friends" on public.dives
+  for select using (
+    exists(
+      select 1 from public.friend_requests fr
+      where fr.status = 'accepted'
+        and ((fr.sender_id = auth.uid() and fr.receiver_id = dives.user_id)
+          or (fr.receiver_id = auth.uid() and fr.sender_id = dives.user_id))
+    )
+  );
+
 -- ── RPCs ────────────────────────────────────────────────────────────────
 
 -- Lee una invitación por id sin permitir enumerarlas todas (ver comentario
