@@ -495,10 +495,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .frp-banner-text{ min-width:0; color:#fff; }
   .frp-banner-name{ font-size:19px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35); }
   .frp-banner-username{ font-size:13px; color:rgba(255,255,255,0.85); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
-  .frp-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
-  .frp-stat{ background:var(--bg); border-radius:12px; padding:12px 8px; text-align:center; }
-  .frp-stat-num{ font-size:22px; font-weight:800; color:var(--ocean); }
-  .frp-stat-label{ font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+  .frp-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px; }
+  .frp-stat{ background:var(--bg); border-radius:12px; padding:10px 4px; text-align:center; }
+  .frp-stat-num{ font-size:19px; font-weight:800; color:var(--ocean); }
+  .frp-stat-label{ font-size:9px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.02em; margin-top:2px; }
   .frp-section{ margin-bottom:20px; }
   .frp-section-title{ font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
   .frp-compare-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
@@ -2130,6 +2130,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-profile-text{ min-width:0; color:#fff; }
   .home-profile-name{ font-size:23px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35); }
   .home-profile-username{ font-size:15px; color:rgba(255,255,255,0.8); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
+  .home-profile-stats{
+    font-size:12px; font-weight:700; color:#fff; margin-top:4px; text-shadow:0 1px 4px rgba(0,0,0,0.35);
+    display:inline-block; padding:3px 10px; border-radius:20px; background:rgba(255,255,255,0.16);
+  }
 
   /* Carrusel: una tarjeta visible a la vez, rota sola. Mismo ancho que las
      tarjetas de arriba/abajo (sin límite propio: ocupa el 100% del contenedor).
@@ -4686,6 +4690,16 @@ async function renderProfilePage(){
         <button class="pp-row-action" id="ppChangePwBtn">Cambiar</button>
       </div>
       <div class="pp-row">
+        <span class="pp-row-label">Licencia</span>
+        <select class="pp-select" id="ppCertSelect">
+          ${CERT_LEVEL_OPTIONS.map(o=>`<option value="${o.value}" ${(acc?.cert_level||'')===o.value?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="pp-row">
+        <span class="pp-row-label">Inmersiones totales</span>
+        <span class="pp-row-value">${acc?.total_dives != null ? acc.total_dives : '—'}</span>
+      </div>
+      <div class="pp-row">
         <span class="pp-row-label">Especies desbloqueadas</span>
         <span class="pp-row-value">${unlocked} / ${totalSpecies}</span>
       </div>
@@ -4852,6 +4866,15 @@ async function renderProfilePage(){
     const { error } = await _sb.auth.updateUser({ password: newPw });
     if(error){ showToast('No se pudo cambiar la contraseña: ' + error.message, true); return; }
     showToast('Contraseña actualizada');
+  };
+
+  document.getElementById('ppCertSelect').onchange = async (e)=>{
+    const value = e.target.value;
+    const prev = currentAccountData.cert_level || '';
+    const { error } = await _sb.from('profiles').update({cert_level: value||null}).eq('id', currentAccountData.id);
+    if(error){ showToast('No se pudo guardar: ' + error.message, true); e.target.value = prev; return; }
+    currentAccountData.cert_level = value || null;
+    showToast('Licencia actualizada');
   };
 
   document.getElementById('ppEditIdentityBtn').onclick = ()=>{
@@ -5634,6 +5657,42 @@ const LANG_OPTIONS = [
   { value:'fr', label:'Français', flag:'🇫🇷' },
   { value:'de', label:'Deutsch', flag:'🇩🇪' },
 ];
+const CERT_LEVEL_OPTIONS = [
+  { value:'', label:'Sin especificar' },
+  { value:'open_water', label:'Open Water' },
+  { value:'advanced', label:'Advanced Open Water' },
+  { value:'rescue', label:'Rescue Diver' },
+  { value:'divemaster', label:'Divemaster' },
+  { value:'instructor', label:'Instructor' },
+];
+const CERT_LEVEL_LABEL = Object.fromEntries(CERT_LEVEL_OPTIONS.filter(o=>o.value).map(o=>[o.value, o.label]));
+
+// Licencia + inmersiones totales de una tanda de usuarios, para pintar en
+// sus tarjetas (amigos, perfil de amigo, tarjeta propia de Inicio). Mismo
+// patrón que fetchBannerUrls: una función aparte porque get_friends/
+// search_users/etc. no exponen estos campos.
+async function fetchProfileDiveStats(ids){
+  const uniqueIds = [...new Set((ids||[]).filter(Boolean))];
+  if(!uniqueIds.length) return {};
+  try{
+    const {data, error} = await _sb.rpc('get_profile_dive_stats', {user_ids: uniqueIds});
+    if(error || !Array.isArray(data)) return {};
+    const map = {};
+    data.forEach(row=>{ map[row.id] = {cert_level: row.cert_level||null, total_dives: row.total_dives}; });
+    return map;
+  }catch(e){ return {}; }
+}
+
+// Refresca la licencia e inmersiones totales de la propia cuenta en
+// currentAccountData — se usa para la tarjeta de Inicio y el perfil propio,
+// que las leen de ahí en vez de pedirlas cada vez.
+async function refreshMyDiveStats(){
+  if(!currentAccountData?.id) return;
+  const stats = await fetchProfileDiveStats([currentAccountData.id]);
+  const mine = stats[currentAccountData.id] || {};
+  currentAccountData.cert_level = mine.cert_level || null;
+  currentAccountData.total_dives = mine.total_dives != null ? mine.total_dives : null;
+}
 
 // Convierte una medida en metros ("1.5 m" / "0–70 m") a pies, preservando
 // el resto del texto (rangos con guion incluidos). Solo actúa sobre
@@ -6761,6 +6820,7 @@ async function loadFriendsData(){
   const friendsList = friends||[];
   const pendingList = pending||[];
   const banners = await fetchBannerUrls([...friendsList, ...pendingList].map(p=>p.id||p.sender_id));
+  const diveStats = await fetchProfileDiveStats(friendsList.map(f=>f.id));
 
   // Pending requests
   const pendingEl = document.getElementById('frPendingSection');
@@ -6797,21 +6857,26 @@ async function loadFriendsData(){
   if(friendsList.length===0){
     listEl.innerHTML += `<div class="fr-empty">Aún no tienes amigos en MarDex. ¡Búscalos por arriba!</div>`;
   } else {
-    listEl.innerHTML += friendsList.map(f=>`<div class="fr-card fr-card-clickable" data-friend-id="${f.id}">
+    listEl.innerHTML += friendsList.map(f=>{
+      const ds = diveStats[f.id] || {};
+      const certLabel = ds.cert_level && CERT_LEVEL_LABEL[ds.cert_level] ? CERT_LEVEL_LABEL[ds.cert_level] : '';
+      const divesLabel = ds.total_dives != null ? `${ds.total_dives} inmersiones` : '';
+      return `<div class="fr-card fr-card-clickable" data-friend-id="${f.id}">
       <div class="fr-card-banner" style="${bannerCardStyle({banner_url:banners[f.id]})}">
         <div class="fr-card-overlay">
           <div class="fr-card-avatar">${avatarInner(f)}</div>
           <div class="fr-card-text">
             <div class="fr-card-name">${escapeHtml(f.name||f.username)}</div>
-            <div class="fr-card-username">@${escapeHtml(f.username||'')}</div>
+            <div class="fr-card-username">@${escapeHtml(f.username||'')}${certLabel ? ' · '+escapeHtml(certLabel) : ''}</div>
           </div>
         </div>
       </div>
       <div class="fr-card-footer">
-        <div class="fr-card-stats">${f.species_count} especies · ${f.sightings_count} avistamientos · ${f.favorites_count} favoritos</div>
+        <div class="fr-card-stats">${f.species_count} especies · ${f.sightings_count} avistamientos · ${f.favorites_count} favoritos${divesLabel ? ' · '+divesLabel : ''}</div>
         <div class="fr-card-actions"><button class="fr-btn fr-btn-unfriend" data-unfriend="${f.id}">Eliminar</button></div>
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
     listEl.querySelectorAll('[data-friend-id]').forEach(row=>{
       row.onclick = e=>{ if(e.target.closest('[data-unfriend]')) return; openFriendProfile(row.dataset.friendId); };
     });
@@ -6837,6 +6902,7 @@ async function doFriendSearch(query){
   const reqMap = {};
   (requests||[]).forEach(r=>{ const other=r.sender_id===currentAccountData.id?r.receiver_id:r.sender_id; reqMap[other]={status:r.status,isSender:r.sender_id===currentAccountData.id,id:r.id}; });
   const banners = await fetchBannerUrls(users.map(u=>u.id));
+  const diveStats = await fetchProfileDiveStats(users.map(u=>u.id));
   el.innerHTML = `<div class="fr-section-title">Resultados</div>` + users.map(u=>{
     const rel = reqMap[u.id];
     let btn = '';
@@ -6844,18 +6910,21 @@ async function doFriendSearch(query){
     else if(rel.status==='accepted') btn = `<span style="font-size:11px;color:var(--lagoon);font-weight:700">Amigos</span>`;
     else if(rel.status==='pending'&&rel.isSender) btn = `<button class="fr-btn fr-btn-cancel" data-cancel="${rel.id}">Cancelar</button>`;
     else if(rel.status==='pending'&&!rel.isSender) btn = `<button class="fr-btn fr-btn-accept" data-accept="${u.id}">Aceptar</button>`;
+    const ds = diveStats[u.id] || {};
+    const certLabel = ds.cert_level && CERT_LEVEL_LABEL[ds.cert_level] ? CERT_LEVEL_LABEL[ds.cert_level] : '';
+    const divesLabel = ds.total_dives != null ? `${ds.total_dives} inmersiones` : '';
     return `<div class="fr-card">
       <div class="fr-card-banner" style="${bannerCardStyle({banner_url:banners[u.id]})}">
         <div class="fr-card-overlay">
           <div class="fr-card-avatar">${avatarInner(u)}</div>
           <div class="fr-card-text">
             <div class="fr-card-name">${escapeHtml(u.name||u.username)}</div>
-            <div class="fr-card-username">@${escapeHtml(u.username||'')}</div>
+            <div class="fr-card-username">@${escapeHtml(u.username||'')}${certLabel ? ' · '+escapeHtml(certLabel) : ''}</div>
           </div>
         </div>
       </div>
       <div class="fr-card-footer">
-        <div class="fr-card-stats">${u.species_count} especies · ${u.sightings_count} avistamientos</div>
+        <div class="fr-card-stats">${u.species_count} especies · ${u.sightings_count} avistamientos${divesLabel ? ' · '+divesLabel : ''}</div>
         <div class="fr-card-actions">${btn}</div>
       </div>
     </div>`;
@@ -6879,13 +6948,16 @@ async function openFriendProfile(friendId){
   sheet.innerHTML = `<div class="fr-header"><div class="fr-title">Cargando…</div><button class="fr-close" id="frpCloseBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
   document.getElementById('frpCloseBtn').onclick = closeFriendProfile;
 
-  const [{data, error}, banners] = await Promise.all([
+  const [{data, error}, banners, diveStats] = await Promise.all([
     _sb.rpc('get_friend_data',{friend_id:friendId}),
-    fetchBannerUrls([friendId])
+    fetchBannerUrls([friendId]),
+    fetchProfileDiveStats([friendId])
   ]);
   if(error||!data){ sheet.innerHTML += `<div class="fr-empty">No se pudo cargar el perfil.</div>`; return; }
 
   const {profile, sightings:fSightings, favorites:fFavs} = data;
+  const friendDiveStats = diveStats[friendId] || {};
+  const friendCertLabel = friendDiveStats.cert_level && CERT_LEVEL_LABEL[friendDiveStats.cert_level] ? CERT_LEVEL_LABEL[friendDiveStats.cert_level] : '';
   profile.banner_url = profile.banner_url || banners[friendId] || '';
   const fSightingsArr = fSightings||[];
   const fFavsArr = fFavs||[];
@@ -6905,7 +6977,7 @@ async function openFriendProfile(friendId){
       <div class="frp-banner-avatar">${avatarInner(profile)}</div>
       <div class="frp-banner-text">
         <div class="frp-banner-name">${escapeHtml(profile.name||profile.username)}</div>
-        <div class="frp-banner-username">@${escapeHtml(profile.username||'')}</div>
+        <div class="frp-banner-username">@${escapeHtml(profile.username||'')}${friendCertLabel ? ' · '+escapeHtml(friendCertLabel) : ''}</div>
       </div>
     </div>
   </div>
@@ -6913,6 +6985,7 @@ async function openFriendProfile(friendId){
     <div class="frp-stat"><div class="frp-stat-num">${fSpeciesIds.length}</div><div class="frp-stat-label">Especies</div></div>
     <div class="frp-stat"><div class="frp-stat-num">${fSightingsArr.length}</div><div class="frp-stat-label">Avistamientos</div></div>
     <div class="frp-stat"><div class="frp-stat-num">${fFavsArr.length}</div><div class="frp-stat-label">Favoritos</div></div>
+    <div class="frp-stat"><div class="frp-stat-num">${friendDiveStats.total_dives != null ? friendDiveStats.total_dives : '—'}</div><div class="frp-stat-label">Inmersiones</div></div>
   </div>
   <div class="frp-section">
     <div class="frp-section-title">Comparativa de colección</div>
@@ -7372,6 +7445,9 @@ function renderHomePage(){
   const bannerUrl = acc?.banner_url || '';
   const avatarUrl = acc?.avatar_url || '';
   const initial = (name[0]||'?').toUpperCase();
+  const statParts = [];
+  if(acc?.cert_level && CERT_LEVEL_LABEL[acc.cert_level]) statParts.push(CERT_LEVEL_LABEL[acc.cert_level]);
+  if(acc?.total_dives != null) statParts.push(`${acc.total_dives} inmersiones`);
 
   sheet.innerHTML = `
     <button type="button" class="home-profile-card" id="homeProfileCard">
@@ -7381,6 +7457,7 @@ function renderHomePage(){
         <div class="home-profile-text">
           <div class="home-profile-name">${escapeHtml(name)}</div>
           ${username ? `<div class="home-profile-username">${escapeHtml(username)}</div>` : ''}
+          ${statParts.length ? `<div class="home-profile-stats">${statParts.map(escapeHtml).join(' · ')}</div>` : ''}
         </div>
       </div>
     </button>
@@ -8022,6 +8099,7 @@ async function deleteDive(diveId){
   logbookView = 'list';
   renderLogbookPanel();
   showToast('Inmersión eliminada');
+  refreshMyDiveStats();
 }
 
 // Dibuja un perfil esquemático de la inmersión (descenso, fondo, paradas y
@@ -9454,6 +9532,7 @@ async function saveDive(){
     logbookView = 'detail';
     showToast('Inmersión guardada');
   }
+  refreshMyDiveStats();
   renderLogbookPanel();
 }
 
@@ -11495,6 +11574,7 @@ async function _alEnterAccount(user){
   renderEnvNav();
   renderViewToggle();
   renderGrid();
+  await refreshMyDiveStats();
   // 'explore' no necesita nada más porque renderGrid() de arriba ya la deja
   // lista, solo falta resaltarla en el dock.
   if(savedView === 'logbook') openLogbookPanel();
