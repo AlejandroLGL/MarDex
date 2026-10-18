@@ -2714,6 +2714,20 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   <input type="file" accept="image/*" id="ndcSheetScanInput" style="display:none">
 </div>
 
+<!-- Poner/cambiar mi propio Nº de inmersión en una inmersión en la que solo
+     estoy etiquetado (sin ser colaborador: ahí ya se hace desde el propio
+     formulario de edición) — ver openSetTagDiveNumberModal(). -->
+<div class="confirm-overlay" id="tagNumberOverlay">
+  <div class="confirm-box" id="tagNumberBox" style="max-width:320px;">
+    <p style="margin-bottom:14px;">Tu propio número de inmersión para esta (no afecta al de quien te etiquetó):</p>
+    <div class="field" style="margin-bottom:16px;"><input type="number" id="tagNumberInput" placeholder="Nº"></div>
+    <div class="row2">
+      <button type="button" class="btn secondary" id="tagNumberCancelBtn">Cancelar</button>
+      <button type="button" class="btn" id="tagNumberSaveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="confirm-overlay" id="homeWidgetPickerOverlay">
   <div class="confirm-box" id="homeWidgetPickerBox" style="max-width:380px;">
     <!-- populated by openHomeWidgetPicker() -->
@@ -3414,6 +3428,13 @@ let myCollabDiveNumber = null;
 // colaboración real (acceso de edición, con nº propio) de una simplemente
 // etiquetada (solo lectura, sin nº propio: ver dive_tags en dive_sharing.sql).
 let myCollabByDiveId = {};
+// Igual que myCollabByDiveId, pero para inmersiones en las que solo estoy
+// ETIQUETADO (sin ser colaborador): mi propio Nº ahí también puede no
+// coincidir con el de quien me etiquetó (dive_tags.dive_number). A
+// diferencia del de colaborador, no se sugiere solo — lo pone cada uno a
+// mano la primera vez (ver openSetSharedDiveNumberModal), así que puede
+// no existir aún para una inmersión dada (valor null/undefined en el mapa).
+let myTagByDiveId = {};
 
 // ── Editor de especies (solo admins) ────────────────────────────────────
 let adminView = 'stats';        // 'stats' | 'species' | 'speciesForm'
@@ -8054,14 +8075,17 @@ function renderHomeWidgetPickerStep2(){
 async function loadDives(){
   const sheet = document.getElementById('logbookSheet');
   sheet.innerHTML = `<div class="page-header"><div class="page-header-text"><h2>Logbook</h2></div></div><div class="zones-empty">Cargando…</div>`;
-  const [{ data, error }, { data: collabRows }] = await Promise.all([
+  const [{ data, error }, { data: collabRows }, { data: tagRows }] = await Promise.all([
     _sb.from('dives').select('*').order('date', { ascending:false }),
     _sb.from('dive_collaborators').select('dive_id, dive_number').eq('user_id', currentAccountData.id),
+    _sb.from('dive_tags').select('dive_id, dive_number').eq('tagged_user_id', currentAccountData.id),
   ]);
   if(error) showToast('Error al cargar el logbook: ' + error.message, true);
   dives = error ? [] : (data || []);
   myCollabByDiveId = {};
   (collabRows||[]).forEach(r=>{ myCollabByDiveId[r.dive_id] = r.dive_number; });
+  myTagByDiveId = {};
+  (tagRows||[]).forEach(r=>{ myTagByDiveId[r.dive_id] = r.dive_number; });
   renderLogbookPanel();
 }
 
@@ -8214,10 +8238,15 @@ function renderLogbookList(){
     // bloqueaba el update sin devolver error visible).
     const isCollaborator = !isOwner && Object.prototype.hasOwnProperty.call(myCollabByDiveId, d.id);
     const isTagOnly = !isOwner && !isCollaborator;
-    const myNum = isCollaborator ? myCollabByDiveId[d.id] : null;
+    // Para un etiquetado, el Nº del propietario no es el suyo (ver
+    // dive_tags.dive_number) — mejor no mostrar número que mostrar uno que
+    // no le pertenece: si todavía no ha puesto el suyo (openSetTagDiveNumberModal),
+    // se deja vacío en vez de caer en el del propietario.
     const numLabel = isCollaborator
-      ? (myNum!=null ? '#'+myNum : '')
-      : (d.dive_number!=null ? '#'+d.dive_number : '');
+      ? (myCollabByDiveId[d.id]!=null ? '#'+myCollabByDiveId[d.id] : '')
+      : isTagOnly
+        ? (myTagByDiveId[d.id]!=null ? '#'+myTagByDiveId[d.id] : '')
+        : (d.dive_number!=null ? '#'+d.dive_number : '');
     const metaParts = [dateLabel, ...subParts.map(p=>escapeHtml(p))].filter(Boolean);
     const cover = d.main_photo
       ? `<div class="dive-card-cover">
@@ -8231,7 +8260,7 @@ function renderLogbookList(){
         </div>`;
     const editBtn = (isOwner || isCollaborator)
       ? `<button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>`
-      : '';
+      : `<button type="button" class="dive-card-edit" data-set-tag-num="${d.id}" title="Poner tu propio número" aria-label="Poner tu propio número">Mi Nº</button>`;
     const removeBtn = isOwner
       ? `<button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>`
       : `<button type="button" class="dive-card-delete" data-leave="${d.id}" title="Quitar de mi logbook" aria-label="Quitar de mi logbook">${ICONS.trash}</button>`;
@@ -8256,7 +8285,7 @@ function renderLogbookList(){
   }).join('');
   listEl.querySelectorAll('.dive-card').forEach(card=>{
     card.onclick = (e)=>{
-      if(e.target.closest('[data-edit]') || e.target.closest('[data-delete]') || e.target.closest('[data-leave]')) return;
+      if(e.target.closest('[data-edit]') || e.target.closest('[data-delete]') || e.target.closest('[data-leave]') || e.target.closest('[data-set-tag-num]')) return;
       editingDive = dives.find(d=>d.id===card.dataset.id) || null;
       logbookView = 'detail';
       renderLogbookPanel();
@@ -8269,6 +8298,9 @@ function renderLogbookList(){
       logbookView = 'form';
       renderLogbookPanel();
     };
+  });
+  listEl.querySelectorAll('[data-set-tag-num]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); openSetTagDiveNumberModal(btn.dataset.setTagNum); };
   });
   listEl.querySelectorAll('[data-delete]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); deleteDive(btn.dataset.delete); };
@@ -8295,10 +8327,43 @@ async function leaveSharedDive(diveId){
   if(tagErr && collabErr){ showToast('Error al quitarla: ' + (collabErr.message||tagErr.message), true); return; }
   dives = dives.filter(x=>x.id!==diveId);
   delete myCollabByDiveId[diveId];
+  delete myTagByDiveId[diveId];
   if(editingDive && editingDive.id===diveId){ editingDive = null; logbookView = 'list'; }
   renderLogbookPanel();
   showToast('Inmersión quitada de tu logbook');
 }
+
+// Poner/cambiar mi propio Nº en una inmersión donde solo estoy etiquetado
+// (sin ser colaborador: ahí ya se cambia desde el formulario de edición
+// normal, con permiso real sobre la fila). Aquí no hay más acceso que ese
+// único campo — set_my_tag_dive_number es la única vía, dive_tags_update
+// solo lo permite al propietario de la inmersión.
+let tagNumberModalDiveId = null;
+function openSetTagDiveNumberModal(diveId){
+  tagNumberModalDiveId = diveId;
+  const input = document.getElementById('tagNumberInput');
+  input.value = myTagByDiveId[diveId] != null ? myTagByDiveId[diveId] : '';
+  document.getElementById('tagNumberOverlay').classList.add('open');
+  input.focus();
+}
+function closeSetTagDiveNumberModal(){
+  document.getElementById('tagNumberOverlay').classList.remove('open');
+  tagNumberModalDiveId = null;
+}
+onBackdropClose('tagNumberOverlay', closeSetTagDiveNumberModal);
+document.getElementById('tagNumberCancelBtn').onclick = closeSetTagDiveNumberModal;
+document.getElementById('tagNumberSaveBtn').onclick = async ()=>{
+  const diveId = tagNumberModalDiveId;
+  if(!diveId) return;
+  const raw = document.getElementById('tagNumberInput').value;
+  const num = raw === '' ? null : Number(raw);
+  const { error } = await _sb.rpc('set_my_tag_dive_number', { p_dive_id: diveId, p_number: num });
+  if(error){ showToast('Error al guardar tu número: ' + error.message, true); return; }
+  myTagByDiveId[diveId] = num;
+  closeSetTagDiveNumberModal();
+  renderLogbookPanel();
+  showToast('Tu número se ha guardado');
+};
 
 // Invitaciones a inmersiones compartidas que me han enviado y aún no he
 // resuelto. Se resuelven con la misma resolveDiveInvite() que usa la
@@ -8421,13 +8486,23 @@ function renderDiveDetail(){
   const body = document.getElementById('logbookBody');
   const d = editingDive || {};
   myCollabDiveNumber = null;
+  const isOwner = d.user_id === currentAccountData.id;
+  // Igual que en renderLogbookList: el Nº del propietario no es el de quien
+  // solo está etiquetado (dive_tags.dive_number) ni, en general, el de un
+  // colaborador real (dive_collaborators.dive_number) — se muestra el
+  // propio de quien mira, no el de la fila compartida. Para un etiquetado
+  // sin número propio puesto aún, se deja "—" (en vez de omitir la fila)
+  // para que haya dónde pulsar "Poner mi número".
+  const isCollaborator = !isOwner && Object.prototype.hasOwnProperty.call(myCollabByDiveId, d.id);
+  const isTagOnly = !isOwner && !isCollaborator;
+  const displayNum = isCollaborator ? myCollabByDiveId[d.id] : isTagOnly ? myTagByDiveId[d.id] : d.dive_number;
   const dateLabel = d.date ? new Date(d.date+'T00:00:00').toLocaleDateString('es-ES') : null;
   const consumption = (d.entry_pressure!=null && d.exit_pressure!=null) ? (d.entry_pressure-d.exit_pressure)+' bar' : null;
 
   // Bloques de datos agrupados como en la hoja de bitácora en papel.
   const groups = [
     ['Inmersión', [
-      ['Nº', d.dive_number],
+      ['Nº', !isOwner ? (displayNum!=null ? displayNum : '—') : d.dive_number],
       ['Fecha', dateLabel],
       ['Entrada', d.entry_time ? d.entry_time.slice(0,5) : null],
       ['Salida', d.exit_time ? d.exit_time.slice(0,5) : null],
@@ -8463,7 +8538,7 @@ function renderDiveDetail(){
       <div class="dvs-head">${escapeHtml(title)}</div>
       <div class="dvs-body">
         <div class="dvs-grid">
-          ${filled.map(([l,v])=>`<div class="dvs-item"><span class="dvs-item-label">${escapeHtml(l)}</span><span class="dvs-item-value"${l==='Nº'?' id="dvDiveNumberValue"':''}>${escapeHtml(String(v))}</span></div>`).join('')}
+          ${filled.map(([l,v])=>`<div class="dvs-item"><span class="dvs-item-label">${escapeHtml(l)}</span><span class="dvs-item-value"${l==='Nº'?' id="dvDiveNumberValue"':''}>${escapeHtml(String(v))}${l==='Nº'&&isTagOnly?` <button type="button" class="dive-card-edit" id="dvSetTagNumBtn" style="height:auto;padding:3px 10px;font-size:11px;vertical-align:middle;">${displayNum!=null?'Cambiar':'Poner'} mi número</button>`:''}</span></div>`).join('')}
         </div>
       </div>
     </div>`;
@@ -8489,7 +8564,6 @@ function renderDiveDetail(){
 
   const notesPhotos = Array.isArray(d.notes_photos) ? d.notes_photos : [];
   const profile = diveProfileSvg(d);
-  const isOwner = d.user_id === currentAccountData.id;
 
   body.innerHTML = `
     <div class="row2" style="margin-bottom:10px;">
@@ -8542,6 +8616,7 @@ function renderDiveDetail(){
   document.getElementById('dvEditBtn').onclick = ()=>{ logbookView='form'; renderLogbookPanel(); };
   document.getElementById('dvDetailDeleteBtn')?.addEventListener('click', ()=>deleteDive(d.id));
   document.getElementById('dvDetailLeaveBtn')?.addEventListener('click', ()=>leaveSharedDive(d.id));
+  document.getElementById('dvSetTagNumBtn')?.addEventListener('click', (e)=>{ e.stopPropagation(); openSetTagDiveNumberModal(d.id); });
   document.getElementById('dvShareBtn')?.addEventListener('click', ()=>openShareDiveOverlay(d));
   document.getElementById('addDiveSpeciesBtn').onclick = ()=>startAddDiveSighting(d);
   document.getElementById('dvMainPhotoView')?.addEventListener('click', e=>openLightbox(e.target.src));
