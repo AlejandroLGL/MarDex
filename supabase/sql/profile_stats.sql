@@ -19,6 +19,12 @@ alter table public.profiles add column if not exists cert_level text;
 -- cert_level ni esto (igual que pasaba con banner_url en friends_banner.sql):
 -- no están versionadas en el repo, así que en vez de tocarlas se añade esta
 -- función aparte y el frontend combina los datos.
+--
+-- La última inmersión de alguien no tiene por qué ser una propia: puede ser
+-- una compartida "tal cual" en la que colabora (ver dive_sharing.sql,
+-- dive_collaborators.dive_number — ahí el Nº es el suyo propio, no el del
+-- propietario de la fila). Por eso se mira lo más reciente por fecha entre
+-- sus propias inmersiones Y sus colaboraciones, no solo `dives`.
 create or replace function public.get_profile_dive_stats(user_ids uuid[])
 returns table(id uuid, cert_level text, total_dives integer)
 language sql
@@ -30,9 +36,16 @@ as $$
     p.id,
     p.cert_level,
     (
-      select d.dive_number from public.dives d
-      where d.user_id = p.id
-      order by d.date desc, d.created_at desc
+      select n from (
+        select d.dive_number as n, d.date as dt, d.created_at as ca
+        from public.dives d where d.user_id = p.id
+        union all
+        select dc.dive_number as n, d2.date as dt, d2.created_at as ca
+        from public.dive_collaborators dc
+        join public.dives d2 on d2.id = dc.dive_id
+        where dc.user_id = p.id
+      ) all_dives
+      order by dt desc, ca desc
       limit 1
     ) as total_dives
   from public.profiles p

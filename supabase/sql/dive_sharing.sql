@@ -60,6 +60,16 @@ create table if not exists public.dive_collaborators (
 );
 create index if not exists dive_collaborators_dive_id_idx on public.dive_collaborators(dive_id);
 
+-- El Nº de inmersión es una cuenta corrida PERSONAL de cada buceador — en
+-- una inmersión compartida "tal cual" (mismo registro, una sola fila en
+-- `dives`), la numeración de cada colaborador normalmente no coincide con
+-- la del propietario (uno puede ir por la 30, otro por la 180). dives.
+-- dive_number sigue siendo el número del propietario; este campo guarda el
+-- número de CADA colaborador para esa misma inmersión, sugerido al
+-- aceptar (ver accept_dive_invite) y editable después (ver
+-- set_my_collab_dive_number más abajo).
+alter table public.dive_collaborators add column if not exists dive_number integer;
+
 create table if not exists public.dive_invites (
   id uuid primary key default gen_random_uuid(),
   dive_id uuid not null references public.dives(id) on delete cascade,
@@ -264,6 +274,14 @@ grant execute on function public.get_dive_invite(uuid) to authenticated;
 --
 -- Devuelve el id de la inmersión resultante (la original en modo 'live', la
 -- copia nueva en modo 'copy'), o null si se rechaza.
+--
+-- El Nº de inmersión del propietario NUNCA se copia a quien acepta (ver el
+-- comentario de dive_collaborators.dive_number más arriba): se le sugiere
+-- en su lugar el siguiente de SU PROPIA numeración — el mayor dive_number
+-- entre sus propias inmersiones y sus colaboraciones en otras, +1 — tanto
+-- en modo 'live' (se guarda en dive_collaborators.dive_number) como en
+-- 'copy' (se guarda directamente como dive_number de la copia, un campo
+-- más de su propia fila, editable después como cualquier otro).
 create or replace function public.accept_dive_invite(p_invite_id uuid, p_action text)
 returns uuid
 language plpgsql
@@ -274,6 +292,7 @@ declare
   v_invite public.dive_invites;
   v_acceptor_id uuid := auth.uid();
   v_new_dive_id uuid;
+  v_next_number integer;
 begin
   if p_action not in ('accept','decline') then
     raise exception 'Acción no válida: %', p_action;
@@ -300,9 +319,16 @@ begin
     return null;
   end if;
 
+  select coalesce(max(n), 0) + 1 into v_next_number
+  from (
+    select dive_number as n from public.dives where user_id = v_acceptor_id and dive_number is not null
+    union all
+    select dive_number as n from public.dive_collaborators where user_id = v_acceptor_id and dive_number is not null
+  ) nums;
+
   if v_invite.mode = 'live' then
-    insert into public.dive_collaborators (dive_id, user_id)
-    values (v_invite.dive_id, v_acceptor_id)
+    insert into public.dive_collaborators (dive_id, user_id, dive_number)
+    values (v_invite.dive_id, v_acceptor_id, v_next_number)
     on conflict (dive_id, user_id) do nothing;
     v_new_dive_id := v_invite.dive_id;
   else
@@ -316,7 +342,7 @@ begin
       main_photo, notes_photos
     )
     select
-      v_acceptor_id, dive_number, date, entry_time, exit_time, duration_min,
+      v_acceptor_id, v_next_number, date, entry_time, exit_time, duration_min,
       site_name, dive_name, location_text, lat, lng,
       approach_type, dive_club, dive_center, seabed_type,
       water_temp, air_temp, entry_pressure, exit_pressure,
@@ -366,3 +392,22 @@ $$;
 revoke all on function public.mark_dive_invites_seen() from public;
 revoke all on function public.mark_dive_invites_seen() from anon;
 grant execute on function public.mark_dive_invites_seen() to authenticated;
+
+-- Deja a un colaborador cambiar SU PROPIO número de inmersión en una
+-- inmersión compartida "tal cual" (ver dive_collaborators.dive_number más
+-- arriba) — SECURITY DEFINER para no tener que abrir una política de
+-- UPDATE completa sobre dive_collaborators solo para este único campo.
+create or replace function public.set_my_collab_dive_number(p_dive_id uuid, p_number integer)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.dive_collaborators
+  set dive_number = p_number
+  where dive_id = p_dive_id and user_id = auth.uid();
+$$;
+
+revoke all on function public.set_my_collab_dive_number(uuid, integer) from public;
+revoke all on function public.set_my_collab_dive_number(uuid, integer) from anon;
+grant execute on function public.set_my_collab_dive_number(uuid, integer) to authenticated;
