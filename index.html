@@ -2131,8 +2131,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-profile-name{ font-size:23px; font-weight:800; text-shadow:0 1px 4px rgba(0,0,0,0.35); }
   .home-profile-username{ font-size:15px; color:rgba(255,255,255,0.8); text-shadow:0 1px 4px rgba(0,0,0,0.35); }
   .home-profile-stats{
-    font-size:12px; font-weight:700; color:#fff; margin-top:4px; text-shadow:0 1px 4px rgba(0,0,0,0.35);
-    display:inline-block; padding:3px 10px; border-radius:20px; background:rgba(255,255,255,0.16);
+    font-size:12px; font-weight:600; color:rgba(255,255,255,0.75); margin-top:3px; text-shadow:0 1px 4px rgba(0,0,0,0.35);
   }
 
   /* Carrusel: una tarjeta visible a la vez, rota sola. Mismo ancho que las
@@ -7445,9 +7444,8 @@ function renderHomePage(){
   const bannerUrl = acc?.banner_url || '';
   const avatarUrl = acc?.avatar_url || '';
   const initial = (name[0]||'?').toUpperCase();
-  const statParts = [];
-  if(acc?.cert_level && CERT_LEVEL_LABEL[acc.cert_level]) statParts.push(CERT_LEVEL_LABEL[acc.cert_level]);
-  if(acc?.total_dives != null) statParts.push(`${acc.total_dives} inmersiones`);
+  const certLabel = acc?.cert_level && CERT_LEVEL_LABEL[acc.cert_level] ? CERT_LEVEL_LABEL[acc.cert_level] : '';
+  const divesLabel = acc?.total_dives != null ? `${acc.total_dives} inmersiones` : '';
 
   sheet.innerHTML = `
     <button type="button" class="home-profile-card" id="homeProfileCard">
@@ -7456,8 +7454,8 @@ function renderHomePage(){
         <div class="home-profile-avatar">${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="">` : escapeHtml(initial)}</div>
         <div class="home-profile-text">
           <div class="home-profile-name">${escapeHtml(name)}</div>
-          ${username ? `<div class="home-profile-username">${escapeHtml(username)}</div>` : ''}
-          ${statParts.length ? `<div class="home-profile-stats">${statParts.map(escapeHtml).join(' · ')}</div>` : ''}
+          ${username ? `<div class="home-profile-username">${escapeHtml(username)}${certLabel ? ` (${escapeHtml(certLabel)})` : ''}</div>` : ''}
+          ${divesLabel ? `<div class="home-profile-stats">${escapeHtml(divesLabel)}</div>` : ''}
         </div>
       </div>
     </button>
