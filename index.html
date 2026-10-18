@@ -9065,6 +9065,103 @@ async function renderNotifPanel(){
   refreshNotifBadge();
 }
 
+// ══════════════════════════════════════════════════════════════════
+// RELLENAR DESDE FOTO DEL LOGBOOK — IA (Gemini) lee una foto de una hoja
+// de bitácora y rellena los campos del formulario que pueda leer. Mismo
+// patrón que identificar una especie por foto (supabase/functions/
+// identify-species), con su propia función aparte:
+// supabase/functions/parse-logbook-page.
+// ══════════════════════════════════════════════════════════════════
+
+// dv-number y dv-date siempre llevan puesto un valor de partida (el
+// siguiente número sugerido / la fecha de hoy) aunque el usuario no haya
+// tocado nada, así que para esos dos SÍ se sobrescribe si la IA trae algo.
+// El resto solo se rellena si el campo está vacío, para no pisar lo que el
+// usuario ya haya escrito a mano.
+const DIVE_SCAN_FIELD_MAP = [
+  ['dive_number', 'dv-number', 'always'],
+  ['date', 'dv-date', 'always'],
+  ['entry_time', 'dv-entry-time', 'empty'],
+  ['exit_time', 'dv-exit-time', 'empty'],
+  ['duration_min', 'dv-duration', 'empty'],
+  ['site_name', 'dv-site-name', 'empty'],
+  ['dive_name', 'dv-dive-name', 'empty'],
+  ['location_text', 'dv-location', 'empty'],
+  ['approach_type', 'dv-approach', 'empty'],
+  ['seabed_type', 'dv-seabed', 'empty'],
+  ['entry_pressure', 'dv-entry-pressure', 'empty'],
+  ['exit_pressure', 'dv-exit-pressure', 'empty'],
+  ['air_type', 'dv-air-type', 'empty'],
+  ['suit_type', 'dv-suit', 'empty'],
+  ['tank_liters', 'dv-tank-liters', 'empty'],
+  ['tank_material', 'dv-tank-material', 'empty'],
+  ['weight_kg', 'dv-weight', 'empty'],
+  ['water_temp', 'dv-water-temp', 'empty'],
+  ['air_temp', 'dv-air-temp', 'empty'],
+  ['visibility_m', 'dv-visibility', 'empty'],
+  ['current', 'dv-current', 'empty'],
+  ['max_depth_m', 'dv-max-depth', 'empty'],
+  ['safety_stop_m', 'dv-safety-stop', 'empty'],
+  ['deco_stop_m', 'dv-deco-stop', 'empty'],
+  ['dive_center', 'dv-center', 'empty'],
+  ['dive_club', 'dv-club', 'empty'],
+  ['notes', 'dv-notes', 'empty'],
+];
+
+function wireDiveScanLogbook(){
+  const btn = document.getElementById('dvScanLogbookBtn');
+  const input = document.getElementById('dvScanLogbookInput');
+  if(!btn || !input) return;
+  btn.onclick = ()=>input.click();
+  input.onchange = async (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    const originalLabel = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `${icon('camera','icon-sm')} Leyendo la foto…`;
+    try{
+      // Más ancho que el de identificar especies (900px): aquí lo que
+      // importa es poder leer letra pequeña/manuscrita, no solo reconocer
+      // una forma.
+      const dataUrl = await resizeImageFile(file, 1600);
+      const base64 = dataUrl.split(',')[1];
+      const { data, error } = await _sb.functions.invoke('parse-logbook-page', {
+        body: { imageBase64: base64, mimeType: 'image/jpeg' }
+      });
+      if(error){ showToast('No se pudo leer la foto del logbook ahora mismo', true); return; }
+      if(!data || typeof data !== 'object'){ showToast('No se ha podido leer nada de la foto', true); return; }
+      let filled = 0;
+      DIVE_SCAN_FIELD_MAP.forEach(([apiKey, domId, mode])=>{
+        const value = data[apiKey];
+        if(value == null || value === '') return;
+        const el = document.getElementById(domId);
+        if(!el) return;
+        if(mode === 'empty' && el.value !== '') return;
+        el.value = value;
+        // Asignar `.value` por código no dispara eventos: se disparan a
+        // mano para que se re-ejecute toda la lógica que ya depende de
+        // ellos (recalcular duración/consumo, vista previa del gráfico,
+        // quitar el gris de "vacío" en los desplegables...) en vez de
+        // duplicarla aquí.
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        filled++;
+      });
+      if(filled){
+        showToast(`Se han rellenado ${filled} campo${filled===1?'':'s'} desde la foto. Revísalos antes de guardar.`);
+      } else {
+        showToast('No se ha podido leer ningún campo con confianza de esa foto.', true);
+      }
+    }catch(err){
+      showToast('Error al leer la foto del logbook', true);
+    }finally{
+      btn.disabled = false;
+      btn.innerHTML = originalLabel;
+    }
+  };
+}
+
 function renderDiveForm(){
   const body = document.getElementById('logbookBody');
   const d = editingDive || {};
@@ -9078,6 +9175,9 @@ function renderDiveForm(){
 
   body.innerHTML = `
     <div class="new-sighting" style="margin-top:0;border-top:none;padding-top:0;">
+
+      <button type="button" class="btn secondary" id="dvScanLogbookBtn" style="width:100%;margin-bottom:16px;">${icon('camera','icon-sm')} Rellenar desde foto del logbook</button>
+      <input type="file" accept="image/*" id="dvScanLogbookInput" style="display:none">
 
       ${sec('Inmersión', `
         <div class="field-row2">
@@ -9252,6 +9352,7 @@ function wireDiveForm(){
   }
 
   wireDivePhotoPickers();
+  wireDiveScanLogbook();
 
   // Vista previa del gráfico que se actualiza según se rellenan los datos.
   const profileEl = document.getElementById('dvProfilePreview');
