@@ -33,6 +33,11 @@ alter table public.profiles add column if not exists cert_level text;
 -- número "ganara" por ser la más reciente, total_dives saldría NULL aunque
 -- la persona sí tenga inmersiones numeradas. Se ignoran las filas sin
 -- número y se cae a la más reciente que sí lo tenga.
+--
+-- Tercera fuente (dive_tags): estar solo ETIQUETADO en la inmersión de
+-- otro, sin ser colaborador, también puede llevar un Nº propio puesto a
+-- mano (ver dive_tags.dive_number / set_my_tag_dive_number en
+-- dive_sharing.sql) — se cuenta igual que una colaboración para esto.
 create or replace function public.get_profile_dive_stats(user_ids uuid[])
 returns table(id uuid, cert_level text, total_dives integer)
 language sql
@@ -52,6 +57,11 @@ as $$
         from public.dive_collaborators dc
         join public.dives d2 on d2.id = dc.dive_id
         where dc.user_id = p.id
+        union all
+        select dt.dive_number as n, d3.date as dt, d3.created_at as ca
+        from public.dive_tags dt
+        join public.dives d3 on d3.id = dt.dive_id
+        where dt.tagged_user_id = p.id
       ) all_dives
       where n is not null
       order by dt desc, ca desc

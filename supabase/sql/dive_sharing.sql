@@ -51,6 +51,15 @@ create table if not exists public.dive_tags (
 create index if not exists dive_tags_dive_id_idx on public.dive_tags(dive_id);
 create index if not exists dive_tags_tagged_user_id_idx on public.dive_tags(tagged_user_id);
 
+-- Mismo motivo que dive_collaborators.dive_number más abajo: a quien solo
+-- está ETIQUETADO (sin ser colaborador — no tiene por qué haber aceptado
+-- compartir la edición) tampoco tiene por qué coincidirle el Nº de
+-- inmersión con el de quien le etiquetó. Nunca se sugiere un valor aquí
+-- (a diferencia de dive_collaborators, no hay un "aceptar" al que
+-- enganchar la sugerencia): lo pone la propia persona a mano la primera
+-- vez que quiere verlo en su numeración, vía set_my_tag_dive_number.
+alter table public.dive_tags add column if not exists dive_number integer;
+
 create table if not exists public.dive_collaborators (
   id uuid primary key default gen_random_uuid(),
   dive_id uuid not null references public.dives(id) on delete cascade,
@@ -337,6 +346,8 @@ begin
     select dive_number as n from public.dives where user_id = v_acceptor_id and dive_number is not null
     union all
     select dive_number as n from public.dive_collaborators where user_id = v_acceptor_id and dive_number is not null
+    union all
+    select dive_number as n from public.dive_tags where tagged_user_id = v_acceptor_id and dive_number is not null
   ) nums;
 
   if v_invite.mode = 'live' then
@@ -424,3 +435,23 @@ $$;
 revoke all on function public.set_my_collab_dive_number(uuid, integer) from public;
 revoke all on function public.set_my_collab_dive_number(uuid, integer) from anon;
 grant execute on function public.set_my_collab_dive_number(uuid, integer) to authenticated;
+
+-- Mismo mecanismo que set_my_collab_dive_number, pero para quien solo está
+-- ETIQUETADO en la inmersión (sin ser colaborador): su Nº tampoco tiene por
+-- qué coincidir con el de quien le etiquetó, y dive_tags_update (más
+-- arriba) solo lo puede tocar el propietario — por eso hace falta esta
+-- función aparte en vez de dejarle hacer un update normal.
+create or replace function public.set_my_tag_dive_number(p_dive_id uuid, p_number integer)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.dive_tags
+  set dive_number = p_number
+  where dive_id = p_dive_id and tagged_user_id = auth.uid();
+$$;
+
+revoke all on function public.set_my_tag_dive_number(uuid, integer) from public;
+revoke all on function public.set_my_tag_dive_number(uuid, integer) from anon;
+grant execute on function public.set_my_tag_dive_number(uuid, integer) to authenticated;
