@@ -1,0 +1,44 @@
+-- ============================================================================
+-- MarDex — Licencia/nivel de buceo e inmersiones totales en la tarjeta de
+-- cada persona (perfil propio, tarjetas de amigos, perfil de amigo).
+-- Ejecutar en Supabase Studio → SQL Editor. Idempotente.
+--
+-- "Inmersiones totales" NO es un recuento de filas en `dives` (eso ya se
+-- usa para el ranking en ranking_global.sql, con otro propósito): aquí se
+-- pide expresamente el número (`dive_number`) de la ÚLTIMA inmersión
+-- registrada por fecha, porque ese número lo lleva cada buceador como
+-- cuenta corrida propia desde antes de usar MarDex si hace falta (p. ej.
+-- si ya llevaba 150 inmersiones al apuntarse, sigue numerando desde 151 en
+-- vez de reiniciar en 1). Si hay empate de fecha, se desempata por
+-- created_at desc (la introducida más recientemente en MarDex).
+-- ============================================================================
+
+alter table public.profiles add column if not exists cert_level text;
+
+-- get_friends/search_users/get_pending_requests/get_friend_data no exponen
+-- cert_level ni esto (igual que pasaba con banner_url en friends_banner.sql):
+-- no están versionadas en el repo, así que en vez de tocarlas se añade esta
+-- función aparte y el frontend combina los datos.
+create or replace function public.get_profile_dive_stats(user_ids uuid[])
+returns table(id uuid, cert_level text, total_dives integer)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    p.id,
+    p.cert_level,
+    (
+      select d.dive_number from public.dives d
+      where d.user_id = p.id
+      order by d.date desc, d.created_at desc
+      limit 1
+    ) as total_dives
+  from public.profiles p
+  where p.id = any(user_ids);
+$$;
+
+revoke all on function public.get_profile_dive_stats(uuid[]) from public;
+revoke all on function public.get_profile_dive_stats(uuid[]) from anon;
+grant execute on function public.get_profile_dive_stats(uuid[]) to authenticated;
