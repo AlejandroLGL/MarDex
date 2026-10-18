@@ -2140,6 +2140,10 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   .home-profile-stats{
     font-size:12px; font-weight:600; color:rgba(255,255,255,0.75); margin-top:3px; text-shadow:0 1px 4px rgba(0,0,0,0.35);
   }
+  /* Licencia junto al nombre (no al @usuario), en tarjetas sobre foto de
+     banner con texto blanco (tarjeta de Inicio, amigos, perfil de amigo):
+     más gris y sin negrita para distinguirse del nombre en negrita. */
+  .person-cert-inline{ font-weight:500; font-size:0.7em; color:rgba(255,255,255,0.62); }
 
   /* Carrusel: una tarjeta visible a la vez, rota sola. Mismo ancho que las
      tarjetas de arriba/abajo (sin límite propio: ocupa el 100% del contenedor).
@@ -5670,9 +5674,12 @@ const LANG_OPTIONS = [
 ];
 const CERT_LEVEL_OPTIONS = [
   { value:'', label:'Sin especificar' },
-  { value:'open_water', label:'Open Water' },
-  { value:'advanced', label:'Advanced Open Water' },
+  { value:'open_water', label:'Open Water Diver' },
+  { value:'advanced_adventurer', label:'Advanced Adventurer' },
+  { value:'advanced', label:'Advanced Open Water Diver' },
+  { value:'stress_rescue', label:'Stress & Rescue' },
   { value:'rescue', label:'Rescue Diver' },
+  { value:'dive_guide', label:'Dive Guide' },
   { value:'divemaster', label:'Divemaster' },
   { value:'instructor', label:'Instructor' },
 ];
@@ -6877,8 +6884,8 @@ async function loadFriendsData(){
         <div class="fr-card-overlay">
           <div class="fr-card-avatar">${avatarInner(f)}</div>
           <div class="fr-card-text">
-            <div class="fr-card-name">${escapeHtml(f.name||f.username)}</div>
-            <div class="fr-card-username">@${escapeHtml(f.username||'')}${certLabel ? ' · '+escapeHtml(certLabel) : ''}</div>
+            <div class="fr-card-name">${escapeHtml(f.name||f.username)}${certLabel ? ` <span class="person-cert-inline">(${escapeHtml(certLabel)})</span>` : ''}</div>
+            <div class="fr-card-username">@${escapeHtml(f.username||'')}</div>
           </div>
         </div>
       </div>
@@ -6929,8 +6936,8 @@ async function doFriendSearch(query){
         <div class="fr-card-overlay">
           <div class="fr-card-avatar">${avatarInner(u)}</div>
           <div class="fr-card-text">
-            <div class="fr-card-name">${escapeHtml(u.name||u.username)}</div>
-            <div class="fr-card-username">@${escapeHtml(u.username||'')}${certLabel ? ' · '+escapeHtml(certLabel) : ''}</div>
+            <div class="fr-card-name">${escapeHtml(u.name||u.username)}${certLabel ? ` <span class="person-cert-inline">(${escapeHtml(certLabel)})</span>` : ''}</div>
+            <div class="fr-card-username">@${escapeHtml(u.username||'')}</div>
           </div>
         </div>
       </div>
@@ -6987,8 +6994,8 @@ async function openFriendProfile(friendId){
     <div class="frp-banner-overlay">
       <div class="frp-banner-avatar">${avatarInner(profile)}</div>
       <div class="frp-banner-text">
-        <div class="frp-banner-name">${escapeHtml(profile.name||profile.username)}</div>
-        <div class="frp-banner-username">@${escapeHtml(profile.username||'')}${friendCertLabel ? ' · '+escapeHtml(friendCertLabel) : ''}</div>
+        <div class="frp-banner-name">${escapeHtml(profile.name||profile.username)}${friendCertLabel ? ` <span class="person-cert-inline">(${escapeHtml(friendCertLabel)})</span>` : ''}</div>
+        <div class="frp-banner-username">@${escapeHtml(profile.username||'')}</div>
       </div>
     </div>
   </div>
@@ -7465,8 +7472,8 @@ function renderHomePage(){
       <div class="home-profile-overlay">
         <div class="home-profile-avatar">${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="">` : escapeHtml(initial)}</div>
         <div class="home-profile-text">
-          <div class="home-profile-name">${escapeHtml(name)}</div>
-          ${username ? `<div class="home-profile-username">${escapeHtml(username)}${certLabel ? ` (${escapeHtml(certLabel)})` : ''}</div>` : ''}
+          <div class="home-profile-name">${escapeHtml(name)}${certLabel ? ` <span class="person-cert-inline">(${escapeHtml(certLabel)})</span>` : ''}</div>
+          ${username ? `<div class="home-profile-username">${escapeHtml(username)}</div>` : ''}
           ${divesLabel ? `<div class="home-profile-stats">${escapeHtml(divesLabel)}</div>` : ''}
         </div>
       </div>
