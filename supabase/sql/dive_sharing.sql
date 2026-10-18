@@ -5,9 +5,10 @@
 --
 -- Tres tablas nuevas:
 --   - dive_tags: etiqueta a otro usuario de MarDex en una inmersión, con un
---     rol (compañero/instructor/divemaster/otro). Solo informativa — no da
---     acceso por sí sola a la inmersión más que para quien está etiquetado
---     (lectura, para que vea que le han mencionado).
+--     rol (compañero/instructor/divemaster/otro). Desde que se añadió
+--     dive_tags.status (más abajo), etiquetar ya NO da acceso de lectura
+--     inmediato: la persona etiquetada tiene que aceptar la etiqueta
+--     primero (accept_dive_tag/decline_dive_tag), igual que una invitación.
 --   - dive_collaborators: representa el modo "compartir tal cual" (edición
 --     compartida). Se rellena desde accept_dive_invite(), nunca a mano desde
 --     el cliente, por eso no tiene políticas de insert/update/delete para
@@ -59,6 +60,29 @@ create index if not exists dive_tags_tagged_user_id_idx on public.dive_tags(tagg
 -- enganchar la sugerencia): lo pone la propia persona a mano la primera
 -- vez que quiere verlo en su numeración, vía set_my_tag_dive_number.
 alter table public.dive_tags add column if not exists dive_number integer;
+
+-- Ciclo de vida de una etiqueta — igual que dive_invites, pero sin tabla
+-- aparte: etiquetar a alguien ya no le da acceso de lectura inmediato
+-- (ver dives_select_tagged_or_collab más abajo, que ahora exige
+-- status='accepted'); la persona etiquetada tiene que aceptar antes de que
+-- la inmersión le aparezca en el logbook. 'forked': la persona etiquetada
+-- editó algo que no era su propio Nº y se le creó una copia independiente
+-- (ver fork_tagged_dive) — deja de tener sentido seguir dándole acceso a
+-- la fila original por esta vía, pero se conserva la fila (no se borra)
+-- para que el propietario siga viendo el historial de quién estuvo
+-- etiquetado en sus chips de compañeros.
+--
+-- Backfill explícito: las etiquetas creadas ANTES de esta columna ya daban
+-- acceso inmediato (ese era el comportamiento de antes) — se marcan como
+-- 'accepted' antes de imponer el default 'pending', para no hacer
+-- desaparecer de ningún logbook una inmersión que ya se veía.
+alter table public.dive_tags add column if not exists status text;
+update public.dive_tags set status = 'accepted' where status is null;
+alter table public.dive_tags alter column status set default 'pending';
+alter table public.dive_tags alter column status set not null;
+alter table public.dive_tags drop constraint if exists dive_tags_status_check;
+alter table public.dive_tags add constraint dive_tags_status_check
+  check (status in ('pending','accepted','declined','forked'));
 
 create table if not exists public.dive_collaborators (
   id uuid primary key default gen_random_uuid(),
@@ -232,10 +256,13 @@ create policy "dive_invites_delete" on public.dive_invites
   for delete using (from_user_id = auth.uid());
 
 -- ── dives: acceso ampliado a etiquetados/colaboradores ─────────────────
+-- `and t.status = 'accepted'`: una etiqueta pendiente/rechazada/con fork ya
+-- hecho no da acceso de lectura — solo una aceptada (ver el ciclo de vida
+-- en el comentario de dive_tags.status más arriba).
 drop policy if exists "dives_select_tagged_or_collab" on public.dives;
 create policy "dives_select_tagged_or_collab" on public.dives
   for select using (
-    exists(select 1 from public.dive_tags t where t.dive_id = dives.id and t.tagged_user_id = auth.uid())
+    exists(select 1 from public.dive_tags t where t.dive_id = dives.id and t.tagged_user_id = auth.uid() and t.status = 'accepted')
     or exists(select 1 from public.dive_collaborators c where c.dive_id = dives.id and c.user_id = auth.uid())
   );
 
@@ -455,3 +482,153 @@ $$;
 revoke all on function public.set_my_tag_dive_number(uuid, integer) from public;
 revoke all on function public.set_my_tag_dive_number(uuid, integer) from anon;
 grant execute on function public.set_my_tag_dive_number(uuid, integer) to authenticated;
+
+-- Vista previa de mis etiquetas pendientes (para la tarjeta de "X te ha
+-- etiquetado..." antes de aceptar). A diferencia de dive_invites, dive_tags
+-- no guarda un snapshot propio (dive_summary) con el nombre de quien
+-- etiqueta y datos de la inmersión — y ahora que una etiqueta pendiente ya
+-- NO da acceso de lectura a `dives` (ver dives_select_tagged_or_collab),
+-- el cliente no podría leer esos datos por su cuenta. SECURITY DEFINER para
+-- leer `dives`/`profiles` de quien etiquetó sin pasar por su RLS, limitado
+-- a lo justo para la tarjeta (nunca toda la fila de `dives`).
+create or replace function public.get_pending_dive_tags()
+returns table(
+  id uuid, dive_id uuid, role text, created_at timestamptz,
+  owner_name text, owner_username text,
+  dive_date date, dive_site_name text, dive_dive_name text
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    t.id, t.dive_id, t.role, t.created_at,
+    p.name as owner_name, p.username as owner_username,
+    d.date as dive_date, d.site_name as dive_site_name, d.dive_name as dive_dive_name
+  from public.dive_tags t
+  join public.dives d on d.id = t.dive_id
+  join public.profiles p on p.id = d.user_id
+  where t.tagged_user_id = auth.uid() and t.status = 'pending'
+  order by t.created_at desc;
+$$;
+
+revoke all on function public.get_pending_dive_tags() from public;
+revoke all on function public.get_pending_dive_tags() from anon;
+grant execute on function public.get_pending_dive_tags() to authenticated;
+
+-- Acepta/rechaza una etiqueta — mismo papel que accept_dive_invite pero
+-- para dive_tags. SECURITY DEFINER porque dive_tags_update (más arriba)
+-- solo lo puede tocar el propietario de la inmersión, no quien está
+-- etiquetado. Solo puede resolver una etiqueta 'pending' — ya aceptada,
+-- rechazada o con fork hecho no se puede volver a tocar por aquí.
+create or replace function public.accept_dive_tag(p_tag_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.dive_tags
+  set status = 'accepted'
+  where id = p_tag_id and tagged_user_id = auth.uid() and status = 'pending';
+  if not found then
+    raise exception 'Etiqueta no encontrada o ya resuelta';
+  end if;
+end;
+$$;
+
+revoke all on function public.accept_dive_tag(uuid) from public;
+revoke all on function public.accept_dive_tag(uuid) from anon;
+grant execute on function public.accept_dive_tag(uuid) to authenticated;
+
+create or replace function public.decline_dive_tag(p_tag_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.dive_tags
+  set status = 'declined'
+  where id = p_tag_id and tagged_user_id = auth.uid() and status = 'pending';
+  if not found then
+    raise exception 'Etiqueta no encontrada o ya resuelta';
+  end if;
+end;
+$$;
+
+revoke all on function public.decline_dive_tag(uuid) from public;
+revoke all on function public.decline_dive_tag(uuid) from anon;
+grant execute on function public.decline_dive_tag(uuid) to authenticated;
+
+-- Si alguien solo etiquetado (no colaborador real) edita cualquier campo
+-- que no sea su propio Nº, la inmersión deja de ser "compartida" para él y
+-- pasa a ser una copia independiente — nunca se toca la fila original del
+-- propietario. p_payload trae el mismo shape que ya construye
+-- readDiveForm() en el cliente (incluye dive_number, pero se ignora: el Nº
+-- de la copia es el que la persona ya tenía puesto en su propia etiqueta,
+-- vía set_my_tag_dive_number — no el del formulario). Mismo patrón de clonado
+-- de sightings que el modo 'copy' de accept_dive_invite.
+create or replace function public.fork_tagged_dive(p_dive_id uuid, p_payload jsonb)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_tag public.dive_tags;
+  v_new_dive_id uuid;
+begin
+  select * into v_tag from public.dive_tags
+  where dive_id = p_dive_id and tagged_user_id = auth.uid() and status = 'accepted';
+  if v_tag.id is null then
+    raise exception 'No tienes una etiqueta aceptada en esta inmersión';
+  end if;
+
+  insert into public.dives (
+    user_id, dive_number, date, entry_time, exit_time, duration_min,
+    site_name, dive_name, location_text, lat, lng,
+    approach_type, dive_club, dive_center, seabed_type,
+    water_temp, air_temp, entry_pressure, exit_pressure,
+    buddy, notes, suit_type, air_type, current, visibility_m,
+    max_depth_m, safety_stop_m, deco_stop_m, weight_kg, tank_liters, tank_material,
+    main_photo, notes_photos
+  )
+  values (
+    auth.uid(), v_tag.dive_number,
+    (p_payload->>'date')::date,
+    nullif(p_payload->>'entry_time','')::time,
+    nullif(p_payload->>'exit_time','')::time,
+    (p_payload->>'duration_min')::numeric,
+    p_payload->>'site_name', p_payload->>'dive_name', p_payload->>'location_text',
+    (p_payload->>'lat')::double precision, (p_payload->>'lng')::double precision,
+    p_payload->>'approach_type', p_payload->>'dive_club', p_payload->>'dive_center', p_payload->>'seabed_type',
+    (p_payload->>'water_temp')::numeric, (p_payload->>'air_temp')::numeric,
+    (p_payload->>'entry_pressure')::numeric, (p_payload->>'exit_pressure')::numeric,
+    p_payload->>'buddy', p_payload->>'notes', p_payload->>'suit_type', p_payload->>'air_type',
+    p_payload->>'current', (p_payload->>'visibility_m')::numeric,
+    (p_payload->>'max_depth_m')::numeric, (p_payload->>'safety_stop_m')::numeric, (p_payload->>'deco_stop_m')::numeric,
+    (p_payload->>'weight_kg')::numeric, (p_payload->>'tank_liters')::numeric, p_payload->>'tank_material',
+    p_payload->>'main_photo', coalesce(p_payload->'notes_photos', '[]'::jsonb)
+  )
+  returning id into v_new_dive_id;
+
+  insert into public.sightings (
+    species_id, title, location_text, comment, lat, lng, date, environment,
+    photo, size_observed, depth_observed, dive_id, user_id
+  )
+  select
+    species_id, title, location_text, comment, lat, lng, date, environment,
+    photo, size_observed, depth_observed, v_new_dive_id, auth.uid()
+  from public.sightings where dive_id = p_dive_id;
+
+  update public.dive_tags set status = 'forked' where id = v_tag.id;
+
+  return v_new_dive_id;
+end;
+$$;
+
+revoke all on function public.fork_tagged_dive(uuid, jsonb) from public;
+revoke all on function public.fork_tagged_dive(uuid, jsonb) from anon;
+grant execute on function public.fork_tagged_dive(uuid, jsonb) to authenticated;

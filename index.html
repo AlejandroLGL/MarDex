@@ -8078,7 +8078,10 @@ async function loadDives(){
   const [{ data, error }, { data: collabRows }, { data: tagRows }] = await Promise.all([
     _sb.from('dives').select('*').order('date', { ascending:false }),
     _sb.from('dive_collaborators').select('dive_id, dive_number').eq('user_id', currentAccountData.id),
-    _sb.from('dive_tags').select('dive_id, dive_number').eq('tagged_user_id', currentAccountData.id),
+    // Solo las aceptadas: una pendiente/rechazada/con fork ya hecho no da
+    // acceso de lectura a `dives` (ver dives_select_tagged_or_collab en
+    // dive_sharing.sql), así que no debe contar como "tengo acceso" aquí.
+    _sb.from('dive_tags').select('dive_id, dive_number').eq('tagged_user_id', currentAccountData.id).eq('status', 'accepted'),
   ]);
   if(error) showToast('Error al cargar el logbook: ' + error.message, true);
   dives = error ? [] : (data || []);
@@ -8206,6 +8209,7 @@ function renderLogbookList(){
   const body = document.getElementById('logbookBody');
   body.innerHTML = `
     <div id="logbookPendingInvites" style="margin-bottom:16px;"></div>
+    <div id="logbookPendingTags" style="margin-bottom:16px;"></div>
     <button type="button" class="btn" id="newDiveBtn" style="margin-bottom:16px;">${icon('plus','icon-sm')} Nueva inmersión</button>
     <div class="dive-card-list" id="diveCardList"></div>
   `;
@@ -8219,6 +8223,7 @@ function renderLogbookList(){
     }
   };
   loadPendingDiveInvites();
+  loadPendingDiveTags();
 
   const listEl = document.getElementById('diveCardList');
   if(!dives.length){
@@ -8258,12 +8263,19 @@ function renderLogbookList(){
           ${icon('anchor','icon-sm')}
           ${numLabel ? `<div class="dive-card-cover-num">${numLabel}</div>` : ''}
         </div>`;
-    const editBtn = (isOwner || isCollaborator)
-      ? `<button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>`
-      : `<button type="button" class="dive-card-edit" data-set-tag-num="${d.id}" title="Poner tu propio número" aria-label="Poner tu propio número">Mi Nº</button>`;
+    // isTagOnly ya solo puede llegar aquí con status='accepted' (loadDives
+    // filtra myTagByDiveId a aceptadas) — por eso ya puede mostrar "Editar"
+    // de verdad: al guardar, saveDive() decide fork si cambia algo que no
+    // sea el número (ver dive_sharing.sql, fork_tagged_dive).
+    const editBtn = `<button type="button" class="dive-card-edit" data-edit="${d.id}" title="Editar inmersión" aria-label="Editar inmersión">Editar</button>`;
+    const tagNumBtn = isTagOnly
+      ? `<button type="button" class="dive-card-edit" data-set-tag-num="${d.id}" title="Poner tu propio número" aria-label="Poner tu propio número">Mi Nº</button>`
+      : '';
     const removeBtn = isOwner
       ? `<button type="button" class="dive-card-delete" data-delete="${d.id}" title="Eliminar inmersión" aria-label="Eliminar inmersión">${ICONS.trash}</button>`
-      : `<button type="button" class="dive-card-delete" data-leave="${d.id}" title="Quitar de mi logbook" aria-label="Quitar de mi logbook">${ICONS.trash}</button>`;
+      : isCollaborator
+        ? `<button type="button" class="dive-card-delete" data-leave="${d.id}" title="Quitar de mi logbook" aria-label="Quitar de mi logbook">${ICONS.trash}</button>`
+        : `<button type="button" class="dive-card-delete" data-untag="${d.id}" title="Quitar mi etiqueta" aria-label="Quitar mi etiqueta">${ICONS.trash}</button>`;
     return `<div class="dive-card" data-id="${d.id}">
       ${cover}
       <div class="dive-card-content">
@@ -8278,6 +8290,7 @@ function renderLogbookList(){
         ${d.max_depth_m!=null ? `<div class="dive-card-depth">${d.max_depth_m} m</div>` : '<div></div>'}
         <div class="dive-card-actions">
           ${editBtn}
+          ${tagNumBtn}
           ${removeBtn}
         </div>
       </div>
@@ -8285,7 +8298,7 @@ function renderLogbookList(){
   }).join('');
   listEl.querySelectorAll('.dive-card').forEach(card=>{
     card.onclick = (e)=>{
-      if(e.target.closest('[data-edit]') || e.target.closest('[data-delete]') || e.target.closest('[data-leave]') || e.target.closest('[data-set-tag-num]')) return;
+      if(e.target.closest('[data-edit]') || e.target.closest('[data-delete]') || e.target.closest('[data-leave]') || e.target.closest('[data-untag]') || e.target.closest('[data-set-tag-num]')) return;
       editingDive = dives.find(d=>d.id===card.dataset.id) || null;
       logbookView = 'detail';
       renderLogbookPanel();
@@ -8305,32 +8318,48 @@ function renderLogbookList(){
   listEl.querySelectorAll('[data-delete]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); deleteDive(btn.dataset.delete); };
   });
+  listEl.querySelectorAll('[data-untag]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); untagMyself(btn.dataset.untag); };
+  });
   listEl.querySelectorAll('[data-leave]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); leaveSharedDive(btn.dataset.leave); };
   });
 }
 
-// Quitar una inmersión compartida de mi propio logbook, sin tocar la del
-// propietario: se borra únicamente mi vínculo con ella (mi fila en
-// dive_tags si solo estoy etiquetado, o en dive_collaborators si soy
-// colaborador real) — nunca la fila de `dives` en sí, que no es mía. Se
-// intentan los dos borrados a la vez en vez de comprobar antes cuál aplica:
-// el que no me corresponde simplemente no afecta a ninguna fila (0 filas
-// borradas no es un error), así que es más simple que mirarlo primero.
+// Dejar de ser colaborador real (dive_collaborators) de una inmersión
+// compartida "tal cual" — nunca toca la fila de `dives` en sí, que sigue
+// siendo del propietario. Distinto de untagMyself (más abajo): esto es
+// solo para el modo "Compartir inmersión" (dive_invites → live), no para
+// una simple etiqueta.
 async function leaveSharedDive(diveId){
   const ok = await askConfirm('¿Quitar esta inmersión de tu logbook? Solo desaparece de tu vista — la persona que la creó sigue teniendo la suya.');
   if(!ok) return;
-  const [{error: tagErr}, {error: collabErr}] = await Promise.all([
-    _sb.from('dive_tags').delete().eq('dive_id', diveId).eq('tagged_user_id', currentAccountData.id),
-    _sb.from('dive_collaborators').delete().eq('dive_id', diveId).eq('user_id', currentAccountData.id),
-  ]);
-  if(tagErr && collabErr){ showToast('Error al quitarla: ' + (collabErr.message||tagErr.message), true); return; }
+  const { error } = await _sb.from('dive_collaborators').delete().eq('dive_id', diveId).eq('user_id', currentAccountData.id);
+  if(error){ showToast('Error al quitarla: ' + error.message, true); return; }
   dives = dives.filter(x=>x.id!==diveId);
   delete myCollabByDiveId[diveId];
-  delete myTagByDiveId[diveId];
   if(editingDive && editingDive.id===diveId){ editingDive = null; logbookView = 'list'; }
   renderLogbookPanel();
   showToast('Inmersión quitada de tu logbook');
+}
+
+// Quitarse una etiqueta (dive_tags) — a diferencia de leaveSharedDive, esto
+// se puede hacer tenga el estado que tenga (pendiente, aceptada...): no
+// depende de que la inmersión esté hoy en `dives`/myTagByDiveId. Mensaje de
+// confirmación exacto pedido por el usuario — al quitarla, el propietario
+// tendría que volver a etiquetar desde cero (no hay invitación que
+// reenviar, es la propia etiqueta la que ya no existe).
+async function untagMyself(diveId){
+  const ok = await askConfirm('¿Estás seguro de que quieres quitar tu etiqueta? Si lo haces, el autor de la inmersión deberá volver a invitarte a la inmersión como compañero.');
+  if(!ok) return;
+  const { error } = await _sb.from('dive_tags').delete().eq('dive_id', diveId).eq('tagged_user_id', currentAccountData.id);
+  if(error){ showToast('Error al quitar la etiqueta: ' + error.message, true); return; }
+  dives = dives.filter(x=>x.id!==diveId);
+  delete myTagByDiveId[diveId];
+  if(editingDive && editingDive.id===diveId){ editingDive = null; logbookView = 'list'; }
+  renderLogbookPanel();
+  loadPendingDiveTags();
+  showToast('Etiqueta quitada');
 }
 
 // Poner/cambiar mi propio Nº en una inmersión donde solo estoy etiquetado
@@ -8407,6 +8436,55 @@ async function loadPendingDiveInvites(){
   el.querySelectorAll('[data-invite-reject]').forEach(btn=>{
     btn.onclick = ()=>resolveDiveInvite(btn.dataset.inviteReject, 'decline');
   });
+}
+
+// Etiquetas pendientes de aceptar/rechazar — mismo patrón visual que
+// loadPendingDiveInvites, pero la vista previa (nombre de quien etiqueta,
+// lugar/fecha de la inmersión) viene de get_pending_dive_tags() en vez de
+// un snapshot guardado en la propia fila: una etiqueta pendiente ya no da
+// acceso de lectura a `dives`, así que el cliente no podría leerlo de otra
+// forma (ver dive_sharing.sql).
+async function loadPendingDiveTags(){
+  const el = document.getElementById('logbookPendingTags');
+  if(!el) return;
+  const { data, error } = await _sb.rpc('get_pending_dive_tags');
+  if(error || !data || !data.length){ el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="fr-section-title">Etiquetas pendientes <span class="fr-pending-badge">${data.length}</span></div>` +
+    data.map(t=>{
+      const label = t.dive_dive_name || t.dive_site_name || 'Una inmersión';
+      const dateLabel = t.dive_date ? new Date(t.dive_date+'T00:00:00').toLocaleDateString('es-ES') : '';
+      return `<div class="fr-card">
+        <div class="fr-card-banner">
+          <div class="fr-card-overlay">
+            <div class="fr-card-avatar">${avatarInner({name:t.owner_name})}</div>
+            <div class="fr-card-text">
+              <div class="fr-card-name">${escapeHtml(t.owner_name || 'Alguien')}</div>
+              <div class="fr-card-username">${escapeHtml(label)}${dateLabel?' · '+dateLabel:''}</div>
+            </div>
+          </div>
+        </div>
+        <div class="fr-card-footer">
+          <div class="fr-card-stats">Te ha etiquetado como compañero</div>
+          <div class="fr-card-actions">
+            <button class="fr-btn fr-btn-accept" data-tag-accept="${t.id}">Aceptar</button>
+            <button class="fr-btn fr-btn-reject" data-tag-reject="${t.id}">Rechazar</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  el.querySelectorAll('[data-tag-accept]').forEach(btn=>{
+    btn.onclick = ()=>resolveDiveTag(btn.dataset.tagAccept, 'accept');
+  });
+  el.querySelectorAll('[data-tag-reject]').forEach(btn=>{
+    btn.onclick = ()=>resolveDiveTag(btn.dataset.tagReject, 'decline');
+  });
+}
+async function resolveDiveTag(tagId, action){
+  const { error } = await _sb.rpc(action==='accept' ? 'accept_dive_tag' : 'decline_dive_tag', { p_tag_id: tagId });
+  if(error){ showToast('Error: ' + error.message, true); return; }
+  showToast(action==='accept' ? 'Etiqueta aceptada' : 'Etiqueta rechazada');
+  refreshNotifBadge();
+  await loadDives();
 }
 
 // Borrado de inmersión, compartido por la lista y por el detalle.
@@ -8565,12 +8643,22 @@ function renderDiveDetail(){
   const notesPhotos = Array.isArray(d.notes_photos) ? d.notes_photos : [];
   const profile = diveProfileSvg(d);
 
+  // isTagOnly aquí ya es siempre 'accepted' (loadDives filtra), así que
+  // Editar tiene siempre un destino válido: en sitio si es colaborador,
+  // con fork si solo está etiquetado (ver saveDive).
+  const canEdit = isOwner || isCollaborator || isTagOnly;
+  const removeActionBtn = isOwner
+    ? `<button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>`
+    : isCollaborator
+      ? `<button type="button" class="pp-logout" id="dvDetailLeaveBtn" style="margin:0 0 16px;">Quitar de mi logbook</button>`
+      : `<button type="button" class="pp-logout" id="dvDetailUntagBtn" style="margin:0 0 16px;">Quitar mi etiqueta</button>`;
+
   body.innerHTML = `
     <div class="row2" style="margin-bottom:10px;">
       <button type="button" class="btn secondary" id="dvBackBtn">‹ Volver</button>
-      <button type="button" class="btn" id="dvEditBtn" style="${isOwner?'':'display:none;'}">Editar</button>
+      <button type="button" class="btn" id="dvEditBtn" style="${canEdit?'':'display:none;'}">Editar</button>
     </div>
-    ${isOwner ? `<button type="button" class="pp-logout" id="dvDetailDeleteBtn" style="margin:0 0 16px;">Eliminar inmersión</button>` : `<button type="button" class="pp-logout" id="dvDetailLeaveBtn" style="margin:0 0 16px;">Quitar de mi logbook</button>`}
+    ${removeActionBtn}
     ${d.main_photo ? `<img class="dive-main-photo" id="dvMainPhotoView" src="${d.main_photo}" alt="">` : ''}
     ${groupHtml}
 
@@ -8616,6 +8704,7 @@ function renderDiveDetail(){
   document.getElementById('dvEditBtn').onclick = ()=>{ logbookView='form'; renderLogbookPanel(); };
   document.getElementById('dvDetailDeleteBtn')?.addEventListener('click', ()=>deleteDive(d.id));
   document.getElementById('dvDetailLeaveBtn')?.addEventListener('click', ()=>leaveSharedDive(d.id));
+  document.getElementById('dvDetailUntagBtn')?.addEventListener('click', ()=>untagMyself(d.id));
   document.getElementById('dvSetTagNumBtn')?.addEventListener('click', (e)=>{ e.stopPropagation(); openSetTagDiveNumberModal(d.id); });
   document.getElementById('dvShareBtn')?.addEventListener('click', ()=>openShareDiveOverlay(d));
   document.getElementById('addDiveSpeciesBtn').onclick = ()=>startAddDiveSighting(d);
@@ -8627,10 +8716,10 @@ function renderDiveDetail(){
   loadDiveDetailTags(d, isOwner);
 }
 
-// Compañeros etiquetados en el detalle (solo lectura) + si quien mira no es
-// el propietario, comprueba si es colaborador (modo "tal cual") para
-// mostrarle también el botón Editar — RLS ya le deja editar la fila, pero
-// sin esto no vería el botón para hacerlo.
+// Compañeros etiquetados en el detalle (solo lectura) + si quien mira es
+// colaborador real, carga su propio Nº (dvEditBtn ya se muestra en
+// renderDiveDetail de forma síncrona vía canEdit — esto solo rellena el
+// valor del campo, redundante pero inofensivo si ya estaba visible).
 async function loadDiveDetailTags(dive, isOwner){
   const [{data:tags, error}, collabCheck] = await Promise.all([
     _sb.from('dive_tags').select('*').eq('dive_id', dive.id),
@@ -9057,10 +9146,21 @@ function renderDiveTagPicker(){
 // pendingDiveTags (borrar + reinsertar en vez de calcular un diff: son como
 // mucho un puñado de filas por inmersión, así que no compensa la
 // complejidad de comparar altas/bajas/cambios de rol uno a uno).
+// Diff en vez de borrar-y-reinsertar: ahora que una etiqueta tiene estado
+// propio (status, dive_number — ver dive_sharing.sql), un borrado+reinserción
+// a cada guardado reseteaba a 'pending' y perdía el número puesto por cada
+// compañero cada vez que el propietario simplemente editaba su inmersión.
+// Solo se tocan las filas que de verdad cambian: se insertan las nuevas, se
+// borran las quitadas, y se actualiza el rol de las que ya existían SIN
+// tocar su status/dive_number.
 async function syncDiveTags(dive){
-  await _sb.from('dive_tags').delete().eq('dive_id', dive.id);
-  if(!pendingDiveTags.length) return;
-  const rows = pendingDiveTags.map(t=>({
+  const { data: existing, error: fetchErr } = await _sb.from('dive_tags').select('id, tagged_user_id, role').eq('dive_id', dive.id);
+  if(fetchErr){ showToast('Error al guardar compañeros etiquetados: ' + fetchErr.message, true); return; }
+  const existingByUser = new Map((existing||[]).map(r=>[r.tagged_user_id, r]));
+  const keepUserIds = new Set(pendingDiveTags.map(t=>t.tagged_user_id));
+
+  const toDeleteIds = (existing||[]).filter(r=>!keepUserIds.has(r.tagged_user_id)).map(r=>r.id);
+  const toInsert = pendingDiveTags.filter(t=>!existingByUser.has(t.tagged_user_id)).map(t=>({
     dive_id: dive.id,
     tagged_user_id: t.tagged_user_id,
     role: t.role,
@@ -9068,8 +9168,20 @@ async function syncDiveTags(dive){
     tagged_username: t.tagged_username,
     tagged_avatar_url: t.tagged_avatar_url,
   }));
-  const { error } = await _sb.from('dive_tags').insert(rows);
-  if(error) showToast('Error al guardar compañeros etiquetados: ' + error.message, true);
+  const toUpdateRole = pendingDiveTags.filter(t=>{
+    const row = existingByUser.get(t.tagged_user_id);
+    return row && row.role !== t.role;
+  });
+
+  const ops = [];
+  if(toDeleteIds.length) ops.push(_sb.from('dive_tags').delete().in('id', toDeleteIds));
+  if(toInsert.length) ops.push(_sb.from('dive_tags').insert(toInsert));
+  toUpdateRole.forEach(t=>{
+    ops.push(_sb.from('dive_tags').update({ role: t.role }).eq('id', existingByUser.get(t.tagged_user_id).id));
+  });
+  const results = await Promise.all(ops);
+  const err = results.find(r=>r.error);
+  if(err) showToast('Error al guardar compañeros etiquetados: ' + err.error.message, true);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -9307,11 +9419,18 @@ async function resolveDiveInvite(inviteId, action){
 async function refreshNotifBadge(){
   const badge = document.getElementById('notifBellBadge');
   if(!badge || !currentAccountData) return;
-  const { count, error } = await _sb.from('dive_invites')
-    .select('id', { count:'exact', head:true })
-    .eq('to_user_id', currentAccountData.id).eq('status', 'pending').is('seen_at', null);
-  if(error || !count){ badge.style.display = 'none'; return; }
-  badge.textContent = count > 9 ? '9+' : String(count);
+  // Las invitaciones (dive_invites) llevan seen_at, así que solo cuentan
+  // las que aún no se han abierto en la campana; las etiquetas (dive_tags)
+  // no tienen ese campo (no hacía falta para su alcance) — cuentan todas
+  // las pendientes mientras lo sigan siendo.
+  const [{ count: inviteCount, error: inviteErr }, { data: tags, error: tagErr }] = await Promise.all([
+    _sb.from('dive_invites').select('id', { count:'exact', head:true })
+      .eq('to_user_id', currentAccountData.id).eq('status', 'pending').is('seen_at', null),
+    _sb.rpc('get_pending_dive_tags'),
+  ]);
+  const total = (inviteErr ? 0 : (inviteCount||0)) + (tagErr ? 0 : (tags||[]).length);
+  if(!total){ badge.style.display = 'none'; return; }
+  badge.textContent = total > 9 ? '9+' : String(total);
   badge.style.display = 'flex';
 }
 
@@ -9339,30 +9458,55 @@ async function renderNotifPanel(){
   `;
   document.getElementById('notifCloseBtn').onclick = closeNotifPanel;
 
-  const { data, error } = await _sb.from('dive_invites').select('*')
-    .eq('to_user_id', currentAccountData.id).eq('status', 'pending')
-    .order('created_at', { ascending:false });
+  const [{ data: invites, error: inviteErr }, { data: tags, error: tagErr }] = await Promise.all([
+    _sb.from('dive_invites').select('*')
+      .eq('to_user_id', currentAccountData.id).eq('status', 'pending')
+      .order('created_at', { ascending:false }),
+    _sb.rpc('get_pending_dive_tags'),
+  ]);
   const listEl = document.getElementById('notifList');
-  if(error || !data || !data.length){
+  const items = [
+    ...(inviteErr ? [] : (invites||[]).map(inv=>({ kind:'invite', created_at:inv.created_at, raw:inv }))),
+    ...(tagErr ? [] : (tags||[]).map(t=>({ kind:'tag', created_at:t.created_at, raw:t }))),
+  ].sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+  if(!items.length){
     listEl.innerHTML = `<div class="zones-empty">No tienes notificaciones pendientes.</div>`;
     return;
   }
   // Se pinta ANTES de marcar como vistas, para que esta misma apertura
-  // todavía las muestre destacadas — la próxima ya no.
-  listEl.innerHTML = data.map(inv=>{
-    const s = inv.dive_summary || {};
-    const label = s.dive_name || s.site_name || 'Una inmersión';
-    const dateLabel = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString('es-ES') : '';
-    const modeLabel = inv.mode === 'live' ? 'Inmersión compartida' : 'Envío de copia';
-    return `<div class="notif-item ${inv.seen_at ? '' : 'unseen'}">
-      <div class="notif-item-avatar">${avatarInner({name:s.from_name})}</div>
+  // todavía las muestre destacadas — la próxima ya no (solo aplica a las
+  // invitaciones, que llevan seen_at; las etiquetas no tienen ese campo).
+  listEl.innerHTML = items.map(item=>{
+    if(item.kind==='invite'){
+      const inv = item.raw;
+      const s = inv.dive_summary || {};
+      const label = s.dive_name || s.site_name || 'Una inmersión';
+      const dateLabel = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString('es-ES') : '';
+      const modeLabel = inv.mode === 'live' ? 'Inmersión compartida' : 'Envío de copia';
+      return `<div class="notif-item ${inv.seen_at ? '' : 'unseen'}">
+        <div class="notif-item-avatar">${avatarInner({name:s.from_name})}</div>
+        <div class="notif-item-text">
+          <div class="notif-item-title">${escapeHtml(s.from_name || 'Alguien')} te comparte "${escapeHtml(label)}"</div>
+          <div class="notif-item-sub">${escapeHtml(modeLabel)}${dateLabel?' · '+dateLabel:''}</div>
+        </div>
+        <div class="notif-item-actions">
+          <button class="fr-btn fr-btn-accept" data-notif-accept="${inv.id}">Aceptar</button>
+          <button class="fr-btn fr-btn-reject" data-notif-reject="${inv.id}">Rechazar</button>
+        </div>
+      </div>`;
+    }
+    const t = item.raw;
+    const label = t.dive_dive_name || t.dive_site_name || 'Una inmersión';
+    const dateLabel = t.dive_date ? new Date(t.dive_date+'T00:00:00').toLocaleDateString('es-ES') : '';
+    return `<div class="notif-item unseen">
+      <div class="notif-item-avatar">${avatarInner({name:t.owner_name})}</div>
       <div class="notif-item-text">
-        <div class="notif-item-title">${escapeHtml(s.from_name || 'Alguien')} te comparte "${escapeHtml(label)}"</div>
-        <div class="notif-item-sub">${escapeHtml(modeLabel)}${dateLabel?' · '+dateLabel:''}</div>
+        <div class="notif-item-title">${escapeHtml(t.owner_name || 'Alguien')} te etiqueta en "${escapeHtml(label)}"</div>
+        <div class="notif-item-sub">Compañero${dateLabel?' · '+dateLabel:''}</div>
       </div>
       <div class="notif-item-actions">
-        <button class="fr-btn fr-btn-accept" data-notif-accept="${inv.id}">Aceptar</button>
-        <button class="fr-btn fr-btn-reject" data-notif-reject="${inv.id}">Rechazar</button>
+        <button class="fr-btn fr-btn-accept" data-notif-tag-accept="${t.id}">Aceptar</button>
+        <button class="fr-btn fr-btn-reject" data-notif-tag-reject="${t.id}">Rechazar</button>
       </div>
     </div>`;
   }).join('');
@@ -9371,6 +9515,12 @@ async function renderNotifPanel(){
   });
   listEl.querySelectorAll('[data-notif-reject]').forEach(btn=>{
     btn.onclick = ()=>{ closeNotifPanel(); resolveDiveInvite(btn.dataset.notifReject, 'decline'); };
+  });
+  listEl.querySelectorAll('[data-notif-tag-accept]').forEach(btn=>{
+    btn.onclick = ()=>{ closeNotifPanel(); resolveDiveTag(btn.dataset.notifTagAccept, 'accept'); };
+  });
+  listEl.querySelectorAll('[data-notif-tag-reject]').forEach(btn=>{
+    btn.onclick = ()=>{ closeNotifPanel(); resolveDiveTag(btn.dataset.notifTagReject, 'decline'); };
   });
 
   await _sb.rpc('mark_dive_invites_seen');
@@ -9491,11 +9641,14 @@ function renderDiveForm(){
   const body = document.getElementById('logbookBody');
   const d = editingDive || {};
   const nextDiveNumber = dives.reduce((max,x)=>Math.max(max, x.dive_number||0), 0) + 1;
-  // Colaborando en una inmersión compartida "tal cual" ajena: el Nº es
-  // personal (ver dive_collaborators.dive_number), no el de la fila
-  // compartida — se muestra/guarda aparte, vía myCollabDiveNumber.
-  const isCollabEdit = !!(editingDive && currentAccountData && editingDive.user_id !== currentAccountData.id);
-  const numberFieldValue = isCollabEdit ? (myCollabDiveNumber ?? '') : (d.dive_number ?? nextDiveNumber);
+  // Para una inmersión ajena (colaborador real o solo etiquetado), el Nº es
+  // personal — no el de la fila compartida (ver dive_collaborators.
+  // dive_number / dive_tags.dive_number) — se muestra/guarda aparte.
+  const isCollaboratorEdit = !!(editingDive && Object.prototype.hasOwnProperty.call(myCollabByDiveId, editingDive.id));
+  const isTagOnlyEdit = !!(editingDive && !isCollaboratorEdit && currentAccountData && editingDive.user_id !== currentAccountData.id);
+  const isCollabEdit = isCollaboratorEdit || isTagOnlyEdit;
+  const myOwnNumber = isCollaboratorEdit ? myCollabByDiveId[editingDive.id] : isTagOnlyEdit ? myTagByDiveId[editingDive.id] : null;
+  const numberFieldValue = isCollabEdit ? (myOwnNumber ?? '') : (d.dive_number ?? nextDiveNumber);
   const sec = (title, inner, cls) => `<div class="dvs-section"><div class="dvs-head">${title}</div><div class="dvs-body ${cls||''}">${inner}</div></div>`;
 
   body.innerHTML = `
@@ -9964,34 +10117,77 @@ function readDiveForm(){
   };
 }
 
+// Campos que readDiveForm() construye, salvo dive_number (ese tiene su
+// propio mecanismo de comparación/guardado, siempre aparte — ver saveDive).
+// Usado para decidir si alguien solo etiquetado (isTagOnly) realmente
+// cambió algo de la inmersión compartida, o si solo tocó su propio número.
+const DIVE_PAYLOAD_KEYS = [
+  'date','entry_time','exit_time','duration_min','site_name','dive_name',
+  'location_text','lat','lng','approach_type','seabed_type','dive_club',
+  'dive_center','buddy','suit_type','air_type','tank_liters','tank_material',
+  'weight_kg','entry_pressure','exit_pressure','water_temp','air_temp',
+  'current','visibility_m','max_depth_m','safety_stop_m','deco_stop_m',
+  'notes','main_photo','notes_photos',
+];
+function diveFieldsChanged(payload, original){
+  return DIVE_PAYLOAD_KEYS.some(k => JSON.stringify(payload[k] ?? null) !== JSON.stringify(original[k] ?? null));
+}
+
 async function saveDive(){
   const payload = readDiveForm();
-  // Colaborando en una inmersión ajena: el Nº es personal (ver
-  // dive_collaborators.dive_number) — se saca del payload de `dives` para
-  // no pisar el número del propietario, y se guarda aparte vía RPC. Los
-  // compañeros etiquetados tampoco se tocan: solo el propietario puede
-  // gestionarlos (dive_tags_insert/update/delete lo exigen por RLS).
-  const isCollabEdit = !!(editingDive && currentAccountData && editingDive.user_id !== currentAccountData.id);
+  // Tres casos muy distintos para una inmersión ajena (editingDive.user_id
+  // !== yo): colaborador real (dive_collaborators, edita en sitio, de
+  // verdad compartido — sin cambios aquí) vs. solo etiquetado (dive_tags,
+  // sin permiso real de UPDATE sobre `dives` — cualquier cambio que no sea
+  // su propio Nº se convierte en una copia independiente, ver
+  // fork_tagged_dive en dive_sharing.sql). En los dos casos el Nº sale del
+  // payload de `dives` y se guarda aparte, para no pisar el del propietario.
+  const isCollaborator = !!(editingDive && Object.prototype.hasOwnProperty.call(myCollabByDiveId, editingDive.id));
+  const isTagOnly = !!(editingDive && !isCollaborator && currentAccountData && editingDive.user_id !== currentAccountData.id);
   const myNumber = payload.dive_number;
-  if(isCollabEdit) delete payload.dive_number;
+  if(isCollaborator || isTagOnly) delete payload.dive_number;
+
+  if(editingDive && isTagOnly){
+    if(myNumber !== (myTagByDiveId[editingDive.id] ?? null)){
+      const { error: numErr } = await _sb.rpc('set_my_tag_dive_number', { p_dive_id: editingDive.id, p_number: myNumber });
+      if(numErr){ showToast('Error al guardar tu número: ' + numErr.message, true); return; }
+      myTagByDiveId[editingDive.id] = myNumber;
+    }
+    if(!diveFieldsChanged(payload, editingDive)){
+      // Solo cambió (como mucho) el número propio, ya guardado arriba —
+      // nunca se escribe nada en `dives` en este caso.
+      logbookView = 'detail';
+      showToast('Inmersión actualizada');
+      renderLogbookPanel();
+      return;
+    }
+    const { data: newDiveId, error } = await _sb.rpc('fork_tagged_dive', { p_dive_id: editingDive.id, p_payload: payload });
+    if(error){ showToast('Error al crear tu copia: ' + error.message, true); return; }
+    dives = dives.filter(x=>x.id!==editingDive.id);
+    delete myTagByDiveId[editingDive.id];
+    const newDive = { ...payload, dive_number: myNumber, id: newDiveId, user_id: currentAccountData.id };
+    dives = [newDive, ...dives];
+    editingDive = newDive;
+    logbookView = 'detail';
+    showToast('Has cambiado algo más que tu número: se ha creado una copia tuya independiente. La inmersión original no se ha tocado.');
+    refreshMyDiveStats();
+    renderLogbookPanel();
+    return;
+  }
 
   if(editingDive){
     // .select() + comprobar filas devueltas: si no soy ni propietario ni
-    // colaborador real (solo etiquetado, dive_tags), RLS bloquea el update
-    // y PostgREST lo devuelve como éxito con 0 filas — sin esto parecía
-    // guardarse ("Inmersión actualizada") pero no persistía nada, y al
-    // volver a entrar se veía el dato de siempre (caso real: un etiquetado
-    // sin colaboración real poniendo su propio Nº, que nunca llegaba a
-    // guardarse en ningún sitio).
+    // colaborador real, RLS bloquea el update y PostgREST lo devuelve como
+    // éxito con 0 filas — sin esto parecía guardarse sin persistir nada.
     const { data: updRows, error } = await _sb.from('dives').update(payload).eq('id', editingDive.id).select();
     if(error){ showToast('Error al guardar: ' + error.message, true); return; }
     if(!updRows || !updRows.length){
-      showToast('No tienes permiso para editar esta inmersión — puede que solo estés etiquetado, no seas colaborador', true);
+      showToast('No tienes permiso para editar esta inmersión', true);
       return;
     }
     dives = dives.map(x=>x.id===editingDive.id ? {...x, ...payload} : x);
     editingDive = dives.find(x=>x.id===editingDive.id) || null;
-    if(isCollabEdit){
+    if(isCollaborator){
       const { error: numErr } = await _sb.rpc('set_my_collab_dive_number', { p_dive_id: editingDive.id, p_number: myNumber });
       if(numErr) showToast('Error al guardar tu número de inmersión: ' + numErr.message, true);
       myCollabDiveNumber = myNumber;
