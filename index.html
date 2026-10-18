@@ -5694,11 +5694,15 @@ async function fetchProfileDiveStats(ids){
   if(!uniqueIds.length) return {};
   try{
     const {data, error} = await _sb.rpc('get_profile_dive_stats', {user_ids: uniqueIds});
-    if(error || !Array.isArray(data)) return {};
+    // No se muestra como toast (esto solo enriquece tarjetas, no es el dato
+    // principal de la pantalla), pero sí se deja en consola: si no, un
+    // fallo aquí es indistinguible de "nadie ha puesto licencia todavía".
+    if(error){ console.error('[fetchProfileDiveStats]', error); return {}; }
+    if(!Array.isArray(data)) return {};
     const map = {};
     data.forEach(row=>{ map[row.id] = {cert_level: row.cert_level||null, total_dives: row.total_dives}; });
     return map;
-  }catch(e){ return {}; }
+  }catch(e){ console.error('[fetchProfileDiveStats]', e); return {}; }
 }
 
 // Refresca la licencia e inmersiones totales de la propia cuenta en
