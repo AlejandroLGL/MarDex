@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MarDex — El logbook de buceo que tus amigos van a querer usar</title>
+<meta name="description" content="MarDex es tu logbook digital de buceo: registra cada inmersión, identifica especies con IA y compártelo con tus compañeros de buceo.">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Misma paleta que la app (index.html), para que la landing se sienta
+       parte de MarDex y no una plantilla genérica pegada encima. */
+    --bg:#F3FBFE;
+    --card:#FFFFFF;
+    --ink:#0D2B40;
+    --muted:#5A7E94;
+    --faint:#7EB0C8;
+    --line:#D9EFF8;
+    --blue:#00a2ff;
+    --blue-soft:#BDE8FA;
+    --turq:#00BDD6;
+    --turq-soft:#B0EEF8;
+    --lagoon:#2DD4A4;
+    --seafoam:#96EDD2;
+    --sky:#4c82f5;
+    --coral:#FF5F53;
+    --coral-soft:#FFE5E3;
+    --amber:#E08A2E;
+    --amber-soft:#F7D9A8;
+    --violet:#7C3AED;
+    --violet-soft:#E9D5FF;
+    --magenta:#DB2777;
+    --serif:'DM Serif Display',Georgia,serif;
+    --sans:'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif;
+    --shadow-glow:0 24px 60px rgba(0,120,190,0.18),0 6px 18px rgba(0,120,190,0.10);
+    --r-lg:28px;
+    --r-md:20px;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  img{ max-width:100%; display:block; }
+  a{ color:inherit; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
+  @media(max-width:600px){ .wrap{ padding:0 18px; } }
+
+  /* ── Navegación ─────────────────────────────────────────────────── */
+  .nav{
+    position:sticky; top:0; z-index:50; background:rgba(243,251,254,0.82);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(13,43,64,0.06);
+  }
+  .nav-inner{
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding:14px 0;
+  }
+  .nav-brand{ display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .nav-brand img{ width:34px; height:34px; border-radius:10px; }
+  .nav-brand span{ font-family:var(--serif); font-size:21px; color:var(--ink); }
+  .nav-links{ display:flex; align-items:center; gap:28px; }
+  .nav-links a{
+    text-decoration:none; color:var(--muted); font-size:14px; font-weight:600;
+    transition:color .15s;
+  }
+  .nav-links a:hover{ color:var(--ink); }
+  @media(max-width:760px){ .nav-links{ display:none; } }
+  .nav-actions{ display:flex; align-items:center; gap:10px; }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    font-family:var(--sans); font-weight:700; font-size:14px; text-decoration:none;
+    border-radius:14px; padding:11px 20px; border:none; cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,#12A0D6 0%,#0D5E87 100%); color:#fff;
+    box-shadow:0 10px 24px rgba(13,94,135,0.28);
+  }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 32px rgba(13,94,135,0.34); }
+  .btn-ghost{ background:none; color:var(--ink); padding:11px 14px; }
+  .btn-ghost:hover{ color:var(--blue); }
+  .btn-lg{ padding:15px 30px; font-size:15.5px; border-radius:16px; }
+  @media(max-width:480px){ .nav-actions .btn-ghost{ display:none; } }
+
+  /* ── Hero ───────────────────────────────────────────────────────── */
+  .hero{
+    position:relative; overflow:hidden; padding:72px 0 56px; text-align:center;
+  }
+  .hero::before{
+    content:''; position:absolute; inset:-20% -10% auto -10%; height:600px; z-index:-1;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 10%, rgba(0,189,214,0.16), transparent 70%),
+      radial-gradient(ellipse 50% 45% at 85% 0%, rgba(45,212,164,0.14), transparent 70%);
+  }
+  .hero-kicker{
+    display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800;
+    letter-spacing:.07em; text-transform:uppercase; color:var(--blue);
+    background:var(--blue-soft); padding:7px 16px; border-radius:20px; margin-bottom:22px;
+  }
+  .hero h1{
+    font-family:var(--serif); font-weight:400; font-size:52px; line-height:1.08;
+    margin:0 auto 20px; max-width:780px; color:var(--ink); letter-spacing:-0.5px;
+  }
+  .hero h1 em{ font-style:normal; color:var(--blue); }
+  @media(max-width:680px){ .hero h1{ font-size:36px; } }
+  .hero p{
+    font-size:17px; line-height:1.6; color:var(--muted); max-width:560px;
+    margin:0 auto 32px;
+  }
+  .hero-ctas{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:56px; }
+
+  /* Mockup de la pantalla principal en el hero: un marco de "teléfono"
+     con un degradado dentro a falta de una captura real — ver nota en
+     .shot-placeholder más abajo sobre cómo sustituirlo. */
+  .hero-mockup{
+    position:relative; max-width:300px; margin:0 auto; border-radius:40px;
+    padding:14px; background:linear-gradient(160deg,#ffffff,#eaf7fc);
+    box-shadow:var(--shadow-glow), 0 0 0 1px rgba(13,43,64,0.04);
+  }
+  .hero-mockup-screen{
+    border-radius:28px; aspect-ratio:9/18.5; overflow:hidden; position:relative;
+    background:linear-gradient(160deg,#0D5E87 0%,#12A0D6 45%,#2DD4A4 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .hero-mockup-screen .ph-label{
+    color:rgba(255,255,255,0.92); font-size:12px; font-weight:700; text-align:center;
+    padding:0 24px; display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .hero-mockup-screen svg{ width:46px; height:46px; opacity:.9; }
+
+  /* ── Cinta de capturas en bucle (marquee) ──────────────────────────
+     Técnica: una fila con el contenido duplicado dos veces, animada con
+     translateX(-50%) en bucle infinito — al llegar a la mitad (donde
+     empieza la copia) el salto es invisible. Búscalo como "CSS infinite
+     marquee" si quieres ver más variantes. */
+  .marquee-section{ padding:12px 0 64px; }
+  .marquee{
+    display:flex; overflow:hidden; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+  }
+  .marquee-track{
+    display:flex; gap:18px; flex-shrink:0; animation:marqueeScroll 34s linear infinite;
+    padding:4px 9px;
+  }
+  .marquee:hover .marquee-track{ animation-play-state:paused; }
+  @keyframes marqueeScroll{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-50%); }
+  }
+  .marquee-shot{
+    flex-shrink:0; width:150px; aspect-ratio:9/16; border-radius:22px; overflow:hidden;
+    box-shadow:0 14px 34px rgba(7,59,92,0.14), 0 3px 10px rgba(7,59,92,0.08);
+  }
+
+  /* ── Placeholder de captura ─────────────────────────────────────────
+     SUSTITUIR cuando haya capturas reales: cambia el contenido de
+     .shot-placeholder por <img src="screenshots/xxx.png" alt="..."> y
+     quita el degradado — el border-radius/box-shadow del contenedor
+     (.feature-shot, .hero-mockup-screen, .marquee-shot) ya están listos
+     para una imagen real. */
+  .shot-placeholder{
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(150deg,var(--shot-a,#12A0D6),var(--shot-b,#0D5E87));
+    color:rgba(255,255,255,0.85);
+  }
+  .shot-placeholder svg{ width:34px; height:34px; opacity:.8; }
+
+  /* ── Secciones de función (imagen+texto alternando) ────────────────── */
+  .features{ padding:40px 0 20px; }
+  .features-head{ text-align:center; max-width:580px; margin:0 auto 64px; }
+  .features-head .kicker{
+    display:block; font-size:12.5px; font-weight:800; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--lagoon); margin-bottom:10px;
+  }
+  .features-head h2{ font-family:var(--serif); font-weight:400; font-size:34px; margin:0 0 12px; }
+  .features-head p{ color:var(--muted); font-size:15.5px; line-height:1.6; margin:0; }
+
+  .feature-row{
+    display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
+    padding:56px 0;
+  }
+  .feature-row.reverse{ direction:rtl; }
+  .feature-row.reverse > *{ direction:ltr; }
+  @media(max-width:860px){
+    .feature-row, .feature-row.reverse{ grid-template-columns:1fr; gap:28px; direction:ltr; padding:36px 0; }
+  }
+
+  .feature-visual{ position:relative; }
+  .feature-shot{
+    border-radius:var(--r-lg); overflow:hidden; aspect-ratio:4/3;
+    box-shadow:var(--shadow-glow);
+    transform:rotate(var(--tilt,0deg));
+  }
+  .feature-row.reverse .feature-shot{ --tilt:-1.4deg; }
+  .feature-row:not(.reverse) .feature-shot{ --tilt:1.4deg; }
+
+  .feature-text .kicker{
+    display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:800;
+    letter-spacing:.06em; text-transform:uppercase; padding:6px 14px; border-radius:16px;
+    margin-bottom:16px;
+  }
+  .feature-text h3{ font-family:var(--serif); font-weight:400; font-size:28px; margin:0 0 14px; line-height:1.2; }
+  .feature-text p{ color:var(--muted); font-size:15.5px; line-height:1.65; margin:0; }
+
+  /* Sección de IA: más llamativa que las demás, con borde en degradado y
+     una insignia distinta — pedido explícitamente para que destaque sobre
+     el resto. */
+  .feature-row.ai-highlight{
+    background:linear-gradient(135deg, rgba(124,58,237,0.06), rgba(219,39,119,0.05));
+    border-radius:40px; padding:56px 40px; margin:16px 0;
+  }
+  @media(max-width:860px){ .feature-row.ai-highlight{ padding:32px 20px; } }
+  .feature-row.ai-highlight .feature-shot{
+    box-shadow:0 26px 64px rgba(124,58,237,0.26), 0 6px 20px rgba(124,58,237,0.16);
+  }
+  .ai-badge{
+    background:linear-gradient(135deg,#7C3AED,#DB2777); color:#fff;
+  }
+  .ai-sparkle{ position:absolute; color:var(--violet); opacity:.55; }
+
+  /* Reveal al hacer scroll */
+  .reveal{ opacity:0; transform:translateY(26px); transition:opacity .7s ease, transform .7s ease; }
+  .reveal.in-view{ opacity:1; transform:translateY(0); }
+  .reveal-delay1.in-view{ transition-delay:.08s; }
+  .reveal-delay2.in-view{ transition-delay:.16s; }
+
+  /* ── CTA final ──────────────────────────────────────────────────── */
+  .cta-band{
+    margin:60px auto 80px; max-width:1100px; border-radius:40px; padding:64px 40px;
+    text-align:center; position:relative; overflow:hidden; color:#fff;
+    background:linear-gradient(135deg,#0D5E87 0%,#12A0D6 55%,#2DD4A4 100%);
+  }
+  .cta-band::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(circle at 15% 0%, rgba(255,255,255,0.22), transparent 45%);
+  }
+  .cta-band h2{ font-family:var(--serif); font-weight:400; font-size:32px; margin:0 0 14px; position:relative; }
+  .cta-band p{ font-size:15.5px; opacity:.92; margin:0 0 30px; position:relative; }
+  .cta-band .btn-primary{ background:#fff; color:var(--ink); box-shadow:0 10px 26px rgba(0,0,0,0.18); position:relative; }
+  .cta-band .btn-primary:hover{ box-shadow:0 14px 34px rgba(0,0,0,0.22); }
+
+  /* ── Footer ─────────────────────────────────────────────────────── */
+  .site-footer{ background:#0A2740; color:rgba(255,255,255,0.72); padding:64px 0 28px; }
+  .footer-grid{
+    display:grid; grid-template-columns:1.3fr repeat(3,1fr); gap:40px; padding-bottom:44px;
+    border-bottom:1px solid rgba(255,255,255,0.1);
+  }
+  @media(max-width:760px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+  @media(max-width:480px){ .footer-grid{ grid-template-columns:1fr; } }
+  .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .footer-brand img{ width:30px; height:30px; border-radius:9px; }
+  .footer-brand span{ font-family:var(--serif); font-size:19px; color:#fff; }
+  .footer-col p.lead{ font-size:13.5px; line-height:1.6; max-width:260px; margin:0 0 20px; }
+  .footer-social{ display:flex; gap:10px; }
+  .footer-social a{
+    width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.08);
+    display:flex; align-items:center; justify-content:center; text-decoration:none;
+    transition:background .15s;
+  }
+  .footer-social a:hover{ background:rgba(255,255,255,0.18); }
+  .footer-social svg{ width:15px; height:15px; color:#fff; }
+  .footer-col h4{
+    font-size:11.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    color:rgba(255,255,255,0.45); margin:0 0 16px;
+  }
+  .footer-col ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:11px; }
+  .footer-col a{ text-decoration:none; font-size:13.5px; color:rgba(255,255,255,0.75); transition:color .15s; }
+  .footer-col a:hover{ color:#fff; }
+  .footer-bottom{
+    padding-top:22px; display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px; font-size:12.5px; color:rgba(255,255,255,0.45);
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="nav-brand">
+      <img src="icon.png" alt="">
+      <span>MarDex</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#funciones">Funciones</a>
+      <a href="#ia">Con IA</a>
+      <a href="#footer">Contacto</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html" class="btn btn-ghost">Iniciar sesión</a>
+      <a href="index.html" class="btn btn-primary">Regístrate gratis</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ── Hero ─────────────────────────────────────────────────────── -->
+  <section class="hero wrap">
+    <div class="hero-kicker">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="21"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>
+      El logbook de buceo para compartir
+    </div>
+    <h1>Convierte cada inmersión en una historia que puedes <em>compartir</em></h1>
+    <p>Registra cada inmersión, identifica lo que ves con IA, y compártelo con quien buceó contigo. MarDex es tu pokédex personal del mar.</p>
+    <div class="hero-ctas">
+      <a href="index.html" class="btn btn-primary btn-lg">Crear cuenta gratis</a>
+      <a href="index.html" class="btn btn-ghost btn-lg">Ya tengo cuenta</a>
+    </div>
+
+    <div class="hero-mockup reveal">
+      <div class="hero-mockup-screen">
+        <!-- Placeholder del hero: sustituir por una captura real del Home de la app. -->
+        <div class="ph-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/><circle cx="8" cy="14" r="1.6"/><path d="M13 13.5h5M13 16h3.5"/></svg>
+          Vista previa de la app<br>(sustituir por una captura real)
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Cinta de capturas en bucle ───────────────────────────────── -->
+  <section class="marquee-section">
+    <div class="marquee">
+      <div class="marquee-track" id="marqueeTrack"><!-- generado por JS: ver buildMarquee() --></div>
+    </div>
+  </section>
+
+  <!-- ── Secciones de función ─────────────────────────────────────── -->
+  <section class="features wrap" id="funciones">
+    <div class="features-head reveal">
+      <span class="kicker">Todo en un solo sitio</span>
+      <h2>Lo que puedes hacer con MarDex</h2>
+      <p>De la foto subacuática a un logbook completo, compartido con quien estuvo allí contigo.</p>
+    </div>
+
+    <!-- 1. Registrar especies -->
+    <div class="feature-row reveal">
+      <div class="feature-visual">
+        <div class="feature-shot" style="--shot-a:#2DD4A4;--shot-b:#0D5E87;">
+          <div class="shot-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21c9 0 14-5 14-14V5h-2C8 5 5 10 5 17v4z"/><path d="M5 21c3-5 7-9 12-11"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="feature-text">
+        <span class="kicker" style="background:var(--seafoam);color:#0D5E3F;">Tu colección</span>
+        <h3>Registra cada especie que ves bajo el agua</h3>
+        <p>Cada inmersión es una oportunidad de ampliar tu colección. Marca lo que has visto, guarda tus mejores fotos y mira cómo tu pokédex de vida marina va creciendo inmersión a inmersión.</p>
+      </div>
+    </div>
+
+    <!-- 2. Logbooks compartidos -->
+    <div class="feature-row reverse reveal">
+      <div class="feature-visual">
+        <div class="feature-shot" style="--shot-a:#4c82f5;--shot-b:#0D5E87;">
+          <div class="shot-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="feature-text">
+        <span class="kicker" style="background:var(--blue-soft);color:#0D5E87;">En compañía</span>
+        <h3>Comparte tus inmersiones con quien buceó contigo</h3>
+        <p>Etiqueta a tus compañeros y decide cómo compartir: una inmersión realmente compartida, o una copia para que cada uno la lleve a su manera. Nunca más un «¿me pasas los datos de la inmersión de ayer?».</p>
+      </div>
+    </div>
+
+    <!-- 3. IA — sección destacada a propósito -->
+    <div class="feature-row ai-highlight reveal" id="ia">
+      <div class="feature-visual">
+        <div class="feature-shot" style="--shot-a:#7C3AED;--shot-b:#DB2777;">
+          <div class="shot-placeholder">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="feature-text">
+        <span class="kicker ai-badge">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2l1.9 5.1L19 9l-5.1 1.9L12 16l-1.9-5.1L5 9l5.1-1.9L12 2z"/></svg>
+          Con inteligencia artificial
+        </span>
+        <h3>Deja que la IA rellene tu logbook por ti</h3>
+        <p>Haz una foto a tu bitácora en papel y la IA la transcribe por ti. ¿No sabes qué animal acabas de ver? Haz una foto y te dice de qué especie se trata. Menos tiempo rellenando datos, más tiempo bajo el agua.</p>
+      </div>
+    </div>
+
+    <!-- 4. Compite con amigos -->
+    <div class="feature-row reverse reveal">
+      <div class="feature-visual">
+        <div class="feature-shot" style="--shot-a:#E08A2E;--shot-b:#FF5F53;">
+          <div class="shot-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="feature-text">
+        <span class="kicker" style="background:var(--amber-soft);color:#8A4D10;">Ranking</span>
+        <h3>¡Compite con tus amigos!</h3>
+        <p>Compara tu colección de especies con la de tus amigos, sube puestos en el ranking global y descubre quién lleva más inmersiones registradas este año.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA final ────────────────────────────────────────────────── -->
+  <section class="wrap">
+    <div class="cta-band reveal">
+      <h2>¿Lista/o para empezar tu logbook?</h2>
+      <p>Únete en segundos y lleva tu primera inmersión registrada hoy mismo.</p>
+      <a href="index.html" class="btn btn-primary btn-lg">Crear cuenta gratis</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" id="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="footer-brand">
+          <img src="icon.png" alt="">
+          <span>MarDex</span>
+        </div>
+        <p class="lead">Tu pokédex personal de buceo. Registra, identifica y comparte cada inmersión.</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+          <a href="#" aria-label="X / Twitter"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.9l-5.4-6.6L4.4 22H1.3l8.1-9.3L1 2h7l4.9 6 6-6z"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z"/></svg></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Producto</h4>
+        <ul>
+          <li><a href="#funciones">Funciones</a></li>
+          <li><a href="#ia">Inteligencia artificial</a></li>
+          <li><a href="index.html">Abrir la app</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Compañía</h4>
+        <ul>
+          <li><a href="#">Sobre MarDex</a></li>
+          <li><a href="#">Contacto</a></li>
+          <li><a href="#">Novedades</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacidad</a></li>
+          <li><a href="#">Términos de uso</a></li>
+          <li><a href="#">Cookies</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="footerYear"></span> MarDex. Todos los derechos reservados.</span>
+      <span>Hecha para buceadores.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+// Cinta de capturas: genera N tarjetas placeholder y las DUPLICA una vez
+// (el array completo dos veces seguidas) — la animación CSS mueve la fila
+// -50% de su ancho total, así que al llegar justo a la mitad (donde
+// empieza la copia) el bucle no se nota. Sustituir cada icono/color por
+// <img src="screenshots/xxx.png"> cuando haya capturas reales (ver
+// comentario de .shot-placeholder en el <style>).
+const MARQUEE_SHOTS = [
+  ['#12A0D6','#0D5E87','<path d="M4 8a2 2 0 0 1 2-2h1.2l.8-1.5A1.5 1.5 0 0 1 9.3 3.7h5.4a1.5 1.5 0 0 1 1.3.8L17 6h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><circle cx="12" cy="13" r="3.3"/>'],
+  ['#2DD4A4','#0D5E87','<path d="M5 21c9 0 14-5 14-14V5h-2C8 5 5 10 5 17v4z"/><path d="M5 21c3-5 7-9 12-11"/>'],
+  ['#4c82f5','#0D5E87','<circle cx="12" cy="9" r="3"/><path d="M12 21s7-6.7 7-11.5A7 7 0 0 0 5 9.5C5 14.3 12 21 12 21z" fill="none"/>'],
+  ['#7C3AED','#DB2777','<path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3z"/>'],
+  ['#E08A2E','#FF5F53','<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/>'],
+  ['#00BDD6','#2DD4A4','<circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="21"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/>'],
+];
+function buildMarquee(){
+  const track = document.getElementById('marqueeTrack');
+  const card = ([a,b,path])=>`<div class="marquee-shot" style="--shot-a:${a};--shot-b:${b};">
+    <div class="shot-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg></div>
+  </div>`;
+  const row = MARQUEE_SHOTS.map(card).join('');
+  track.innerHTML = row + row; // duplicado para el bucle continuo
+}
+buildMarquee();
+
+// Animación de aparición al hacer scroll — sin dependencias, como el
+// resto de MarDex (ver index.html, que tampoco usa librerías de UI).
+const revealObserver = new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add('in-view');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold:0.15, rootMargin:'0px 0px -60px 0px' });
+document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
+</script>
+
+</body>
+</html>
