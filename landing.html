@@ -182,6 +182,7 @@
      arriba (degradado + borde superior más claro) y una sombra sólida
      debajo, en vez de un blanco plano. */
   .nav-pill-indicator-inner{
+    position:relative;
     width:100%; height:100%; border-radius:999px;
     background:linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.84) 100%);
     backdrop-filter:blur(10px) saturate(1.5); -webkit-backdrop-filter:blur(10px) saturate(1.5);
@@ -190,6 +191,36 @@
       0 3px 8px rgba(0,0,0,0.38), 0 1px 2px rgba(0,0,0,0.3),
       inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -2px 3px rgba(13,43,64,0.08);
     transform-origin:center;
+  }
+  /* Dos "reflejos de burbuja": un anillo fino, metido hacia dentro del
+     borde real de la píldora (el offset pedido), recortado con una
+     máscara cónica para que solo se vea un arco — y ese arco ya entra y
+     sale en degradado (transparente→blanco→transparente), no de golpe.
+     Van como pseudo-elementos (no SVG ni border-image) justamente porque
+     el ancho de la píldora cambia según el botón activo: border-radius
+     en px siempre da una cápsula perfecta sea cual sea el ancho, cosa que
+     un SVG con viewBox estirado no haría sin deformar los extremos. */
+  .nav-pill-indicator-inner::before,
+  .nav-pill-indicator-inner::after{
+    content:''; position:absolute; inset:3px; border-radius:999px;
+    border:1.3px solid #fff;
+    pointer-events:none;
+  }
+  .nav-pill-indicator-inner::before{
+    -webkit-mask-image:conic-gradient(from -90deg at 50% 50%,
+      transparent 0deg, transparent 20deg, rgba(255,255,255,0.95) 75deg,
+      transparent 130deg, transparent 360deg);
+    mask-image:conic-gradient(from -90deg at 50% 50%,
+      transparent 0deg, transparent 20deg, rgba(255,255,255,0.95) 75deg,
+      transparent 130deg, transparent 360deg);
+  }
+  .nav-pill-indicator-inner::after{
+    -webkit-mask-image:conic-gradient(from 90deg at 50% 50%,
+      transparent 0deg, transparent 20deg, rgba(255,255,255,0.95) 75deg,
+      transparent 130deg, transparent 360deg);
+    mask-image:conic-gradient(from 90deg at 50% 50%,
+      transparent 0deg, transparent 20deg, rgba(255,255,255,0.95) 75deg,
+      transparent 130deg, transparent 360deg);
   }
   /* "Estrangulamiento": se estrecha verticalmente a mitad de camino al
      pasar de una sección a otra, y recupera su altura al llegar — un
