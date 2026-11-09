@@ -7,7 +7,7 @@
 <meta name="description" content="MarDex es tu logbook digital de buceo: registra cada inmersión, identifica especies con IA y compártelo con tus compañeros de buceo.">
 <link rel="icon" type="image/png" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     /* Misma paleta que la app (index.html), para que la landing se sienta
@@ -32,8 +32,10 @@
     --violet:#7C3AED;
     --violet-soft:#E9D5FF;
     --magenta:#DB2777;
-    --serif:'DM Serif Display',Georgia,serif;
-    --sans:'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif;
+    /* Inter para titulares, Manrope para el resto del texto (pedido
+       explícitamente) — ya no se usa ninguna tipografía serif. */
+    --font-head:'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif;
+    --font-body:'Manrope',-apple-system,'Helvetica Neue',Arial,sans-serif;
     --shadow-glow:0 24px 60px rgba(0,120,190,0.18),0 6px 18px rgba(0,120,190,0.10);
     --r-lg:28px;
     --r-md:20px;
@@ -41,30 +43,43 @@
   *{ box-sizing:border-box; }
   html{ scroll-behavior:smooth; }
   body{
-    margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body);
     -webkit-font-smoothing:antialiased;
   }
   img{ max-width:100%; display:block; }
   a{ color:inherit; }
+  button{ font-family:var(--font-body); }
   .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
   @media(max-width:600px){ .wrap{ padding:0 18px; } }
 
-  /* ── Navegación ─────────────────────────────────────────────────── */
-  .nav{
-    position:sticky; top:0; z-index:50; background:rgba(243,251,254,0.82);
+  /* ── Navegación ─────────────────────────────────────────────────────
+     .nav es solo el carril "sticky"; .nav-shell es la barra/píldora que de
+     verdad se ve, y es la que anima JS (ver heroProgress en el <script>)
+     de barra ancha de borde recto a píldora flotante oscura, al hacer
+     scroll por la sección del móvil. Dentro lleva DOS variantes de
+     contenido superpuestas (.nav-full / .nav-pill-content) que se funden
+     la una en la otra en vez de aparecer/desaparecer de golpe. */
+  .nav{ position:sticky; top:0; z-index:50; padding:0 16px; }
+  .nav-shell{
+    position:relative; margin:0 auto; width:100%; max-width:1180px; height:66px;
+    border-radius:0px; background:rgba(243,251,254,0.86);
     backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-    border-bottom:1px solid rgba(13,43,64,0.06);
+    /* Sombra azul sutil en el borde inferior: sin esto el efecto cristal
+       se confundía con el fondo claro de la página. */
+    box-shadow:0 1px 0 rgba(0,130,255,0.18), 0 16px 32px -20px rgba(0,130,255,0.45);
+    transition:border-radius .05s;
+    overflow:hidden;
   }
-  .nav-inner{
-    display:flex; align-items:center; justify-content:space-between; gap:20px;
-    padding:14px 0;
+  .nav-full, .nav-pill-content{
+    position:absolute; inset:0; display:flex; align-items:center;
   }
-  .nav-brand{ display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .nav-full{ justify-content:space-between; padding:0 24px; }
+  .nav-brand{ display:flex; align-items:center; gap:10px; text-decoration:none; flex-shrink:0; }
   .nav-brand img{ width:34px; height:34px; border-radius:10px; }
-  .nav-brand span{ font-family:var(--serif); font-size:21px; color:var(--ink); }
+  .nav-brand span{ font-family:var(--font-head); font-weight:800; font-size:20px; color:var(--ink); }
   .nav-links{ display:flex; align-items:center; gap:28px; }
   .nav-links a{
-    text-decoration:none; color:var(--muted); font-size:14px; font-weight:600;
+    text-decoration:none; color:var(--muted); font-size:14px; font-weight:700;
     transition:color .15s;
   }
   .nav-links a:hover{ color:var(--ink); }
@@ -72,23 +87,77 @@
   .nav-actions{ display:flex; align-items:center; gap:10px; }
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    font-family:var(--sans); font-weight:700; font-size:14px; text-decoration:none;
+    font-family:var(--font-body); font-weight:700; font-size:14px; text-decoration:none;
     border-radius:14px; padding:11px 20px; border:none; cursor:pointer;
     transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
   }
   .btn-primary{
-    background:linear-gradient(135deg,#12A0D6 0%,#0D5E87 100%); color:#fff;
-    box-shadow:0 10px 24px rgba(13,94,135,0.28);
+    /* Color sólido en vez de degradado, pedido para un acabado más limpio. */
+    background:#0B7FC4; color:#fff;
+    box-shadow:0 10px 24px rgba(11,127,196,0.3);
   }
-  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 32px rgba(13,94,135,0.34); }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 32px rgba(11,127,196,0.36); background:#0a6fac; }
   .btn-ghost{ background:none; color:var(--ink); padding:11px 14px; }
   .btn-ghost:hover{ color:var(--blue); }
   .btn-lg{ padding:15px 30px; font-size:15.5px; border-radius:16px; }
   @media(max-width:480px){ .nav-actions .btn-ghost{ display:none; } }
 
+  /* Selector de idioma — de momento es solo UI (no cambia nada de verdad),
+     con banderas de relleno: sustituir por el selector real cuando haya
+     i18n. "Banderas redondas" vía emoji recortado en un círculo, para no
+     depender de assets de imagen que todavía no existen. */
+  .lang-select{ position:relative; }
+  .lang-trigger{
+    width:34px; height:34px; border-radius:50%; border:1px solid rgba(13,43,64,0.1);
+    background:var(--card); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    padding:0; overflow:hidden; transition:border-color .15s;
+  }
+  .lang-trigger:hover{ border-color:var(--blue); }
+  .lang-flag{
+    width:20px; height:20px; border-radius:50%; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1;
+  }
+  /* position:fixed (no absolute): .nav-shell necesita overflow:hidden para
+     recortar el crossfade nav-full/nav-pill-content, y eso recortaría un
+     desplegable absoluto. Fixed escapa de ese overflow (no hay transform/
+     filter por medio que le cree un containing block distinto al viewport);
+     top/left se calculan en JS a partir de la posición real del botón. */
+  .lang-menu{
+    display:none; position:fixed; top:0; left:0; min-width:170px;
+    background:var(--card); border-radius:14px; box-shadow:0 16px 40px rgba(7,59,92,0.18);
+    padding:6px; z-index:200;
+  }
+  .lang-menu.open{ display:block; }
+  .lang-option{
+    display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; border-radius:9px;
+    border:none; background:none; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--ink);
+    text-align:left; transition:background .12s;
+  }
+  .lang-option:hover{ background:var(--bg); }
+  .lang-option .lang-flag{ width:22px; height:22px; font-size:14px; background:var(--bg); }
+
+  /* Píldora flotante compacta (sustituye a .nav-full al hacer scroll) —
+     lleva los mismos 4 atajos a las secciones de función, con un
+     indicador que se desliza bajo la opción activa y también sirve para
+     saltar directamente a esa sección. */
+  .nav-pill-content{ justify-content:center; gap:2px; opacity:0; pointer-events:none; }
+  .nav-pill-content.interactive{ pointer-events:auto; }
+  .nav-pill-indicator{
+    position:absolute; top:7px; bottom:7px; left:0; border-radius:999px;
+    background:rgba(255,255,255,0.16); transition:transform .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
+    width:0;
+  }
+  .nav-pill-btn{
+    position:relative; z-index:1; background:none; border:none; cursor:pointer;
+    color:rgba(255,255,255,0.68); font-weight:700; font-size:12.5px; letter-spacing:.01em;
+    padding:9px 18px; border-radius:999px; transition:color .2s;
+    white-space:nowrap;
+  }
+  .nav-pill-btn.active{ color:#fff; }
+
   /* ── Hero ───────────────────────────────────────────────────────── */
   .hero{
-    position:relative; overflow:hidden; padding:72px 0 56px; text-align:center;
+    position:relative; overflow:hidden; padding:72px 0 32px; text-align:center;
   }
   .hero::before{
     content:''; position:absolute; inset:-20% -10% auto -10%; height:600px; z-index:-1;
@@ -96,14 +165,9 @@
       radial-gradient(ellipse 60% 50% at 20% 10%, rgba(0,189,214,0.16), transparent 70%),
       radial-gradient(ellipse 50% 45% at 85% 0%, rgba(45,212,164,0.14), transparent 70%);
   }
-  .hero-kicker{
-    display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:800;
-    letter-spacing:.07em; text-transform:uppercase; color:var(--blue);
-    background:var(--blue-soft); padding:7px 16px; border-radius:20px; margin-bottom:22px;
-  }
   .hero h1{
-    font-family:var(--serif); font-weight:400; font-size:52px; line-height:1.08;
-    margin:0 auto 20px; max-width:780px; color:var(--ink); letter-spacing:-0.5px;
+    font-family:var(--font-head); font-weight:800; font-size:52px; line-height:1.1;
+    margin:0 auto 20px; max-width:780px; color:var(--ink); letter-spacing:-0.8px;
   }
   .hero h1 em{ font-style:normal; color:var(--blue); }
   @media(max-width:680px){ .hero h1{ font-size:36px; } }
@@ -111,15 +175,25 @@
     font-size:17px; line-height:1.6; color:var(--muted); max-width:560px;
     margin:0 auto 32px;
   }
-  .hero-ctas{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:56px; }
+  .hero-ctas{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
 
-  /* Mockup de la pantalla principal en el hero: un marco de "teléfono"
-     con un degradado dentro a falta de una captura real — ver nota en
-     .shot-placeholder más abajo sobre cómo sustituirlo. */
+  /* ── Escenario del móvil "anclado" ──────────────────────────────────
+     .hero-stage da "combustible" de scroll (es mucho más alto que la
+     pantalla); .hero-stage-pin se queda fijo (sticky) mientras tanto, así
+     que el móvil parece quedarse centrado en el sitio mientras scrolleas
+     — ese scroll "de más" es justo lo que mueve el progreso 0→1 que el
+     <script> usa para rotarlo/agrandarlo (heroProgress) y, a la vez, para
+     ir mutando #navShell hacia la píldora. Ver updateHeroProgress(). */
+  .hero-stage{ height:200vh; position:relative; }
+  .hero-stage-pin{
+    position:sticky; top:0; height:100vh; display:flex; align-items:center; justify-content:center;
+    perspective:1400px;
+  }
   .hero-mockup{
-    position:relative; max-width:300px; margin:0 auto; border-radius:40px;
-    padding:14px; background:linear-gradient(160deg,#ffffff,#eaf7fc);
+    position:relative; width:300px; border-radius:40px; padding:14px;
+    background:linear-gradient(160deg,#ffffff,#eaf7fc);
     box-shadow:var(--shadow-glow), 0 0 0 1px rgba(13,43,64,0.04);
+    will-change:transform; transform:perspective(1400px) rotateY(0deg) scale(1);
   }
   .hero-mockup-screen{
     border-radius:28px; aspect-ratio:9/18.5; overflow:hidden; position:relative;
@@ -133,23 +207,28 @@
   .hero-mockup-screen svg{ width:46px; height:46px; opacity:.9; }
 
   /* ── Cinta de capturas en bucle (marquee) ──────────────────────────
-     Técnica: una fila con el contenido duplicado dos veces, animada con
-     translateX(-50%) en bucle infinito — al llegar a la mitad (donde
-     empieza la copia) el salto es invisible. Búscalo como "CSS infinite
-     marquee" si quieres ver más variantes. */
+     Técnica: una fila con el contenido repetido VARIAS veces (no solo
+     dos — con solo dos copias, en pantallas anchas una sola copia no
+     llega a cubrir el ancho de la ventana y se ve un hueco en blanco
+     durante parte del bucle, que es justo el bug que se reportó),
+     animada con translateX(-25%) en bucle infinito: con 4 copias
+     iguales, moverse un cuarto del ancho total equivale a moverse
+     exactamente una copia, así que el salto al reiniciar es invisible
+     pase lo que pase de ancha que sea la pantalla. Búscalo como "CSS
+     infinite marquee" si quieres ver más variantes. */
   .marquee-section{ padding:12px 0 64px; }
   .marquee{
     display:flex; overflow:hidden; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
     mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
   }
   .marquee-track{
-    display:flex; gap:18px; flex-shrink:0; animation:marqueeScroll 34s linear infinite;
+    display:flex; gap:18px; flex-shrink:0; animation:marqueeScroll 48s linear infinite;
     padding:4px 9px;
   }
   .marquee:hover .marquee-track{ animation-play-state:paused; }
   @keyframes marqueeScroll{
     from{ transform:translateX(0); }
-    to{ transform:translateX(-50%); }
+    to{ transform:translateX(-25%); }
   }
   .marquee-shot{
     flex-shrink:0; width:150px; aspect-ratio:9/16; border-radius:22px; overflow:hidden;
@@ -176,7 +255,7 @@
     display:block; font-size:12.5px; font-weight:800; letter-spacing:.08em;
     text-transform:uppercase; color:var(--lagoon); margin-bottom:10px;
   }
-  .features-head h2{ font-family:var(--serif); font-weight:400; font-size:34px; margin:0 0 12px; }
+  .features-head h2{ font-family:var(--font-head); font-weight:800; font-size:32px; margin:0 0 12px; letter-spacing:-0.4px; }
   .features-head p{ color:var(--muted); font-size:15.5px; line-height:1.6; margin:0; }
 
   .feature-row{
@@ -203,7 +282,7 @@
     letter-spacing:.06em; text-transform:uppercase; padding:6px 14px; border-radius:16px;
     margin-bottom:16px;
   }
-  .feature-text h3{ font-family:var(--serif); font-weight:400; font-size:28px; margin:0 0 14px; line-height:1.2; }
+  .feature-text h3{ font-family:var(--font-head); font-weight:800; font-size:26px; margin:0 0 14px; line-height:1.25; letter-spacing:-0.3px; }
   .feature-text p{ color:var(--muted); font-size:15.5px; line-height:1.65; margin:0; }
 
   /* Sección de IA: más llamativa que las demás, con borde en degradado y
@@ -238,10 +317,10 @@
     content:''; position:absolute; inset:0; pointer-events:none;
     background:radial-gradient(circle at 15% 0%, rgba(255,255,255,0.22), transparent 45%);
   }
-  .cta-band h2{ font-family:var(--serif); font-weight:400; font-size:32px; margin:0 0 14px; position:relative; }
+  .cta-band h2{ font-family:var(--font-head); font-weight:800; font-size:30px; margin:0 0 14px; position:relative; letter-spacing:-0.4px; }
   .cta-band p{ font-size:15.5px; opacity:.92; margin:0 0 30px; position:relative; }
   .cta-band .btn-primary{ background:#fff; color:var(--ink); box-shadow:0 10px 26px rgba(0,0,0,0.18); position:relative; }
-  .cta-band .btn-primary:hover{ box-shadow:0 14px 34px rgba(0,0,0,0.22); }
+  .cta-band .btn-primary:hover{ box-shadow:0 14px 34px rgba(0,0,0,0.22); background:#fff; }
 
   /* ── Footer ─────────────────────────────────────────────────────── */
   .site-footer{ background:#0A2740; color:rgba(255,255,255,0.72); padding:64px 0 28px; }
@@ -253,7 +332,7 @@
   @media(max-width:480px){ .footer-grid{ grid-template-columns:1fr; } }
   .footer-brand{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
   .footer-brand img{ width:30px; height:30px; border-radius:9px; }
-  .footer-brand span{ font-family:var(--serif); font-size:19px; color:#fff; }
+  .footer-brand span{ font-family:var(--font-head); font-weight:800; font-size:18px; color:#fff; }
   .footer-col p.lead{ font-size:13.5px; line-height:1.6; max-width:260px; margin:0 0 20px; }
   .footer-social{ display:flex; gap:10px; }
   .footer-social a{
@@ -279,44 +358,71 @@
 <body>
 
 <header class="nav">
-  <div class="wrap nav-inner">
-    <a href="#top" class="nav-brand">
-      <img src="icon.png" alt="">
-      <span>MarDex</span>
-    </a>
-    <nav class="nav-links">
-      <a href="#funciones">Funciones</a>
-      <a href="#ia">Con IA</a>
-      <a href="#footer">Contacto</a>
-    </nav>
-    <div class="nav-actions">
-      <a href="index.html" class="btn btn-ghost">Iniciar sesión</a>
-      <a href="index.html" class="btn btn-primary">Regístrate gratis</a>
+  <div class="nav-shell" id="navShell">
+    <div class="nav-full" id="navFull">
+      <a href="#top" class="nav-brand">
+        <img src="icon.png" alt="">
+        <span>MarDex</span>
+      </a>
+      <nav class="nav-links">
+        <a href="#funciones">Funciones</a>
+        <a href="#ia">Con IA</a>
+        <a href="#footer">Contacto</a>
+      </nav>
+      <div class="nav-actions">
+        <div class="lang-select" id="langSelect">
+          <button type="button" class="lang-trigger" id="langTrigger" aria-label="Seleccionar idioma" aria-haspopup="true">
+            <span class="lang-flag">🇪🇸</span>
+          </button>
+        </div>
+        <a href="index.html" class="btn btn-ghost">Iniciar sesión</a>
+        <a href="index.html" class="btn btn-primary">Regístrate gratis</a>
+      </div>
+    </div>
+    <div class="nav-pill-content" id="navPillContent">
+      <div class="nav-pill-indicator" id="navPillIndicator"></div>
+      <button type="button" class="nav-pill-btn" data-target="f-especies">Especies</button>
+      <button type="button" class="nav-pill-btn" data-target="f-logbooks">Logbooks</button>
+      <button type="button" class="nav-pill-btn" data-target="ia">IA</button>
+      <button type="button" class="nav-pill-btn" data-target="f-ranking">Ranking</button>
     </div>
   </div>
 </header>
+<!-- Fuera de .nav-shell a propósito: el shell necesita overflow:hidden para
+     recortar el crossfade nav-full/nav-pill-content, y eso recortaba este
+     desplegable aunque fuera position:fixed (el clip de un overflow:hidden
+     alcanza a los descendientes fixed en la práctica). Se posiciona por JS
+     junto al botón real (ver updateHeroProgress / listener de langTrigger). -->
+<div class="lang-menu" id="langMenu">
+  <button type="button" class="lang-option" data-lang="es"><span class="lang-flag">🇪🇸</span> Español</button>
+  <button type="button" class="lang-option" data-lang="en"><span class="lang-flag">🇬🇧</span> English</button>
+  <button type="button" class="lang-option" data-lang="fr"><span class="lang-flag">🇫🇷</span> Français</button>
+  <button type="button" class="lang-option" data-lang="de"><span class="lang-flag">🇩🇪</span> Deutsch</button>
+</div>
 
 <main id="top">
 
   <!-- ── Hero ─────────────────────────────────────────────────────── -->
   <section class="hero wrap">
-    <div class="hero-kicker">
-      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="21"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>
-      El logbook de buceo para compartir
-    </div>
     <h1>Convierte cada inmersión en una historia que puedes <em>compartir</em></h1>
     <p>Registra cada inmersión, identifica lo que ves con IA, y compártelo con quien buceó contigo. MarDex es tu pokédex personal del mar.</p>
     <div class="hero-ctas">
       <a href="index.html" class="btn btn-primary btn-lg">Crear cuenta gratis</a>
       <a href="index.html" class="btn btn-ghost btn-lg">Ya tengo cuenta</a>
     </div>
+  </section>
 
-    <div class="hero-mockup reveal">
-      <div class="hero-mockup-screen">
-        <!-- Placeholder del hero: sustituir por una captura real del Home de la app. -->
-        <div class="ph-label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/><circle cx="8" cy="14" r="1.6"/><path d="M13 13.5h5M13 16h3.5"/></svg>
-          Vista previa de la app<br>(sustituir por una captura real)
+  <!-- ── Escenario anclado: el móvil rota/crece mientras el menú se
+       transforma en píldora (ver updateHeroProgress en el <script>) ── -->
+  <section class="hero-stage" id="heroStage">
+    <div class="hero-stage-pin">
+      <div class="hero-mockup" id="heroMockup">
+        <div class="hero-mockup-screen">
+          <!-- Placeholder del hero: sustituir por una captura real del Home de la app. -->
+          <div class="ph-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/><circle cx="8" cy="14" r="1.6"/><path d="M13 13.5h5M13 16h3.5"/></svg>
+            Vista previa de la app<br>(sustituir por una captura real)
+          </div>
         </div>
       </div>
     </div>
@@ -338,7 +444,7 @@
     </div>
 
     <!-- 1. Registrar especies -->
-    <div class="feature-row reveal">
+    <div class="feature-row reveal" id="f-especies">
       <div class="feature-visual">
         <div class="feature-shot" style="--shot-a:#2DD4A4;--shot-b:#0D5E87;">
           <div class="shot-placeholder">
@@ -354,7 +460,7 @@
     </div>
 
     <!-- 2. Logbooks compartidos -->
-    <div class="feature-row reverse reveal">
+    <div class="feature-row reverse reveal" id="f-logbooks">
       <div class="feature-visual">
         <div class="feature-shot" style="--shot-a:#4c82f5;--shot-b:#0D5E87;">
           <div class="shot-placeholder">
@@ -389,7 +495,7 @@
     </div>
 
     <!-- 4. Compite con amigos -->
-    <div class="feature-row reverse reveal">
+    <div class="feature-row reverse reveal" id="f-ranking">
       <div class="feature-visual">
         <div class="feature-shot" style="--shot-a:#E08A2E;--shot-b:#FF5F53;">
           <div class="shot-placeholder">
@@ -408,7 +514,7 @@
   <!-- ── CTA final ────────────────────────────────────────────────── -->
   <section class="wrap">
     <div class="cta-band reveal">
-      <h2>¿Lista/o para empezar tu logbook?</h2>
+      <h2>¿Listo para empezar tu logbook?</h2>
       <p>Únete en segundos y lleva tu primera inmersión registrada hoy mismo.</p>
       <a href="index.html" class="btn btn-primary btn-lg">Crear cuenta gratis</a>
     </div>
@@ -458,7 +564,7 @@
     </div>
     <div class="footer-bottom">
       <span>© <span id="footerYear"></span> MarDex. Todos los derechos reservados.</span>
-      <span>Hecha para buceadores.</span>
+      <span>Hecha por buceadores, para buceadores.</span>
     </div>
   </div>
 </footer>
@@ -466,10 +572,13 @@
 <script>
 document.getElementById('footerYear').textContent = new Date().getFullYear();
 
-// Cinta de capturas: genera N tarjetas placeholder y las DUPLICA una vez
-// (el array completo dos veces seguidas) — la animación CSS mueve la fila
-// -50% de su ancho total, así que al llegar justo a la mitad (donde
-// empieza la copia) el bucle no se nota. Sustituir cada icono/color por
+// ── Cinta de capturas ──────────────────────────────────────────────
+// Repetida 4 veces (no 2): con un único juego de tarjetas más estrecho
+// que la ventana, dos copias apenas cubrían pantallas anchas y durante
+// parte del bucle se veía un hueco en blanco a un lado — justo el bug
+// reportado. Con 4 copias iguales, moverse -25% equivale a moverse
+// exactamente una copia completa, así que el salto nunca se nota, sea
+// cual sea el ancho de la ventana. Sustituir cada icono/color por
 // <img src="screenshots/xxx.png"> cuando haya capturas reales (ver
 // comentario de .shot-placeholder en el <style>).
 const MARQUEE_SHOTS = [
@@ -486,12 +595,13 @@ function buildMarquee(){
     <div class="shot-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg></div>
   </div>`;
   const row = MARQUEE_SHOTS.map(card).join('');
-  track.innerHTML = row + row; // duplicado para el bucle continuo
+  track.innerHTML = row.repeat(4);
 }
 buildMarquee();
 
-// Animación de aparición al hacer scroll — sin dependencias, como el
-// resto de MarDex (ver index.html, que tampoco usa librerías de UI).
+// ── Animación de aparición al hacer scroll ──────────────────────────
+// Sin dependencias, como el resto de MarDex (ver index.html, que
+// tampoco usa librerías de UI).
 const revealObserver = new IntersectionObserver(entries=>{
   entries.forEach(entry=>{
     if(entry.isIntersecting){
@@ -501,6 +611,140 @@ const revealObserver = new IntersectionObserver(entries=>{
   });
 }, { threshold:0.15, rootMargin:'0px 0px -60px 0px' });
 document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
+
+// ── Selector de idioma (de momento solo visual, sin i18n real) ──────
+const langTrigger = document.getElementById('langTrigger');
+const langMenu = document.getElementById('langMenu');
+langTrigger.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const opening = !langMenu.classList.contains('open');
+  if(opening){
+    const rect = langTrigger.getBoundingClientRect();
+    langMenu.style.top = (rect.bottom + 10) + 'px';
+    langMenu.style.left = Math.max(12, rect.right - 170) + 'px';
+  }
+  langMenu.classList.toggle('open', opening);
+});
+document.querySelectorAll('.lang-option').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    langTrigger.querySelector('.lang-flag').textContent = opt.querySelector('.lang-flag').textContent;
+    langMenu.classList.remove('open');
+  });
+});
+document.addEventListener('click', (e)=>{
+  if(!langMenu.contains(e.target) && e.target!==langTrigger) langMenu.classList.remove('open');
+});
+window.addEventListener('scroll', ()=> langMenu.classList.remove('open'), { passive:true });
+
+// ── Móvil que rota/crece + menú que se convierte en píldora ─────────
+// Un único "progreso" 0→1, calculado a partir de cuánto se ha
+// scrolleado DENTRO de #heroStage (que es mucho más alto que la
+// pantalla a propósito — ver el comentario de .hero-stage en el
+// <style>), controla a la vez dos cosas: el transform 3D del móvil, y
+// la forma/color/contenido de #navShell. Van de la mano porque nacen
+// del mismo número.
+const heroStage = document.getElementById('heroStage');
+const heroMockup = document.getElementById('heroMockup');
+const navShell = document.getElementById('navShell');
+const navFull = document.getElementById('navFull');
+const navPill = document.getElementById('navPillContent');
+
+function lerpColor(a, b, t){
+  return `rgba(${a[0]+(b[0]-a[0])*t}, ${a[1]+(b[1]-a[1])*t}, ${a[2]+(b[2]-a[2])*t}, ${a[3]+(b[3]-a[3])*t})`;
+}
+const NAV_BG_FROM = [243,251,254,0.86];
+const NAV_BG_TO = [10,16,26,0.94];
+
+let heroProgress = 0;
+function updateHeroProgress(){
+  const rect = heroStage.getBoundingClientRect();
+  const scrollable = heroStage.offsetHeight - window.innerHeight;
+  // rect.top pasa de 0 (el escenario empieza justo al llegar) a
+  // -scrollable (se ha scrolleado todo su "combustible") — se traduce
+  // directamente a un progreso 0→1.
+  const raw = scrollable > 0 ? -rect.top / scrollable : 0;
+  heroProgress = Math.min(1, Math.max(0, raw));
+
+  // Móvil: una rotación sutil en su eje vertical (rotateY) + escala
+  // creciente, para que "ocupe más parte de la pantalla" sin llegar a
+  // verse del revés (se limita a 24°, no da una vuelta completa).
+  heroMockup.style.transform =
+    `perspective(1400px) rotateY(${heroProgress*24}deg) scale(${1 + heroProgress*0.65})`;
+  // Al escalarlo, el móvil "pinta" fuera de su caja de layout (el transform
+  // no reserva espacio real) — justo al soltarse el sticky, esa pintura de
+  // más se solapaba con la siguiente sección (marquee). Se desvanece en el
+  // último tramo del progreso para que, al soltarse, ya sea invisible.
+  heroMockup.style.opacity = heroProgress < 0.92 ? 1 : Math.max(0, 1 - (heroProgress - 0.92) / 0.08);
+
+  // Menú: de barra ancha de borde recto a píldora oscura flotante.
+  navShell.style.borderRadius = (heroProgress*30) + 'px';
+  navShell.style.width = (100 - heroProgress*58) + '%';
+  navShell.style.maxWidth = (1180 - heroProgress*(1180-480)) + 'px';
+  navShell.style.marginTop = (heroProgress*12) + 'px';
+  navShell.style.background = lerpColor(NAV_BG_FROM, NAV_BG_TO, heroProgress);
+
+  // Contenido: el nav completo se funde en el de píldora a mitad de
+  // camino, en vez de cambiar de golpe.
+  const fullOpacity = Math.max(0, 1 - heroProgress*2);
+  const pillOpacity = Math.max(0, heroProgress*2 - 1);
+  navFull.style.opacity = fullOpacity;
+  navFull.style.pointerEvents = fullOpacity > 0.5 ? 'auto' : 'none';
+  navPill.style.opacity = pillOpacity;
+  navPill.classList.toggle('interactive', pillOpacity > 0.5);
+}
+
+// ── Indicador deslizante del menú píldora ────────────────────────────
+// Sigue qué sección de función está más a la vista (independiente de
+// heroProgress: esto sigue activo en el resto de la página, no solo
+// durante el escenario del móvil) y mueve el resaltado bajo el botón
+// correspondiente — también sirve para saltar a esa sección al pulsar.
+const PILL_TARGETS = ['f-especies','f-logbooks','ia','f-ranking'];
+const pillIndicator = document.getElementById('navPillIndicator');
+const pillButtons = Array.from(document.querySelectorAll('.nav-pill-btn'));
+let activePillIndex = -1;
+
+function positionPillIndicator(index){
+  const btn = pillButtons[index];
+  if(!btn) return;
+  pillIndicator.style.width = btn.offsetWidth + 'px';
+  pillIndicator.style.transform = `translateX(${btn.offsetLeft}px)`;
+}
+function setActivePill(index){
+  if(index === activePillIndex) return;
+  activePillIndex = index;
+  pillButtons.forEach((btn,i)=>btn.classList.toggle('active', i===index));
+  positionPillIndicator(index);
+}
+pillButtons.forEach((btn,i)=>{
+  btn.addEventListener('click', ()=>{
+    document.getElementById(PILL_TARGETS[i])?.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+});
+
+function updateActiveSection(){
+  const line = window.innerHeight * 0.4;
+  let current = 0;
+  PILL_TARGETS.forEach((id, i)=>{
+    const el = document.getElementById(id);
+    if(el && el.getBoundingClientRect().top <= line) current = i;
+  });
+  setActivePill(current);
+}
+
+let ticking = false;
+function onScroll(){
+  if(ticking) return;
+  ticking = true;
+  requestAnimationFrame(()=>{
+    updateHeroProgress();
+    updateActiveSection();
+    ticking = false;
+  });
+}
+window.addEventListener('scroll', onScroll, { passive:true });
+window.addEventListener('resize', ()=>{ updateHeroProgress(); positionPillIndicator(activePillIndex); });
+updateHeroProgress();
+setActivePill(0);
 </script>
 
 </body>
