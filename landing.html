@@ -288,33 +288,24 @@
 
   /* ── Hero: texto fijo que se desvanece con el scroll ─────────────────
      Mismo truco de "combustible" que el resto del héroe: .hero-text-stage
-     da scroll de sobra, .hero-text-pin se queda anclado (sticky) centrado
-     en pantalla mientras tanto, y ese scroll de más mueve solo la
-     opacidad de #heroTextContent (de 1 a 0) — el texto no se mueve de
-     sitio, solo se desvanece. .hero-text-gap es aire en blanco entre el
-     final del desvanecido y el principio de la escena siguiente. Ver
-     updateHeroTextProgress(). */
+     da scroll de sobra, .hero-text-pin se queda anclado (sticky) arriba
+     mientras tanto (NO centrado — pedido explícitamente que el texto se
+     quede donde estaba "antes", cerca del borde superior, no a media
+     pantalla), y ese scroll de más mueve la opacidad de #heroTextContent
+     (sin llegar a 0 del todo: el resto de su desaparición lo hace el
+     propio scroll normal al soltarse el sticky, tapándolo por abajo con
+     la escena siguiente — ver updateHeroTextProgress()). Sin hueco en
+     blanco después (.hero-text-gap quitado): la escena empieza enseguida,
+     así el texto que aún quedaba visible se oculta de verdad detrás de su
+     borde superior en vez de desvanecerse en un espacio vacío. */
   .hero-text-stage{ height:160vh; position:relative; }
   .hero-text-pin{
     position:sticky; top:0; height:100vh;
-    display:flex; align-items:center; justify-content:center;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding-top:96px;
   }
-  .hero-text-gap{ height:16vh; }
   .hero{
-    position:relative; overflow:hidden; padding:72px 0 32px; text-align:center;
-  }
-  /* inset:0 (en vez de una caja más alta que .hero) para que el propio
-     overflow:hidden de .hero no la recorte a media transición y deje un
-     borde recto visible — los cuatro brillos radiales, anclados en las
-     cuatro esquinas, se funden entre sí y se apagan bien antes de llegar
-     a cualquier borde, así que no hay ningún corte duro en ningún punto. */
-  .hero::before{
-    content:''; position:absolute; inset:0; z-index:-1;
-    background:
-      radial-gradient(ellipse 70% 60% at 12% 0%, rgba(0,189,214,0.17), transparent 65%),
-      radial-gradient(ellipse 60% 55% at 92% 5%, rgba(45,212,164,0.15), transparent 65%),
-      radial-gradient(ellipse 55% 55% at 2% 100%, rgba(76,130,245,0.09), transparent 62%),
-      radial-gradient(ellipse 55% 55% at 98% 100%, rgba(0,162,255,0.09), transparent 62%);
+    position:relative; text-align:center;
   }
   .hero h1{
     font-family:var(--font-head); font-weight:800; font-size:52px; line-height:1.1;
@@ -334,25 +325,34 @@
      combustible se reparte en tres tramos (ver PHASE_A/B/C_FUEL_VH en el
      <script>):
      A) el móvil se traslada desde su posición desplazada (ver imagen de
-        referencia) hasta centrarse sobre la pantalla del portátil, a la
-        vez que gira/escala (como antes) — y el contenido de la pantalla
-        del portátil se "barre" hacia la derecha con una curva acelerada.
-     B) tramo fijo, sin más cambios (hueco para el vídeo scrubbeado).
+        referencia) hasta centrarse del todo en la escena, a la vez que
+        gira y crece mucho (se convierte en el protagonista) — y la
+        pantalla del portátil entera (el marco físico, no solo su
+        contenido) se "barre" hacia la derecha hasta salir con una curva
+        acelerada.
+     B) tramo fijo, sin más cambios (hueco para el vídeo scrubbeado) — el
+        móvil ya centrado y grande.
      C) la pantalla del móvil se vuelve transparente (revela #sceneAppBg,
-        el "fondo real de la app" de debajo) y el marco del móvil crece
-        muchísimo hasta "tragarse" la vista — el resto de capas de la
-        escena (fondo, pantalla del portátil) se desvanecen a la vez.
+        el "fondo real de la app" de debajo) y el marco del móvil sigue
+        creciendo muchísimo más hasta "tragarse" la vista — el resto de
+        capas de la escena (fondo, pantalla del portátil) se desvanecen a
+        la vez.
      Al agotarse el combustible el sticky se suelta solo y la página
-     sigue su scroll normal. Ver updateHeroProgress(). */
-  .hero-stage{ height:440vh; position:relative; }
+     sigue su scroll normal. Ver updateHeroProgress(). Borde superior:
+     línea separadora pedida entre el héroe (claro) y esta escena (fondo
+     oscuro). */
+  .hero-stage{ height:520vh; position:relative; }
   .hero-stage-pin{
     position:sticky; top:0; height:100vh; display:flex; align-items:center; justify-content:center;
     perspective:1400px; overflow:hidden;
+    border-top:1.5px solid rgba(255,255,255,0.22);
     /* Posición de arranque/llegada del móvil (ver PHONE_START/PHONE_END en
        el <script>, que las lee de aquí) — como custom properties para
-       poder darles otros valores en móvil sin tocar el JS. */
+       poder darles otros valores en móvil sin tocar el JS. Llegada en
+       (0,0): centrado del todo (pedido explícitamente — antes quedaba
+       descentrado, solapando la pantalla, y eso no gustó). */
     --phone-start-x:-280px; --phone-start-y:140px;
-    --phone-end-x:-150px; --phone-end-y:40px;
+    --phone-end-x:0px; --phone-end-y:0px;
   }
   /* Placeholder: sustituir por la foto de fondo real cuando la pases. */
   .scene-bg{
@@ -379,25 +379,24 @@
      tapa el marco entero y no se ve nada translúcido), fondo blanco
      translúcido + blur detrás, y un borde también translúcido en vez de
      la línea de 1px casi invisible que había. */
-  /* Escala x1.4 (antes x2 — se pasaba de tamaño, desbordaba la pantalla
-     por la derecha) alrededor del propio centro del elemento (mismo
-     patrón que #heroMockup), desplazada hasta que su borde izquierdo
-     corte el borde superior del móvil justo al 25% de su ancho (pedido
-     explícitamente). Con el móvil en su posición final (fase A completada:
-     centro en -150,40px, ancho 190*1.22≈231.8px — ver PHONE_END/baseScale
-     en el <script>), ese punto cae en x≈-208px; con la pantalla a 620px
-     de base (el tope de min(620px,56vw) desde ~1107px de viewport) y
-     escalada x1.4 (868px), su centro debe quedar en x≈226px para que el
-     borde izquierdo caiga justo ahí — y, a ese tamaño, la pantalla ya
-     cabe entera en un viewport de 1440px sin desbordar. */
+  /* .scene-screen: solo posición/escala (estático, responsive vía media
+     query — sin tocar). El aspecto visual (cristal, fondo, borde) y el
+     barrido hacia la derecha viven en .scene-screen-frame, un hijo
+     interior a inset:0 — así la escala/posición responsive no se pelea
+     con la animación JS del barrido (que solo toca el frame), y además
+     el barrido mueve de verdad la pantalla física entera (el frame, con
+     su fondo/cristal/contenido dentro), no solo el contenido, que es lo
+     que pasaba antes. */
   .scene-screen{
     position:absolute; top:50%; left:50%; z-index:3; width:min(620px, 56vw); aspect-ratio:16/9;
-    border-radius:18px; overflow:hidden; padding:8px;
+    transform:translate(-50%,-50%) translate(226px, -18px) scale(1.4);
+  }
+  .scene-screen-frame{
+    position:absolute; inset:0; border-radius:18px; overflow:hidden; padding:8px;
     background:rgba(255,255,255,0.5);
     backdrop-filter:blur(14px) saturate(1.4); -webkit-backdrop-filter:blur(14px) saturate(1.4);
     border:1.5px solid rgba(255,255,255,0.55);
     box-shadow:0 30px 70px rgba(0,0,0,0.38);
-    transform:translate(-50%,-50%) translate(226px, -18px) scale(1.4);
   }
   .scene-screen-content{
     position:absolute; inset:0; width:100%; height:100%; border-radius:12px;
@@ -451,7 +450,7 @@
   @media(max-width:640px){
     .hero-stage-pin{
       --phone-start-x:-20px; --phone-start-y:170px;
-      --phone-end-x:-6px; --phone-end-y:46px;
+      --phone-end-x:0px; --phone-end-y:0px;
     }
     .scene-screen{
       width:92vw;
@@ -677,7 +676,6 @@
       </div>
     </div>
   </section>
-  <div class="hero-text-gap" aria-hidden="true"></div>
 
   <!-- ── Escena anclada: fondo + pantalla de portátil + móvil (ver
        updateHeroProgress en el <script>) ── -->
@@ -685,8 +683,10 @@
     <div class="hero-stage-pin">
       <div class="scene-bg" id="sceneBg"></div>
       <div class="scene-screen" id="sceneScreen">
-        <div class="scene-screen-content" id="sceneScreenContent">
-          Pantalla del portátil<br>(sustituir por una captura real de la app)
+        <div class="scene-screen-frame" id="sceneScreenFrame">
+          <div class="scene-screen-content" id="sceneScreenContent">
+            Pantalla del portátil<br>(sustituir por una captura real de la app)
+          </div>
         </div>
       </div>
       <div class="scene-app-bg" id="sceneAppBg"></div>
@@ -910,13 +910,18 @@ function easeOutQuart(t){ return 1 - Math.pow(1-t, 4); }
 // el barrido de la pantalla del portátil, pedido explícitamente así.
 function easeOutQuint(t){ return 1 - Math.pow(1-t, 5); }
 
-// ── Texto del héroe: fijo en pantalla, se desvanece con el scroll ───
+// ── Texto del héroe: fijo arriba, se desvanece con el scroll ────────
 // Mismo "combustible" que el resto: #heroTextStage es más alto que la
-// pantalla, #heroTextPin se queda anclado centrado mientras tanto, y ese
-// scroll de más mueve solo la opacidad de #heroTextContent — el texto no
-// se mueve de sitio, solo desaparece. Después de esta función viene
-// #heroTextGap (ver <style>), aire en blanco antes de que empiece la
-// escena del móvil.
+// pantalla, #heroTextPin se queda anclado arriba mientras tanto, y ese
+// scroll de más mueve la opacidad de #heroTextContent — el texto no se
+// mueve de sitio. La opacidad no baja de 0.3 (no debe desaparecer del
+// todo por sí sola): lo que queda de él se oculta de verdad al soltarse
+// el sticky, tapado por la escena siguiente (ya no hay hueco en blanco
+// después — quitado .hero-text-gap), no desvanecido en el aire.
+//
+// El menú también pasa a píldora AQUÍ (no durante la escena siguiente,
+// como antes) — pedido explícitamente: para cuando empieza la escena del
+// móvil, el menú ya tiene que estar formado del todo.
 const heroTextStage = document.getElementById('heroTextStage');
 const heroTextContent = document.getElementById('heroTextContent');
 function updateHeroTextProgress(){
@@ -924,22 +929,37 @@ function updateHeroTextProgress(){
   const scrollable = heroTextStage.offsetHeight - window.innerHeight;
   const raw = scrollable > 0 ? -rect.top / scrollable : 0;
   const progress = Math.min(1, Math.max(0, raw));
-  heroTextContent.style.opacity = 1 - progress;
+  heroTextContent.style.opacity = 1 - progress*0.7;
+
+  navShell.style.borderRadius = (progress*30) + 'px';
+  navShell.style.width = (100 - progress*28) + '%';
+  navShell.style.maxWidth = (1180 - progress*(1180-660)) + 'px';
+  navShell.style.marginTop = (progress*22) + 'px';
+  navShell.style.background = lerpColor(NAV_BG_FROM, NAV_BG_TO, progress);
+  const fullOpacity = Math.max(0, 1 - progress*2);
+  const pillOpacity = Math.max(0, progress*2 - 1);
+  navFull.style.opacity = fullOpacity;
+  navFull.style.pointerEvents = fullOpacity > 0.5 ? 'auto' : 'none';
+  navPill.style.opacity = pillOpacity;
+  navPill.classList.toggle('interactive', pillOpacity > 0.5);
+  if(activePillIndex >= 0) positionPillIndicator(activePillIndex);
 }
 
-// ── Escena anclada: fondo + pantalla de portátil + móvil + menú ─────
+// ── Escena anclada: fondo + pantalla de portátil + móvil ────────────
 // Un único "progreso" 0→1, calculado a partir de cuánto se ha scrolleado
 // DENTRO de #heroStage (mucho más alto que la pantalla a propósito — ver
-// el comentario de .hero-stage en el <style>), controla a la vez el
-// transform 3D del móvil, el barrido de la pantalla del portátil, la
-// transparencia/zoom final, y la forma/color/contenido de #navShell.
+// el comentario de .hero-stage en el <style>), controla el transform 3D
+// del móvil, el barrido del marco físico de la pantalla del portátil y
+// la transparencia/zoom final. El menú ya no se toca aquí — ver
+// updateHeroTextProgress(), que lo termina de morfear a píldora antes de
+// que empiece esta escena.
 const heroStage = document.getElementById('heroStage');
 const heroStagePin = document.querySelector('.hero-stage-pin');
 const heroMockup = document.getElementById('heroMockup');
 const heroMockupScreen = document.getElementById('heroMockupScreen');
 const sceneBg = document.getElementById('sceneBg');
 const sceneScreen = document.getElementById('sceneScreen');
-const sceneScreenContent = document.getElementById('sceneScreenContent');
+const sceneScreenFrame = document.getElementById('sceneScreenFrame');
 const sceneAppBg = document.getElementById('sceneAppBg');
 const navShell = document.getElementById('navShell');
 const navFull = document.getElementById('navFull');
@@ -968,17 +988,20 @@ function readPhoneOffsets(){
 readPhoneOffsets();
 
 // El combustible de scroll se reparte en tres tramos (vh, a juego con
-// .hero-stage en el <style>: 100vh de pin + 120+120+100 = 440vh):
-// A) el móvil se traslada a su sitio sobre la pantalla mientras gira y
-//    escala (como antes), y el contenido de la pantalla del portátil se
-//    "barre" hacia la derecha con una curva acelerada — y el menú termina
-//    de formarse en píldora, igual que antes.
-// B) tramo fijo, sin más cambios (hueco para el vídeo scrubbeado).
+// .hero-stage en el <style>: 100vh de pin + 200+120+100 = 520vh):
+// A) el móvil se traslada hasta centrarse del todo mientras gira y crece
+//    mucho (se convierte en el protagonista), y la pantalla del portátil
+//    entera (el marco físico) se "barre" hacia la derecha con una curva
+//    acelerada hasta salir — y el menú ya viene formado en píldora desde
+//    el tramo de texto anterior. 200vh (antes 120) porque se pidió
+//    explícitamente más lenta — se notaba demasiado rápida.
+// B) tramo fijo, sin más cambios (hueco para el vídeo scrubbeado) — el
+//    móvil ya centrado y grande.
 // C) la pantalla del móvil se vuelve transparente (revela #sceneAppBg) y
-//    el marco crece muchísimo hasta "tragarse" la vista — el resto de
-//    capas de la escena (fondo, pantalla del portátil) se
+//    el marco sigue creciendo mucho más hasta "tragarse" la vista — el
+//    resto de capas de la escena (fondo, pantalla del portátil) se
 //    desvanecen a la vez.
-const PHASE_A_FUEL_VH = 120;
+const PHASE_A_FUEL_VH = 200;
 const PHASE_B_FUEL_VH = 120;
 const PHASE_C_FUEL_VH = 100;
 const FUEL_TOTAL = PHASE_A_FUEL_VH + PHASE_B_FUEL_VH + PHASE_C_FUEL_VH;
@@ -1010,16 +1033,14 @@ function updateHeroProgress(){
   // Móvil: traslación desde la posición desplazada hasta centrado sobre
   // la pantalla (tramo A) + rotación sutil en su eje vertical (sube y
   // vuelve a 0° con un seno, como antes — no se queda "a medio girar") +
-  // escala creciente. En el tramo C, la traslación vuelve a (0,0) y la
-  // escala sigue creciendo mucho más, para "tragarse" la vista.
-  // Giro y crecimiento más sutiles que antes (24°/+0.65 cuando el móvil
-  // iba solo): aquí comparte escena con la pantalla del portátil, así que
-  // un crecimiento tan grande lo convertía en el elemento dominante y
-  // tapaba la pantalla en vez de quedar delante de ella como en la
-  // imagen de referencia. El crecimiento fuerte queda para el tramo C.
+  // escala creciente. Debe quedar totalmente centrado y ser el elemento
+  // protagonista de la escena (más grande que la pantalla del portátil)
+  // ya al final del tramo A, no solo al final del tramo C. En el tramo C,
+  // la traslación se mantiene en (0,0) y la escala sigue creciendo mucho
+  // más, para "tragarse" la vista.
   const rotateY = Math.sin(phaseA * Math.PI) * 12;
-  const baseScale = 1 + phaseA*0.22;
-  const finalScale = baseScale + phaseC*13;
+  const baseScale = 1 + phaseA*1.6;
+  const finalScale = baseScale + phaseC*10;
   const offsetX = PHONE_START.x + (PHONE_END.x - PHONE_START.x)*easedA - phaseC*PHONE_END.x;
   const offsetY = PHONE_START.y + (PHONE_END.y - PHONE_START.y)*easedA - phaseC*PHONE_END.y;
   heroMockup.style.transform =
@@ -1036,10 +1057,13 @@ function updateHeroProgress(){
   heroMockupScreen.style.opacity = 1 - phaseC;
   heroMockup.style.background = `rgba(255,255,255,${0.52*(1-phaseC)})`;
 
-  // Pantalla del portátil: el contenido se "barre" hacia la derecha con
-  // una curva acelerada durante el tramo A (easeOutQuint: decelera mucho
-  // más de golpe al final que easeOutQuart).
-  sceneScreenContent.style.transform = `translateX(${easeOutQuint(phaseA)*115}%)`;
+  // Pantalla del portátil: es el marco físico (#sceneScreenFrame) el que se
+  // "barre" hacia la derecha, no solo su contenido — así desaparece la
+  // pantalla entera (cristal, borde y sombra incluidos), con una curva
+  // acelerada durante el tramo A (easeOutQuint: decelera mucho más de
+  // golpe al final que easeOutQuart). El contenedor exterior (#sceneScreen)
+  // no se toca aquí: solo fija la posición/escala responsive.
+  sceneScreenFrame.style.transform = `translateX(${easeOutQuint(phaseA)*115}%)`;
 
   // El resto de capas de la escena se desvanecen durante el tramo C, a la
   // vez que #sceneAppBg (el fondo real de la app) aparece detrás del móvil.
@@ -1047,32 +1071,6 @@ function updateHeroProgress(){
   sceneBg.style.opacity = sceneFade;
   sceneScreen.style.opacity = sceneFade;
   sceneAppBg.style.opacity = phaseC;
-
-  // Menú: de barra ancha de borde recto a píldora oscura flotante —
-  // atado a phaseA (no al heroProgress completo) para que termine de
-  // formarse exactamente cuando el móvil termina de colocarse, y se quede
-  // así, sin más cambios, durante el resto del escenario.
-  navShell.style.borderRadius = (phaseA*30) + 'px';
-  navShell.style.width = (100 - phaseA*28) + '%';
-  navShell.style.maxWidth = (1180 - phaseA*(1180-660)) + 'px';
-  navShell.style.marginTop = (phaseA*22) + 'px';
-  navShell.style.background = lerpColor(NAV_BG_FROM, NAV_BG_TO, phaseA);
-
-  // Contenido: el nav completo se funde en el de píldora a mitad de
-  // camino, en vez de cambiar de golpe.
-  const fullOpacity = Math.max(0, 1 - phaseA*2);
-  const pillOpacity = Math.max(0, phaseA*2 - 1);
-  navFull.style.opacity = fullOpacity;
-  navFull.style.pointerEvents = fullOpacity > 0.5 ? 'auto' : 'none';
-  navPill.style.opacity = pillOpacity;
-  navPill.classList.toggle('interactive', pillOpacity > 0.5);
-
-  // navShell se va estrechando durante todo este tramo de scroll, así que
-  // la posición de los botones de la píldora (y por tanto del indicador)
-  // cambia con él — sin esto, el indicador se queda clavado en la posición
-  // que tenía con el ancho inicial (completo) y queda descolocado en
-  // cuanto termina de encogerse.
-  if(activePillIndex >= 0) positionPillIndicator(activePillIndex);
 }
 
 // ── Indicador deslizante del menú píldora ────────────────────────────
