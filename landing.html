@@ -134,12 +134,21 @@
   .lang-flag.flag-es{ background:linear-gradient(to bottom, #AA151B 0 25%, #F1BF00 25% 75%, #AA151B 75% 100%); }
   .lang-flag.flag-fr{ background:linear-gradient(to right, #0055A4 0 33.33%, #fff 33.33% 66.66%, #EF4135 66.66% 100%); }
   .lang-flag.flag-de{ background:linear-gradient(to bottom, #000 0 33.33%, #DD0000 33.33% 66.66%, #FFCE00 66.66% 100%); }
+  /* Sin las diagonales esto es literalmente la bandera de Islandia (cruz
+     sobre azul marino) — la Union Jack las necesita para distinguirse.
+     De arriba a abajo (primera capa = la que se pinta encima): cruz roja
+     fina, cruz blanca ancha, aspas rojas finas, aspas blancas anchas,
+     fondo azul marino. */
   .lang-flag.flag-en{
     background:
       linear-gradient(to bottom, transparent 44%, #C8102E 44%, #C8102E 56%, transparent 56%),
       linear-gradient(to right, transparent 44%, #C8102E 44%, #C8102E 56%, transparent 56%),
       linear-gradient(to bottom, transparent 36%, #fff 36%, #fff 64%, transparent 64%),
       linear-gradient(to right, transparent 36%, #fff 36%, #fff 64%, transparent 64%),
+      linear-gradient(45deg, transparent 44%, #C8102E 44%, #C8102E 50%, transparent 50%),
+      linear-gradient(-45deg, transparent 44%, #C8102E 44%, #C8102E 50%, transparent 50%),
+      linear-gradient(45deg, transparent 34%, #fff 34%, #fff 58%, transparent 58%),
+      linear-gradient(-45deg, transparent 34%, #fff 34%, #fff 58%, transparent 58%),
       #0A1A4D;
   }
   /* position:fixed (no absolute): .nav-shell necesita overflow:hidden para
