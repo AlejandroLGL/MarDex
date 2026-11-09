@@ -348,6 +348,11 @@
   .hero-stage-pin{
     position:sticky; top:0; height:100vh; display:flex; align-items:center; justify-content:center;
     perspective:1400px; overflow:hidden;
+    /* Posición de arranque/llegada del móvil (ver PHONE_START/PHONE_END en
+       el <script>, que las lee de aquí) — como custom properties para
+       poder darles otros valores en móvil sin tocar el JS. */
+    --phone-start-x:-280px; --phone-start-y:140px;
+    --phone-end-x:-150px; --phone-end-y:40px;
   }
   /* Placeholder: sustituir por la foto de fondo real cuando la pases. */
   .scene-bg{
@@ -371,14 +376,22 @@
      uno no partía del mismo origen. translate(-50%,-50%) es lo que los
      centra de verdad; el translate(68px,-18px) de después es el offset
      respecto a ese centro. */
+  /* Marco con efecto glass (pedido explícitamente): padding para que haya
+     un borde visible alrededor del contenido (sin padding, el contenido
+     tapa el marco entero y no se ve nada translúcido), fondo blanco
+     translúcido + blur detrás, y un borde también translúcido en vez de
+     la línea de 1px casi invisible que había. */
   .scene-screen{
     position:absolute; top:50%; left:50%; z-index:3; width:min(620px, 56vw); aspect-ratio:16/9;
-    border-radius:18px; overflow:hidden; background:#fff;
-    box-shadow:0 30px 70px rgba(0,0,0,0.38), 0 0 0 1px rgba(255,255,255,0.08);
+    border-radius:18px; overflow:hidden; padding:8px;
+    background:rgba(255,255,255,0.5);
+    backdrop-filter:blur(14px) saturate(1.4); -webkit-backdrop-filter:blur(14px) saturate(1.4);
+    border:1.5px solid rgba(255,255,255,0.55);
+    box-shadow:0 30px 70px rgba(0,0,0,0.38);
     transform:translate(-50%,-50%) translate(68px, -18px);
   }
   .scene-screen-content{
-    position:absolute; inset:0; width:100%; height:100%;
+    position:absolute; inset:0; width:100%; height:100%; border-radius:12px;
     background:linear-gradient(135deg,#eaf7fc 0%,#cdeee6 100%);
     display:flex; align-items:center; justify-content:center; text-align:center;
     color:var(--muted); font-size:12.5px; font-weight:700; padding:20px;
@@ -393,10 +406,17 @@
      del portátil (16:9, bastante más ancha) — a 300px + el crecimiento
      del tramo A se comía la pantalla en vez de quedar como un elemento
      secundario delante de ella, como en la imagen de referencia. */
+  /* Efecto glass (pedido explícitamente): blanco translúcido + blur
+     detrás en vez de un blanco sólido, con un borde también translúcido.
+     El fondo se sigue pisando por JS durante el tramo C (ver
+     updateHeroProgress) para desvanecerlo del todo; ahí también se
+     interpola desde esta misma opacidad base en vez de blanco opaco. */
   .hero-mockup{
     position:absolute; top:50%; left:50%; z-index:5; width:190px; border-radius:30px; padding:10px;
-    background:linear-gradient(160deg,#ffffff,#eaf7fc);
-    box-shadow:var(--shadow-glow), 0 0 0 1px rgba(13,43,64,0.04);
+    background:rgba(255,255,255,0.52);
+    backdrop-filter:blur(12px) saturate(1.4); -webkit-backdrop-filter:blur(12px) saturate(1.4);
+    border:1.5px solid rgba(255,255,255,0.55);
+    box-shadow:var(--shadow-glow);
     will-change:transform; transform:translate(-50%,-50%) perspective(1400px) rotateY(0deg) scale(1);
   }
   .hero-mockup-screen{
@@ -409,6 +429,27 @@
     padding:0 24px; display:flex; flex-direction:column; align-items:center; gap:10px;
   }
   .hero-mockup-screen svg{ width:46px; height:46px; opacity:.9; }
+
+  /* Móvil: que solo se vea una parte de la pantalla del portátil (a
+     propósito, no por desbordar sin más) — pedido explícitamente con una
+     imagen de referencia. Pantalla más grande en proporción y empujada
+     fuera de encuadre por arriba-derecha, dejando solo una esquina
+     visible; el móvil, más centrado y sin el desplazamiento lateral tan
+     amplio que tenía en escritorio (ahí no hay sitio para abrirlo tanto).
+     Va DESPUÉS de las reglas base de .scene-screen/.hero-mockup (misma
+     especificidad: con empate, gana la que aparece más abajo en el
+     archivo, así que puesta antes no tenía ningún efecto). */
+  @media(max-width:640px){
+    .hero-stage-pin{
+      --phone-start-x:-20px; --phone-start-y:170px;
+      --phone-end-x:-6px; --phone-end-y:46px;
+    }
+    .scene-screen{
+      width:92vw;
+      transform:translate(-50%,-50%) translate(26vw, -22vh);
+    }
+    .hero-mockup{ width:208px; }
+  }
 
   /* ── Cinta de capturas en bucle (marquee) ──────────────────────────
      Técnica: una fila con el contenido repetido VARIAS veces (no solo
@@ -889,6 +930,7 @@ function updateHeroTextProgress(){
 // transform 3D del móvil, el barrido de la pantalla del portátil, la
 // transparencia/zoom final, y la forma/color/contenido de #navShell.
 const heroStage = document.getElementById('heroStage');
+const heroStagePin = document.querySelector('.hero-stage-pin');
 const heroMockup = document.getElementById('heroMockup');
 const heroMockupScreen = document.getElementById('heroMockupScreen');
 const sceneBg = document.getElementById('sceneBg');
@@ -906,14 +948,21 @@ function lerpColor(a, b, t){
 const NAV_BG_FROM = [243,251,254,0.86];
 const NAV_BG_TO = [10,16,26,0.94];
 
-// El móvil empieza desplazado abajo-izquierda de la composición (ver
-// imagen de referencia) y termina solapando la esquina inferior izquierda
-// de #sceneScreen (que está desplazada 68px/-18px del centro — ver
-// .scene-screen en el <style>). En el tramo C vuelve a (0,0) a la vez que
-// crece muchísimo, para que el "zoom" final quede centrado en vez de
-// descuadrado hacia un lado.
-const PHONE_START = { x:-280, y:140 };
-const PHONE_END   = { x:-150, y:40 };
+// El móvil empieza desplazado de la composición y termina solapando la
+// pantalla del portátil — los valores de dónde exactamente (distintos en
+// móvil, donde además la pantalla se empuja fuera de encuadre a
+// propósito) viven como custom properties en .hero-stage-pin (ver el
+// <style>), no aquí, para poder darles otros valores por media query sin
+// tocar JS. Se releen en cada resize.
+let PHONE_START = { x:-280, y:140 };
+let PHONE_END   = { x:-150, y:40 };
+function readPhoneOffsets(){
+  const cs = getComputedStyle(heroStagePin);
+  const px = (name) => parseFloat(cs.getPropertyValue(name)) || 0;
+  PHONE_START = { x:px('--phone-start-x'), y:px('--phone-start-y') };
+  PHONE_END   = { x:px('--phone-end-x'), y:px('--phone-end-y') };
+}
+readPhoneOffsets();
 
 // El combustible de scroll se reparte en tres tramos (vh, a juego con
 // .hero-stage en el <style>: 100vh de pin + 120+120+100 = 440vh):
@@ -975,11 +1024,14 @@ function updateHeroProgress(){
 
   // Pantalla del móvil: transparente en el tramo C, para fundirse con
   // #sceneAppBg (el "fondo real de la app") que hay justo debajo. El
-  // propio marco (#heroMockup) tiene su fondo opaco (blanco), así que
-  // también hay que desvanecerlo — si no, taparía igualmente lo de detrás
-  // aunque la pantalla interior ya fuera transparente.
+  // propio marco (#heroMockup) tiene fondo translúcido (efecto glass, no
+  // opaco), así que también hay que desvanecerlo — si no, taparía
+  // igualmente lo de detrás aunque la pantalla interior ya fuera
+  // transparente. Parte de la misma opacidad "glass" (0.52, la del CSS)
+  // en vez de blanco opaco, para no dar un salto de aspecto al empezar
+  // este tramo.
   heroMockupScreen.style.opacity = 1 - phaseC;
-  heroMockup.style.background = `rgba(255,255,255,${1-phaseC})`;
+  heroMockup.style.background = `rgba(255,255,255,${0.52*(1-phaseC)})`;
 
   // Pantalla del portátil: el contenido se "barre" hacia la derecha con
   // una curva acelerada durante el tramo A (easeOutQuint: decelera mucho
@@ -1077,7 +1129,7 @@ function onScroll(){
   });
 }
 window.addEventListener('scroll', onScroll, { passive:true });
-window.addEventListener('resize', ()=>{ updateHeroTextProgress(); updateHeroProgress(); positionPillIndicator(activePillIndex); });
+window.addEventListener('resize', ()=>{ readPhoneOffsets(); updateHeroTextProgress(); updateHeroProgress(); positionPillIndicator(activePillIndex); });
 updateHeroTextProgress();
 updateHeroProgress();
 setActivePill(0);
