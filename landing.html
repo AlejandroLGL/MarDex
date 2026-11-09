@@ -159,9 +159,15 @@
      saltar directamente a esa sección. */
   .nav-pill-content{ justify-content:center; gap:2px; opacity:0; pointer-events:none; }
   .nav-pill-content.interactive{ pointer-events:auto; }
+  /* Efecto glass (opaco, no transparente del todo): blanco desenfocado en
+     vez de un blanco plano, a juego con el cristal esmerilado del resto de
+     la navegación en vez de un bloque sólido. */
   .nav-pill-indicator{
     position:absolute; top:7px; bottom:7px; left:0; border-radius:999px;
-    background:#fff; box-shadow:0 2px 10px rgba(0,0,0,0.22);
+    background:rgba(255,255,255,0.86);
+    backdrop-filter:blur(10px) saturate(1.5); -webkit-backdrop-filter:blur(10px) saturate(1.5);
+    border:1px solid rgba(255,255,255,0.55);
+    box-shadow:0 2px 10px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.7);
     transition:transform .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
     width:0;
   }
@@ -208,11 +214,16 @@
   /* ── Escenario del móvil "anclado" ──────────────────────────────────
      .hero-stage da "combustible" de scroll (es mucho más alto que la
      pantalla); .hero-stage-pin se queda fijo (sticky) mientras tanto, así
-     que el móvil parece quedarse centrado en el sitio mientras scrolleas
-     — ese scroll "de más" es justo lo que mueve el progreso 0→1 que el
-     <script> usa para rotarlo/agrandarlo (heroProgress) y, a la vez, para
-     ir mutando #navShell hacia la píldora. Ver updateHeroProgress(). */
-  .hero-stage{ height:200vh; position:relative; }
+     que el móvil parece quedarse centrado en el sitio mientras scrolleas.
+     Ese scroll "de más" tiene dos tramos (ver PHASE_A_FUEL_VH/
+     PHASE_B_FUEL_VH en el <script>, que reparten esta altura entre los
+     dos): el giro/escala del móvil, y después un tramo donde se queda
+     fijo sin más cambios — pensado para reproducir ahí, más adelante, un
+     vídeo de la app scrubbeado con el scroll. Al acabar el segundo tramo,
+     el sticky se suelta solo (altura de sobra agotada) y el móvil sigue
+     el scroll normal de la página como un elemento más. Ver
+     updateHeroProgress(). */
+  .hero-stage{ height:340vh; position:relative; }
   .hero-stage-pin{
     position:sticky; top:0; height:100vh; display:flex; align-items:center; justify-content:center;
     perspective:1400px;
@@ -677,43 +688,63 @@ function lerpColor(a, b, t){
 const NAV_BG_FROM = [243,251,254,0.86];
 const NAV_BG_TO = [10,16,26,0.94];
 
+// El "combustible" de scroll del escenario se reparte en dos tramos:
+// A) giro/escala del móvil (y, a la vez, el menú morphing a píldora) —
+// B) un tramo donde el móvil se queda fijo tal cual quedó al final de A,
+// reservado para un vídeo de la app scrubbeado con el scroll más adelante
+// (de momento solo mantiene el móvil quieto en pantalla, sin vídeo real
+// todavía). Los números son vh, a juego con .hero-stage en el <style>
+// (100vh del pin + 100 de A + 140 de B = 340vh).
+const PHASE_A_FUEL_VH = 100;
+const PHASE_B_FUEL_VH = 140;
+const PHASE_SPLIT = PHASE_A_FUEL_VH / (PHASE_A_FUEL_VH + PHASE_B_FUEL_VH);
+
 let heroProgress = 0;
 function updateHeroProgress(){
   const rect = heroStage.getBoundingClientRect();
   const scrollable = heroStage.offsetHeight - window.innerHeight;
   // rect.top pasa de 0 (el escenario empieza justo al llegar) a
   // -scrollable (se ha scrolleado todo su "combustible") — se traduce
-  // directamente a un progreso 0→1.
+  // directamente a un progreso 0→1 a lo largo de los DOS tramos juntos.
   const raw = scrollable > 0 ? -rect.top / scrollable : 0;
   heroProgress = Math.min(1, Math.max(0, raw));
 
+  // rotateProgress: 0→1 solo durante el tramo A y clavado en 1 durante
+  // todo el tramo B — así el giro/escala del menú y del móvil terminan
+  // exactamente cuando empieza el tramo "fijo", en vez de seguir
+  // cambiando (o de completarse demasiado despacio ahora que el
+  // escenario es más largo).
+  const rotateProgress = Math.min(1, heroProgress / PHASE_SPLIT);
+
   // Móvil: una rotación sutil en su eje vertical (rotateY) + escala
   // creciente, para que "ocupe más parte de la pantalla" sin llegar a
-  // verse del revés (se limita a 24°, no da una vuelta completa). La
-  // rotación sube y vuelve a 0° (seno sobre el progreso, no un aumento
-  // directo) en vez de quedarse "a medio girar" en el ángulo máximo justo
-  // cuando el móvil se desvanece al final — así llega de frente, grande,
-  // justo antes de desaparecer.
-  const rotateY = Math.sin(heroProgress * Math.PI) * 24;
+  // verse del revés (se limita a 24°, no da una vuelta completa — eso
+  // queda para cuando haya vídeo real: una vuelta de 360°). La rotación
+  // sube y vuelve a 0° (seno sobre el progreso, no un aumento directo) en
+  // vez de quedarse "a medio girar", así llega de frente, grande, justo
+  // al entrar en el tramo fijo.
+  const rotateY = Math.sin(rotateProgress * Math.PI) * 24;
   heroMockup.style.transform =
-    `perspective(1400px) rotateY(${rotateY}deg) scale(${1 + heroProgress*0.65})`;
-  // Al escalarlo, el móvil "pinta" fuera de su caja de layout (el transform
-  // no reserva espacio real) — justo al soltarse el sticky, esa pintura de
-  // más se solapaba con la siguiente sección (marquee). Se desvanece en el
-  // último tramo del progreso para que, al soltarse, ya sea invisible.
-  heroMockup.style.opacity = heroProgress < 0.92 ? 1 : Math.max(0, 1 - (heroProgress - 0.92) / 0.08);
+    `perspective(1400px) rotateY(${rotateY}deg) scale(${1 + rotateProgress*0.65})`;
+  // Ya no se desvanece: se queda fijo y visible todo el tramo B, y es el
+  // propio sticky el que se suelta solo al agotarse el "combustible" —
+  // entonces el móvil sigue el scroll normal de la página como cualquier
+  // otro elemento, en vez de desaparecer.
 
-  // Menú: de barra ancha de borde recto a píldora oscura flotante.
-  navShell.style.borderRadius = (heroProgress*30) + 'px';
-  navShell.style.width = (100 - heroProgress*58) + '%';
-  navShell.style.maxWidth = (1180 - heroProgress*(1180-480)) + 'px';
-  navShell.style.marginTop = (heroProgress*12) + 'px';
-  navShell.style.background = lerpColor(NAV_BG_FROM, NAV_BG_TO, heroProgress);
+  // Menú: de barra ancha de borde recto a píldora oscura flotante —
+  // atado a rotateProgress (no al heroProgress completo) para que termine
+  // de formarse exactamente cuando el móvil termina de girar/escalar, y
+  // se quede así, sin más cambios, durante todo el tramo fijo.
+  navShell.style.borderRadius = (rotateProgress*30) + 'px';
+  navShell.style.width = (100 - rotateProgress*58) + '%';
+  navShell.style.maxWidth = (1180 - rotateProgress*(1180-480)) + 'px';
+  navShell.style.marginTop = (rotateProgress*22) + 'px';
+  navShell.style.background = lerpColor(NAV_BG_FROM, NAV_BG_TO, rotateProgress);
 
   // Contenido: el nav completo se funde en el de píldora a mitad de
   // camino, en vez de cambiar de golpe.
-  const fullOpacity = Math.max(0, 1 - heroProgress*2);
-  const pillOpacity = Math.max(0, heroProgress*2 - 1);
+  const fullOpacity = Math.max(0, 1 - rotateProgress*2);
+  const pillOpacity = Math.max(0, rotateProgress*2 - 1);
   navFull.style.opacity = fullOpacity;
   navFull.style.pointerEvents = fullOpacity > 0.5 ? 'auto' : 'none';
   navPill.style.opacity = pillOpacity;
