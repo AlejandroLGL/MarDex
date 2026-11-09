@@ -59,7 +59,15 @@
      scroll por la sección del móvil. Dentro lleva DOS variantes de
      contenido superpuestas (.nav-full / .nav-pill-content) que se funden
      la una en la otra en vez de aparecer/desaparecer de golpe. */
-  .nav{ position:sticky; top:0; z-index:50; padding:0 16px; }
+  /* display:flow-root: crea un nuevo contexto de formato de bloque sin
+     ningún efecto visual propio (a diferencia de overflow:hidden, que
+     recortaría la sombra/el blur de #navShell) — necesario porque, sin
+     esto, el margin-top que el <script> le pone a #navShell (para
+     separarlo del borde superior una vez convertido en píldora) colapsa
+     con el de .nav, que no tiene padding-top/border-top que lo contenga:
+     el margen "se escapa" hacia fuera de .nav y, al estar sticky con
+     top:0, el resultado era que no se veía ningún hueco real. */
+  .nav{ position:sticky; top:0; z-index:50; padding:0 16px; display:flow-root; }
   .nav-shell{
     position:relative; margin:0 auto; width:100%; max-width:1180px; height:66px;
     border-radius:0px; background:rgba(243,251,254,0.86);
@@ -159,18 +167,39 @@
      saltar directamente a esa sección. */
   .nav-pill-content{ justify-content:center; gap:2px; opacity:0; pointer-events:none; }
   .nav-pill-content.interactive{ pointer-events:auto; }
-  /* Efecto glass (opaco, no transparente del todo): blanco desenfocado en
-     vez de un blanco plano, a juego con el cristal esmerilado del resto de
-     la navegación en vez de un bloque sólido. */
+  /* .nav-pill-indicator (fuera) solo se encarga de la posición/ancho —
+     eso es lo que anima positionPillIndicator(). El aspecto glass/3D y el
+     "estrangulamiento" al cambiar de sección van en .nav-pill-indicator-
+     inner, un hijo aparte: si ambas cosas (posición y estrujado vertical)
+     se animaran sobre el mismo transform, la animación CSS del estrujado
+     pisaría el translateX puesto por JS mientras dura. */
   .nav-pill-indicator{
     position:absolute; top:7px; bottom:7px; left:0; border-radius:999px;
-    background:rgba(255,255,255,0.86);
-    backdrop-filter:blur(10px) saturate(1.5); -webkit-backdrop-filter:blur(10px) saturate(1.5);
-    border:1px solid rgba(255,255,255,0.55);
-    box-shadow:0 2px 10px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.7);
-    transition:transform .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
     width:0;
+    transition:transform .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
   }
+  /* Efecto glass (opaco, no transparente del todo) + aspecto 3D: brillo
+     arriba (degradado + borde superior más claro) y una sombra sólida
+     debajo, en vez de un blanco plano. */
+  .nav-pill-indicator-inner{
+    width:100%; height:100%; border-radius:999px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.84) 100%);
+    backdrop-filter:blur(10px) saturate(1.5); -webkit-backdrop-filter:blur(10px) saturate(1.5);
+    border:1px solid rgba(255,255,255,0.65);
+    box-shadow:
+      0 3px 8px rgba(0,0,0,0.38), 0 1px 2px rgba(0,0,0,0.3),
+      inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -2px 3px rgba(13,43,64,0.08);
+    transform-origin:center;
+  }
+  /* "Estrangulamiento": se estrecha verticalmente a mitad de camino al
+     pasar de una sección a otra, y recupera su altura al llegar — un
+     pelín de squash-and-stretch en vez de solo deslizarse en línea recta. */
+  @keyframes navPillSqueeze{
+    0%{ transform:scaleY(1); }
+    45%{ transform:scaleY(0.64); }
+    100%{ transform:scaleY(1); }
+  }
+  .nav-pill-indicator-inner.squeeze{ animation:navPillSqueeze .32s cubic-bezier(.4,0,.2,1); }
   /* Mismo tiempo/curva que el indicador (en vez de un .2s más corto): si el
      texto cambia a negro antes de que la píldora blanca llegue debajo,
      queda un tramo con texto oscuro sobre el fondo oscuro, ilegible. */
@@ -299,20 +328,21 @@
 
   .feature-row{
     display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
-    padding:56px 0;
+    /* Relleno horizontal (antes solo vertical): separa la imagen y el
+       texto del borde de la fila, donde empieza el degradado — si tocaban
+       ese borde quedaban "pegados" a él. */
+    padding:56px 36px;
     /* Degradado horizontal muy sutil desde el lado de la imagen hacia el
-       del texto, para separar visualmente una sección de la siguiente sin
-       depender solo de la línea divisoria. El color lo pone cada fila por
-       su variable --row-tint (ver el style= inline, a juego con --shot-a). */
+       del texto, para separar visualmente una sección de la siguiente —
+       sin línea divisoria: solo el degradado de cada fila. El color lo
+       pone cada fila por su variable --row-tint (ver el style= inline, a
+       juego con --shot-a). */
     background:linear-gradient(90deg, var(--row-tint, transparent) 0%, transparent 60%);
   }
-  /* Línea divisoria "imaginaria" entre secciones consecutivas: no en la
-     primera fila (no hay nada por encima que separar). */
-  .feature-row + .feature-row{ border-top:1px solid var(--line); }
   .feature-row.reverse{ direction:rtl; background:linear-gradient(270deg, var(--row-tint, transparent) 0%, transparent 60%); }
   .feature-row.reverse > *{ direction:ltr; }
   @media(max-width:860px){
-    .feature-row, .feature-row.reverse{ grid-template-columns:1fr; gap:28px; direction:ltr; padding:36px 0; }
+    .feature-row, .feature-row.reverse{ grid-template-columns:1fr; gap:28px; direction:ltr; padding:36px 20px; }
   }
 
   .feature-visual{ position:relative; }
@@ -419,7 +449,7 @@
       </div>
     </div>
     <div class="nav-pill-content" id="navPillContent">
-      <div class="nav-pill-indicator" id="navPillIndicator"></div>
+      <div class="nav-pill-indicator" id="navPillIndicator"><div class="nav-pill-indicator-inner" id="navPillIndicatorInner"></div></div>
       <button type="button" class="nav-pill-btn" data-target="f-especies">Especies</button>
       <button type="button" class="nav-pill-btn" data-target="f-logbooks">Logbooks</button>
       <button type="button" class="nav-pill-btn" data-target="ia">IA</button>
@@ -765,6 +795,7 @@ function updateHeroProgress(){
 // correspondiente — también sirve para saltar a esa sección al pulsar.
 const PILL_TARGETS = ['f-especies','f-logbooks','ia','f-ranking'];
 const pillIndicator = document.getElementById('navPillIndicator');
+const pillIndicatorInner = document.getElementById('navPillIndicatorInner');
 const pillButtons = Array.from(document.querySelectorAll('.nav-pill-btn'));
 let activePillIndex = -1;
 
@@ -779,6 +810,11 @@ function setActivePill(index){
   activePillIndex = index;
   pillButtons.forEach((btn,i)=>btn.classList.toggle('active', i===index));
   positionPillIndicator(index);
+  // Reinicia el "estrangulamiento" aunque ya estuviera animándose (cambio
+  // rápido de sección): quitar la clase, forzar reflow y volver a ponerla.
+  pillIndicatorInner.classList.remove('squeeze');
+  void pillIndicatorInner.offsetWidth;
+  pillIndicatorInner.classList.add('squeeze');
 }
 pillButtons.forEach((btn,i)=>{
   btn.addEventListener('click', ()=>{
