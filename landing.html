@@ -341,7 +341,7 @@
      C) la pantalla del móvil se vuelve transparente (revela #sceneAppBg,
         el "fondo real de la app" de debajo) y el marco del móvil crece
         muchísimo hasta "tragarse" la vista — el resto de capas de la
-        escena (fondo, ola, pantalla del portátil) se desvanecen a la vez.
+        escena (fondo, pantalla del portátil) se desvanecen a la vez.
      Al agotarse el combustible el sticky se suelta solo y la página
      sigue su scroll normal. Ver updateHeroProgress(). */
   .hero-stage{ height:440vh; position:relative; }
@@ -364,8 +364,6 @@
     transform:translateX(-50%); color:rgba(255,255,255,0.42); font-size:11px;
     font-weight:700; letter-spacing:.04em; white-space:nowrap;
   }
-  .scene-wave{ position:absolute; left:-5%; right:-5%; bottom:-2px; width:110%; z-index:2; line-height:0; }
-  .scene-wave svg{ width:100%; height:auto; display:block; }
   /* Placeholder: sustituir el contenido de dentro por una captura real de
      la app (grid de especies, etc.) — ahora mismo es solo un degradado
      con el mismo estilo que el resto de placeholders de la página. */
@@ -675,11 +673,6 @@
   <section class="hero-stage" id="heroStage">
     <div class="hero-stage-pin">
       <div class="scene-bg" id="sceneBg"></div>
-      <div class="scene-wave" aria-hidden="true">
-        <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
-          <path fill="#fff" d="M0,80 C240,20 420,110 720,70 C1020,30 1200,100 1440,50 L1440,120 L0,120 Z"/>
-        </svg>
-      </div>
       <div class="scene-screen" id="sceneScreen">
         <div class="scene-screen-content" id="sceneScreenContent">
           Pantalla del portátil<br>(sustituir por una captura real de la app)
@@ -937,7 +930,6 @@ const sceneBg = document.getElementById('sceneBg');
 const sceneScreen = document.getElementById('sceneScreen');
 const sceneScreenContent = document.getElementById('sceneScreenContent');
 const sceneAppBg = document.getElementById('sceneAppBg');
-const sceneWave = document.querySelector('.scene-wave');
 const navShell = document.getElementById('navShell');
 const navFull = document.getElementById('navFull');
 const navPill = document.getElementById('navPillContent');
@@ -973,7 +965,7 @@ readPhoneOffsets();
 // B) tramo fijo, sin más cambios (hueco para el vídeo scrubbeado).
 // C) la pantalla del móvil se vuelve transparente (revela #sceneAppBg) y
 //    el marco crece muchísimo hasta "tragarse" la vista — el resto de
-//    capas de la escena (fondo, ola, pantalla del portátil) se
+//    capas de la escena (fondo, pantalla del portátil) se
 //    desvanecen a la vez.
 const PHASE_A_FUEL_VH = 120;
 const PHASE_B_FUEL_VH = 120;
@@ -1042,7 +1034,6 @@ function updateHeroProgress(){
   // vez que #sceneAppBg (el fondo real de la app) aparece detrás del móvil.
   const sceneFade = 1 - phaseC;
   sceneBg.style.opacity = sceneFade;
-  sceneWave.style.opacity = sceneFade;
   sceneScreen.style.opacity = sceneFade;
   sceneAppBg.style.opacity = phaseC;
 
