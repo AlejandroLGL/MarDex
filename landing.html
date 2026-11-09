@@ -113,9 +113,26 @@
     padding:0; overflow:hidden; transition:border-color .15s;
   }
   .lang-trigger:hover{ border-color:var(--blue); }
+  /* Banderas dibujadas en CSS (franjas de color), no con el emoji de
+     bandera: los emoji de bandera (secuencias de "regional indicator")
+     dependen de que el sistema operativo tenga una fuente de emoji que los
+     dibuje como banderas — en Windows y en muchos Linux de escritorio caen
+     a solo las dos letras del código de país, así que no se veían. Esto
+     se ve igual en cualquier sistema. El overflow:hidden + border-radius:50%
+     del contenedor ya recorta el degradado en un círculo. */
   .lang-flag{
-    width:20px; height:20px; border-radius:50%; overflow:hidden;
-    display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1;
+    width:20px; height:20px; border-radius:50%; overflow:hidden; flex-shrink:0;
+  }
+  .lang-flag.flag-es{ background:linear-gradient(to bottom, #AA151B 0 25%, #F1BF00 25% 75%, #AA151B 75% 100%); }
+  .lang-flag.flag-fr{ background:linear-gradient(to right, #0055A4 0 33.33%, #fff 33.33% 66.66%, #EF4135 66.66% 100%); }
+  .lang-flag.flag-de{ background:linear-gradient(to bottom, #000 0 33.33%, #DD0000 33.33% 66.66%, #FFCE00 66.66% 100%); }
+  .lang-flag.flag-en{
+    background:
+      linear-gradient(to bottom, transparent 44%, #C8102E 44%, #C8102E 56%, transparent 56%),
+      linear-gradient(to right, transparent 44%, #C8102E 44%, #C8102E 56%, transparent 56%),
+      linear-gradient(to bottom, transparent 36%, #fff 36%, #fff 64%, transparent 64%),
+      linear-gradient(to right, transparent 36%, #fff 36%, #fff 64%, transparent 64%),
+      #0A1A4D;
   }
   /* position:fixed (no absolute): .nav-shell necesita overflow:hidden para
      recortar el crossfade nav-full/nav-pill-content, y eso recortaría un
@@ -134,7 +151,7 @@
     text-align:left; transition:background .12s;
   }
   .lang-option:hover{ background:var(--bg); }
-  .lang-option .lang-flag{ width:22px; height:22px; font-size:14px; background:var(--bg); }
+  .lang-option .lang-flag{ width:22px; height:22px; }
 
   /* Píldora flotante compacta (sustituye a .nav-full al hacer scroll) —
      lleva los mismos 4 atajos a las secciones de función, con un
@@ -144,26 +161,37 @@
   .nav-pill-content.interactive{ pointer-events:auto; }
   .nav-pill-indicator{
     position:absolute; top:7px; bottom:7px; left:0; border-radius:999px;
-    background:rgba(255,255,255,0.16); transition:transform .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
+    background:#fff; box-shadow:0 2px 10px rgba(0,0,0,0.22);
+    transition:transform .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
     width:0;
   }
+  /* Mismo tiempo/curva que el indicador (en vez de un .2s más corto): si el
+     texto cambia a negro antes de que la píldora blanca llegue debajo,
+     queda un tramo con texto oscuro sobre el fondo oscuro, ilegible. */
   .nav-pill-btn{
     position:relative; z-index:1; background:none; border:none; cursor:pointer;
     color:rgba(255,255,255,0.68); font-weight:700; font-size:12.5px; letter-spacing:.01em;
-    padding:9px 18px; border-radius:999px; transition:color .2s;
+    padding:9px 18px; border-radius:999px; transition:color .32s cubic-bezier(.4,0,.2,1);
     white-space:nowrap;
   }
-  .nav-pill-btn.active{ color:#fff; }
+  .nav-pill-btn.active{ color:var(--ink); }
 
   /* ── Hero ───────────────────────────────────────────────────────── */
   .hero{
     position:relative; overflow:hidden; padding:72px 0 32px; text-align:center;
   }
+  /* inset:0 (en vez de una caja más alta que .hero) para que el propio
+     overflow:hidden de .hero no la recorte a media transición y deje un
+     borde recto visible — los cuatro brillos radiales, anclados en las
+     cuatro esquinas, se funden entre sí y se apagan bien antes de llegar
+     a cualquier borde, así que no hay ningún corte duro en ningún punto. */
   .hero::before{
-    content:''; position:absolute; inset:-20% -10% auto -10%; height:600px; z-index:-1;
+    content:''; position:absolute; inset:0; z-index:-1;
     background:
-      radial-gradient(ellipse 60% 50% at 20% 10%, rgba(0,189,214,0.16), transparent 70%),
-      radial-gradient(ellipse 50% 45% at 85% 0%, rgba(45,212,164,0.14), transparent 70%);
+      radial-gradient(ellipse 70% 60% at 12% 0%, rgba(0,189,214,0.17), transparent 65%),
+      radial-gradient(ellipse 60% 55% at 92% 5%, rgba(45,212,164,0.15), transparent 65%),
+      radial-gradient(ellipse 55% 55% at 2% 100%, rgba(76,130,245,0.09), transparent 62%),
+      radial-gradient(ellipse 55% 55% at 98% 100%, rgba(0,162,255,0.09), transparent 62%);
   }
   .hero h1{
     font-family:var(--font-head); font-weight:800; font-size:52px; line-height:1.1;
@@ -216,7 +244,7 @@
      exactamente una copia, así que el salto al reiniciar es invisible
      pase lo que pase de ancha que sea la pantalla. Búscalo como "CSS
      infinite marquee" si quieres ver más variantes. */
-  .marquee-section{ padding:12px 0 64px; }
+  .marquee-section{ padding:88px 0 64px; }
   .marquee{
     display:flex; overflow:hidden; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
     mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
@@ -261,8 +289,16 @@
   .feature-row{
     display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
     padding:56px 0;
+    /* Degradado horizontal muy sutil desde el lado de la imagen hacia el
+       del texto, para separar visualmente una sección de la siguiente sin
+       depender solo de la línea divisoria. El color lo pone cada fila por
+       su variable --row-tint (ver el style= inline, a juego con --shot-a). */
+    background:linear-gradient(90deg, var(--row-tint, transparent) 0%, transparent 60%);
   }
-  .feature-row.reverse{ direction:rtl; }
+  /* Línea divisoria "imaginaria" entre secciones consecutivas: no en la
+     primera fila (no hay nada por encima que separar). */
+  .feature-row + .feature-row{ border-top:1px solid var(--line); }
+  .feature-row.reverse{ direction:rtl; background:linear-gradient(270deg, var(--row-tint, transparent) 0%, transparent 60%); }
   .feature-row.reverse > *{ direction:ltr; }
   @media(max-width:860px){
     .feature-row, .feature-row.reverse{ grid-template-columns:1fr; gap:28px; direction:ltr; padding:36px 0; }
@@ -277,11 +313,6 @@
   .feature-row.reverse .feature-shot{ --tilt:-1.4deg; }
   .feature-row:not(.reverse) .feature-shot{ --tilt:1.4deg; }
 
-  .feature-text .kicker{
-    display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:800;
-    letter-spacing:.06em; text-transform:uppercase; padding:6px 14px; border-radius:16px;
-    margin-bottom:16px;
-  }
   .feature-text h3{ font-family:var(--font-head); font-weight:800; font-size:26px; margin:0 0 14px; line-height:1.25; letter-spacing:-0.3px; }
   .feature-text p{ color:var(--muted); font-size:15.5px; line-height:1.65; margin:0; }
 
@@ -295,9 +326,6 @@
   @media(max-width:860px){ .feature-row.ai-highlight{ padding:32px 20px; } }
   .feature-row.ai-highlight .feature-shot{
     box-shadow:0 26px 64px rgba(124,58,237,0.26), 0 6px 20px rgba(124,58,237,0.16);
-  }
-  .ai-badge{
-    background:linear-gradient(135deg,#7C3AED,#DB2777); color:#fff;
   }
   .ai-sparkle{ position:absolute; color:var(--violet); opacity:.55; }
 
@@ -372,7 +400,7 @@
       <div class="nav-actions">
         <div class="lang-select" id="langSelect">
           <button type="button" class="lang-trigger" id="langTrigger" aria-label="Seleccionar idioma" aria-haspopup="true">
-            <span class="lang-flag">🇪🇸</span>
+            <span class="lang-flag flag-es"></span>
           </button>
         </div>
         <a href="index.html" class="btn btn-ghost">Iniciar sesión</a>
@@ -394,10 +422,10 @@
      alcanza a los descendientes fixed en la práctica). Se posiciona por JS
      junto al botón real (ver updateHeroProgress / listener de langTrigger). -->
 <div class="lang-menu" id="langMenu">
-  <button type="button" class="lang-option" data-lang="es"><span class="lang-flag">🇪🇸</span> Español</button>
-  <button type="button" class="lang-option" data-lang="en"><span class="lang-flag">🇬🇧</span> English</button>
-  <button type="button" class="lang-option" data-lang="fr"><span class="lang-flag">🇫🇷</span> Français</button>
-  <button type="button" class="lang-option" data-lang="de"><span class="lang-flag">🇩🇪</span> Deutsch</button>
+  <button type="button" class="lang-option" data-lang="es"><span class="lang-flag flag-es"></span> Español</button>
+  <button type="button" class="lang-option" data-lang="en"><span class="lang-flag flag-en"></span> English</button>
+  <button type="button" class="lang-option" data-lang="fr"><span class="lang-flag flag-fr"></span> Français</button>
+  <button type="button" class="lang-option" data-lang="de"><span class="lang-flag flag-de"></span> Deutsch</button>
 </div>
 
 <main id="top">
@@ -444,7 +472,7 @@
     </div>
 
     <!-- 1. Registrar especies -->
-    <div class="feature-row reveal" id="f-especies">
+    <div class="feature-row reveal" id="f-especies" style="--row-tint:rgba(45,212,164,0.07);">
       <div class="feature-visual">
         <div class="feature-shot" style="--shot-a:#2DD4A4;--shot-b:#0D5E87;">
           <div class="shot-placeholder">
@@ -453,14 +481,13 @@
         </div>
       </div>
       <div class="feature-text">
-        <span class="kicker" style="background:var(--seafoam);color:#0D5E3F;">Tu colección</span>
         <h3>Registra cada especie que ves bajo el agua</h3>
         <p>Cada inmersión es una oportunidad de ampliar tu colección. Marca lo que has visto, guarda tus mejores fotos y mira cómo tu pokédex de vida marina va creciendo inmersión a inmersión.</p>
       </div>
     </div>
 
     <!-- 2. Logbooks compartidos -->
-    <div class="feature-row reverse reveal" id="f-logbooks">
+    <div class="feature-row reverse reveal" id="f-logbooks" style="--row-tint:rgba(76,130,245,0.07);">
       <div class="feature-visual">
         <div class="feature-shot" style="--shot-a:#4c82f5;--shot-b:#0D5E87;">
           <div class="shot-placeholder">
@@ -469,7 +496,6 @@
         </div>
       </div>
       <div class="feature-text">
-        <span class="kicker" style="background:var(--blue-soft);color:#0D5E87;">En compañía</span>
         <h3>Comparte tus inmersiones con quien buceó contigo</h3>
         <p>Etiqueta a tus compañeros y decide cómo compartir: una inmersión realmente compartida, o una copia para que cada uno la lleve a su manera. Nunca más un «¿me pasas los datos de la inmersión de ayer?».</p>
       </div>
@@ -485,17 +511,13 @@
         </div>
       </div>
       <div class="feature-text">
-        <span class="kicker ai-badge">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2l1.9 5.1L19 9l-5.1 1.9L12 16l-1.9-5.1L5 9l5.1-1.9L12 2z"/></svg>
-          Con inteligencia artificial
-        </span>
         <h3>Deja que la IA rellene tu logbook por ti</h3>
         <p>Haz una foto a tu bitácora en papel y la IA la transcribe por ti. ¿No sabes qué animal acabas de ver? Haz una foto y te dice de qué especie se trata. Menos tiempo rellenando datos, más tiempo bajo el agua.</p>
       </div>
     </div>
 
     <!-- 4. Compite con amigos -->
-    <div class="feature-row reverse reveal" id="f-ranking">
+    <div class="feature-row reverse reveal" id="f-ranking" style="--row-tint:rgba(224,138,46,0.07);">
       <div class="feature-visual">
         <div class="feature-shot" style="--shot-a:#E08A2E;--shot-b:#FF5F53;">
           <div class="shot-placeholder">
@@ -504,7 +526,6 @@
         </div>
       </div>
       <div class="feature-text">
-        <span class="kicker" style="background:var(--amber-soft);color:#8A4D10;">Ranking</span>
         <h3>¡Compite con tus amigos!</h3>
         <p>Compara tu colección de especies con la de tus amigos, sube puestos en el ranking global y descubre quién lleva más inmersiones registradas este año.</p>
       </div>
@@ -627,7 +648,8 @@ langTrigger.addEventListener('click', (e)=>{
 });
 document.querySelectorAll('.lang-option').forEach(opt=>{
   opt.addEventListener('click', ()=>{
-    langTrigger.querySelector('.lang-flag').textContent = opt.querySelector('.lang-flag').textContent;
+    const flagClass = Array.from(opt.querySelector('.lang-flag').classList).find(c=>c.startsWith('flag-'));
+    langTrigger.querySelector('.lang-flag').className = 'lang-flag ' + flagClass;
     langMenu.classList.remove('open');
   });
 });
@@ -667,9 +689,14 @@ function updateHeroProgress(){
 
   // Móvil: una rotación sutil en su eje vertical (rotateY) + escala
   // creciente, para que "ocupe más parte de la pantalla" sin llegar a
-  // verse del revés (se limita a 24°, no da una vuelta completa).
+  // verse del revés (se limita a 24°, no da una vuelta completa). La
+  // rotación sube y vuelve a 0° (seno sobre el progreso, no un aumento
+  // directo) en vez de quedarse "a medio girar" en el ángulo máximo justo
+  // cuando el móvil se desvanece al final — así llega de frente, grande,
+  // justo antes de desaparecer.
+  const rotateY = Math.sin(heroProgress * Math.PI) * 24;
   heroMockup.style.transform =
-    `perspective(1400px) rotateY(${heroProgress*24}deg) scale(${1 + heroProgress*0.65})`;
+    `perspective(1400px) rotateY(${rotateY}deg) scale(${1 + heroProgress*0.65})`;
   // Al escalarlo, el móvil "pinta" fuera de su caja de layout (el transform
   // no reserva espacio real) — justo al soltarse el sticky, esa pintura de
   // más se solapaba con la siguiente sección (marquee). Se desvanece en el
@@ -691,6 +718,13 @@ function updateHeroProgress(){
   navFull.style.pointerEvents = fullOpacity > 0.5 ? 'auto' : 'none';
   navPill.style.opacity = pillOpacity;
   navPill.classList.toggle('interactive', pillOpacity > 0.5);
+
+  // navShell se va estrechando durante todo este tramo de scroll, así que
+  // la posición de los botones de la píldora (y por tanto del indicador)
+  // cambia con él — sin esto, el indicador se queda clavado en la posición
+  // que tenía con el ancho inicial (completo) y queda descolocado en
+  // cuanto termina de encogerse.
+  if(activePillIndex >= 0) positionPillIndicator(activePillIndex);
 }
 
 // ── Indicador deslizante del menú píldora ────────────────────────────

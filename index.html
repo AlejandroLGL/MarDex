@@ -6863,14 +6863,31 @@ function initBottomNav(){
   }
 
   const springs = btns.map(()=>new Spring(ICON_BASE));
-  let rafId = null, lastT = null;
+  let rafId = null, lastT = null, accumulator = 0;
+  // Paso fijo para la integración, en vez de usar el dt real del frame:
+  // con STIFFNESS=150/MASS=0.1 el muelle oscila en ~160ms, y un dt real
+  // que se acerque a esa escala (portátiles con el refresco de pantalla
+  // menos regular) hace que la integración explícita diverja en vez de
+  // asentarse — se ve como un parpadeo de tamaño creciente. Sustituimos
+  // ese dt real por "substeps" de tamaño fijo y pequeño (acumulando el
+  // tiempo real entre frames), así la simulación es estable sea cual sea
+  // el refresco real de la pantalla.
+  const PHYSICS_DT = 1/120;
+  const MAX_SUBSTEPS = 10;
 
   function loop(t){
-    const dt = lastT ? Math.min((t-lastT)/1000, 0.05) : 0.016;
+    const frameDt = lastT ? Math.min((t-lastT)/1000, 0.1) : PHYSICS_DT;
     lastT = t;
+    accumulator += frameDt;
+    let substeps = 0;
+    while(accumulator >= PHYSICS_DT && substeps < MAX_SUBSTEPS){
+      springs.forEach(s=>s.tick(PHYSICS_DT));
+      accumulator -= PHYSICS_DT;
+      substeps++;
+    }
     let running = false;
     springs.forEach((s,i)=>{
-      const px = Math.max(ICON_BASE, Math.round(s.tick(dt)*10)/10);
+      const px = Math.max(ICON_BASE, Math.round(s.v*10)/10);
       const ico = btns[i].querySelector('.bnav-icon');
       if(ico){ ico.style.width=px+'px'; ico.style.height=px+'px'; }
       const svg = ico?.querySelector('svg');
@@ -6878,7 +6895,7 @@ function initBottomNav(){
       if(!s.settled()) running = true;
     });
     if(running){ rafId = requestAnimationFrame(loop); }
-    else{ rafId = null; lastT = null; }
+    else{ rafId = null; lastT = null; accumulator = 0; }
   }
 
   function kick(){ if(!rafId) rafId = requestAnimationFrame(loop); }
