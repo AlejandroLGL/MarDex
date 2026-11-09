@@ -100,11 +100,12 @@
     transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
   }
   .btn-primary{
-    /* Color sólido en vez de degradado, pedido para un acabado más limpio. */
-    background:#0B7FC4; color:#fff;
-    box-shadow:0 10px 24px rgba(11,127,196,0.3);
+    /* Color sólido en vez de degradado (pedido para un acabado más limpio),
+       y negro (pedido también) en vez del azul inicial. */
+    background:#0B0F16; color:#fff;
+    box-shadow:0 10px 24px rgba(0,0,0,0.3);
   }
-  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 32px rgba(11,127,196,0.36); background:#0a6fac; }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 32px rgba(0,0,0,0.38); background:#1b212c; }
   .btn-ghost{ background:none; color:var(--ink); padding:11px 14px; }
   .btn-ghost:hover{ color:var(--blue); }
   .btn-lg{ padding:15px 30px; font-size:15.5px; border-radius:16px; }
@@ -174,8 +175,42 @@
      lleva los mismos 4 atajos a las secciones de función, con un
      indicador que se desliza bajo la opción activa y también sirve para
      saltar directamente a esa sección. */
-  .nav-pill-content{ justify-content:center; gap:2px; opacity:0; pointer-events:none; }
+  .nav-pill-content{
+    justify-content:space-between; gap:10px; opacity:0; pointer-events:none;
+    padding:0 8px 0 22px;
+  }
   .nav-pill-content.interactive{ pointer-events:auto; }
+  .nav-pill-links{ display:flex; align-items:center; gap:2px; }
+  /* Iniciar sesión/Registrarse también en la píldora compacta, no solo en
+     el menú completo — a juego con nav-actions pero a tamaño de píldora. */
+  .nav-pill-actions{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .nav-pill-login{
+    color:rgba(255,255,255,0.75); font-size:12.5px; font-weight:700;
+    text-decoration:none; padding:8px 10px; white-space:nowrap; transition:color .15s;
+  }
+  .nav-pill-login:hover{ color:#fff; }
+  /* Blanco, no negro: el pedido de "relleno negro" vale para los botones
+     de fondo claro (Crear cuenta gratis / Regístrate gratis) — un botón
+     negro encima del propio fondo casi negro de la píldora se volvería
+     invisible, así que aquí se mantiene el contraste con blanco sólido. */
+  .nav-pill-signup{
+    background:#fff; color:#0B0F16; font-size:12.5px; font-weight:800;
+    text-decoration:none; padding:8px 16px; border-radius:999px; white-space:nowrap;
+    box-shadow:0 2px 8px rgba(0,0,0,0.3);
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .nav-pill-signup:hover{ transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.35); background:#f0f0f0; }
+  /* La píldora llega a ~72% del ancho de pantalla (ver updateHeroProgress
+     en el <script>) — con los enlaces + Iniciar sesión + Registrarse eso
+     deja de caber por debajo de ~900px de viewport, y solo enlaces +
+     Registrarse por debajo de ~720px, así que se van quitando por pasos
+     (medido con el contenido real: ~577px/~470px/~134px de ancho propio
+     para cada combinación) en vez de desbordar la píldora. */
+  @media(max-width:900px){ .nav-pill-login{ display:none; } }
+  @media(max-width:720px){
+    .nav-pill-links, .nav-pill-indicator{ display:none; }
+    .nav-pill-content{ justify-content:center; }
+  }
   /* .nav-pill-indicator (fuera) solo se encarga de la posición/ancho —
      eso es lo que anima positionPillIndicator(). El aspecto glass/3D y el
      "estrangulamiento" al cambiar de sección van en .nav-pill-indicator-
@@ -490,10 +525,16 @@
     </div>
     <div class="nav-pill-content" id="navPillContent">
       <div class="nav-pill-indicator" id="navPillIndicator"><div class="nav-pill-indicator-inner" id="navPillIndicatorInner"></div></div>
-      <button type="button" class="nav-pill-btn" data-target="f-especies">Especies</button>
-      <button type="button" class="nav-pill-btn" data-target="f-logbooks">Logbooks</button>
-      <button type="button" class="nav-pill-btn" data-target="ia">IA</button>
-      <button type="button" class="nav-pill-btn" data-target="f-ranking">Ranking</button>
+      <div class="nav-pill-links">
+        <button type="button" class="nav-pill-btn" data-target="f-especies">Especies</button>
+        <button type="button" class="nav-pill-btn" data-target="f-logbooks">Logbooks</button>
+        <button type="button" class="nav-pill-btn" data-target="ia">IA</button>
+        <button type="button" class="nav-pill-btn" data-target="f-ranking">Ranking</button>
+      </div>
+      <div class="nav-pill-actions">
+        <a href="index.html" class="nav-pill-login">Iniciar sesión</a>
+        <a href="index.html" class="nav-pill-signup">Registrarse</a>
+      </div>
     </div>
   </div>
 </header>
@@ -806,8 +847,8 @@ function updateHeroProgress(){
   // de formarse exactamente cuando el móvil termina de girar/escalar, y
   // se quede así, sin más cambios, durante todo el tramo fijo.
   navShell.style.borderRadius = (rotateProgress*30) + 'px';
-  navShell.style.width = (100 - rotateProgress*58) + '%';
-  navShell.style.maxWidth = (1180 - rotateProgress*(1180-480)) + 'px';
+  navShell.style.width = (100 - rotateProgress*28) + '%';
+  navShell.style.maxWidth = (1180 - rotateProgress*(1180-660)) + 'px';
   navShell.style.marginTop = (rotateProgress*22) + 'px';
   navShell.style.background = lerpColor(NAV_BG_FROM, NAV_BG_TO, rotateProgress);
 
