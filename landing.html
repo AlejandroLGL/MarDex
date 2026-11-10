@@ -366,7 +366,7 @@
      sigue su scroll normal. Ver updateHeroProgress(). Borde superior:
      línea separadora pedida entre el héroe (claro) y esta escena (fondo
      oscuro). */
-  .hero-stage{ height:590vh; position:relative; }
+  .hero-stage{ height:670vh; position:relative; }
   .hero-stage-pin{
     position:sticky; top:0; height:100vh; display:flex; align-items:center; justify-content:center;
     perspective:1400px; overflow:hidden;
@@ -944,11 +944,8 @@ document.addEventListener('click', (e)=>{
 });
 window.addEventListener('scroll', ()=> langMenu.classList.remove('open'), { passive:true });
 
-// ── Curvas de easing reutilizadas por el héroe y la escena ──────────
+// ── Curva de easing reutilizada por el héroe y la escena ────────────
 function easeOutQuart(t){ return 1 - Math.pow(1-t, 4); }
-// Más "acelerada" que la anterior (decelera más de golpe al final) — para
-// el barrido de la pantalla del portátil, pedido explícitamente así.
-function easeOutQuint(t){ return 1 - Math.pow(1-t, 5); }
 
 // ── Texto del héroe: centrado y quieto hasta que lo tapa la escena ──
 // El texto en sí YA NO se anima (pedido explícitamente — debe seguir
@@ -1035,18 +1032,21 @@ function readPhoneOffsets(){
 }
 readPhoneOffsets();
 
-// Distancia en PX reales (no en % fijo del propio ancho del marco) que
-// necesita recorrer #sceneScreenFrame en el tramo A para salir del todo
-// del viewport por la derecha — calculada a partir de su posición
-// estática actual, para que funcione sea cual sea el ancho de pantalla
-// (con un % fijo, en viewports anchos el marco se quedaba a medias fuera
-// — pedido explícitamente arreglarlo). .scene-screen (el contenedor
-// exterior) no se mueve con el scroll, así que su posición es estable
-// mientras no cambie el layout: basta con releerla en cada resize.
+// Distancia en PX reales que necesita recorrer #sceneScreenFrame en el
+// tramo A para quedar "escondida a medias" hacia el margen derecho — NO
+// para salir del todo del viewport (pedido explícitamente, dos veces ya:
+// no debe desaparecer del todo). Calculada para que, al final del tramo
+// A, justo la mitad de su propio ancho quede más allá del borde derecho
+// del viewport — a partir de su posición y ancho estáticos actuales, para
+// que funcione sea cual sea el ancho de pantalla. .scene-screen (el
+// contenedor exterior) no se mueve con el scroll, así que su geometría es
+// estable mientras no cambie el layout: basta con releerla en cada
+// resize.
 let screenExitPx = 0;
 function readScreenExitPx(){
   const r = sceneScreen.getBoundingClientRect();
-  screenExitPx = window.innerWidth - r.left + 120;
+  const targetLeft = window.innerWidth - r.width*0.5;
+  screenExitPx = Math.max(0, targetLeft - r.left);
 }
 readScreenExitPx();
 
@@ -1061,24 +1061,26 @@ let isMobileScene = window.innerWidth <= 640;
 function readSceneMode(){ isMobileScene = window.innerWidth <= 640; }
 
 // El combustible de scroll se reparte en CUATRO tramos (vh, a juego con
-// .hero-stage en el <style>: 100vh de pin + 70+200+120+100 = 590vh):
+// .hero-stage en el <style>: 100vh de pin + 70+200+120+180 = 670vh):
 // PRE) pausa sin ningún movimiento (pedido explícitamente — antes la
 //    animación arrancaba nada más llegar a la escena).
 // A) el móvil se traslada hasta solapar la esquina de la pantalla del
 //    portátil, girando y creciendo con moderación — y la pantalla del
-//    portátil entera (el marco físico) se "barre" hacia la derecha con
-//    una curva acelerada hasta salir del todo del viewport — y el menú
-//    ya viene formado en píldora desde el tramo de texto anterior.
+//    portátil entera (el marco físico) se "esconde a medias" hacia la
+//    derecha (NUNCA del todo, pedido explícitamente dos veces) — y el
+//    menú ya viene formado en píldora desde el tramo de texto anterior.
 // B) tramo fijo, sin más cambios (hueco para el vídeo scrubbeado).
-// C) aquí cambian los papeles (ver phoneIsProtagonist más abajo): quien
-//    NO es la protagonista recupera su forma/posición original y se
-//    aparta; quien SÍ lo es vuelve al centro (si se había barrido fuera)
-//    y crece muchísimo más hasta que su interior "se traga" la vista — el
-//    resto de capas de la escena se desvanecen a la vez.
+// C) aquí cambian los papeles (ver phoneIsProtagonist más abajo), EN TRES
+//    PASOS encadenados (pedido explícitamente — "hazlo por pasos"), ver
+//    swapT/holdT/growT más abajo: (1) quien deja de ser protagonista se
+//    aparta y desenfoca, quien lo va a ser vuelve al centro pero a un
+//    tamaño reducido, nada más; (2) pausa sin ningún cambio — hueco
+//    reservado para la animación/vídeo que se añadirá más adelante; (3)
+//    solo entonces crece de verdad.
 const PHASE_PRE_FUEL_VH = 70;
 const PHASE_A_FUEL_VH = 200;
 const PHASE_B_FUEL_VH = 120;
-const PHASE_C_FUEL_VH = 100;
+const PHASE_C_FUEL_VH = 180;
 const FUEL_TOTAL = PHASE_PRE_FUEL_VH + PHASE_A_FUEL_VH + PHASE_B_FUEL_VH + PHASE_C_FUEL_VH;
 const PRE_END = PHASE_PRE_FUEL_VH / FUEL_TOTAL;
 const PHASE_A_END = (PHASE_PRE_FUEL_VH + PHASE_A_FUEL_VH) / FUEL_TOTAL;
@@ -1121,15 +1123,21 @@ function updateHeroProgress(){
 
   // Tramo C: aquí el móvil y la pantalla del portátil intercambian su
   // papel de protagonista (pedido explícitamente) — isMobileScene decide
-  // quién gana en cada plataforma (ver comentario de la variable). El
-  // intercambio en sí ocurre solo en la primera mitad del tramo C
-  // (swapT, 0→1) y se queda clavado ahí el resto — "su animación se
-  // pare", pedido explícitamente: ya no sigue cambiando hasta el final
-  // del tramo, se asienta y para.
+  // quién gana en cada plataforma (ver comentario de la variable), EN
+  // TRES PASOS encadenados (pedido explícitamente, "hazlo por pasos"):
+  // (1) swapT, 0→1 en el primer tercio: el intercambio en sí — quien dej
+  // a de ser protagonista se aparta y desenfoca, quien lo va a ser vuelve
+  // al centro pero SIN crecer todavía; (2) tramo intermedio sin ningún
+  // cambio (hueco reservado para la animación/vídeo que se añadirá más
+  // adelante); (3) growT, 0→1 en el último tercio: solo entonces crece de
+  // verdad. Cada paso se congela en cuanto termina el suyo — nada sigue
+  // cambiando fuera de su propia ventana.
   const phoneIsProtagonist = isMobileScene;
   const screenIsProtagonist = !phoneIsProtagonist;
-  const SWAP_SHARE = 0.5;
-  const swapT = Math.min(1, phaseC / SWAP_SHARE);
+  const SWAP_END = 0.34;
+  const GROW_START = 0.66;
+  const swapT = Math.min(1, phaseC / SWAP_END);
+  const growT = phaseC <= GROW_START ? 0 : Math.min(1, (phaseC - GROW_START) / (1 - GROW_START));
 
   let phoneScale, phoneX, phoneBlur;
   if(phoneIsProtagonist){
@@ -1144,8 +1152,9 @@ function updateHeroProgress(){
     // (pedido explícitamente — antes se apartaba a la izquierda), un
     // poco más pequeño, con un desenfoque creciente — pedido
     // explícitamente ("la pantalla que no esté centrada esté un poco
-    // blureada"). Todo en función de swapT, así que se congela en cuanto
-    // termina el intercambio.
+    // blureada"). Todo en función de swapT (paso 1), así que se congela
+    // en cuanto termina el intercambio y no se mueve más durante la
+    // pausa ni el crecimiento de la pantalla.
     phoneScale = placedScale - (placedScale-0.82)*swapT;
     phoneX = offsetX + swapT*560;
     phoneBlur = swapT*5;
@@ -1164,24 +1173,34 @@ function updateHeroProgress(){
   heroMockupScreen.style.opacity = 1 - phoneReveal;
   heroMockup.style.background = `rgba(255,255,255,${0.52*(1-phoneReveal)})`;
 
-  // Pantalla del portátil: en el tramo A barre hacia la derecha el marco
-  // físico entero (#sceneScreenFrame, no solo su contenido) — pero ya NO
-  // sale del todo del viewport (pedido explícitamente, "no debe
-  // desaparecer del todo"): solo la mitad de esa distancia, para que se
-  // quede "escondida a medias" hacia el margen derecho, no desaparecida.
-  const sweepPx = easeOutQuint(phaseA) * screenExitPx * 0.5;
+  // Pantalla del portátil: en el tramo A se esconde a medias (justo la
+  // mitad de su propio ancho, ver readScreenExitPx) hacia la derecha —
+  // NUNCA del todo (pedido explícitamente, dos veces ya). easeOutQuart
+  // (antes easeOutQuint, que aceleraba de golpe al principio y se sentía
+  // "demasiado rápida" — pedido explícitamente suavizarlo) en vez de una
+  // curva más agresiva. sweepPx son px reales EN PANTALLA (lo que mide
+  // readScreenExitPx); #sceneScreenFrame vive dentro de #sceneScreen, que
+  // en escritorio ya lleva su propio scale(1.75) — cualquier transform
+  // que el frame se aplique a sí mismo se renderiza multiplicado por ese
+  // 1.75 (los transforms anidados se componen), así que para que el
+  // frame se mueva esos px reales en pantalla hay que pedirle que se
+  // mueva 1.75 veces menos en su propio sistema de coordenadas. En móvil
+  // #sceneScreen no lleva escala (su media query la sustituye del todo),
+  // así que ahí no hace falta corregir nada.
+  const SCREEN_BASE_SCALE = 1.75;
+  const sweepPx = easeOutQuart(phaseA) * screenExitPx;
 
   let screenScale, screenTX, screenTY, screenBlur;
   if(screenIsProtagonist){
-    // Escritorio, tramo C: vuelve de ese escondite a medias, se recentra
-    // del todo (deshaciendo también el offset de composición de
-    // .scene-screen) y gana solo un pelín de escala — YA NO crece
-    // muchísimo hasta tragarse la página (pedido explícitamente esta
-    // ronda: debe quedarse una pantalla reconocible y centrada, no un
-    // zoom enorme). Congelada en cuanto termina el intercambio (swapT).
-    screenScale = 1 + swapT*0.15;
-    screenTX = sweepPx*(1-swapT) - 226*swapT;
-    screenTY = 18*swapT;
+    // Escritorio, tramo C: paso 1 (swapT) — vuelve de ese escondite a
+    // medias y se recentra del todo (deshaciendo también el offset de
+    // composición de .scene-screen), SIN crecer todavía (escala 1, "que
+    // sea más pequeña al centrarse" — pedido explícitamente). Paso 2
+    // (pausa): nada cambia aquí, swapT y growT se quedan clavados en 1 y
+    // 0 respectivamente. Paso 3 (growT) — solo entonces crece de verdad.
+    screenScale = 1 + growT*0.8;
+    screenTX = (sweepPx*(1-swapT) - 226*swapT) / SCREEN_BASE_SCALE;
+    screenTY = (18*swapT) / SCREEN_BASE_SCALE;
     screenBlur = 0;
   } else {
     // Móvil, tramo C: el móvil es quien se lleva el protagonismo — la
