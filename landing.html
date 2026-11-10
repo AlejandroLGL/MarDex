@@ -433,6 +433,18 @@
     display:flex; align-items:center; justify-content:center; text-align:center;
     color:var(--muted); font-size:12.5px; font-weight:700; padding:20px;
   }
+  /* Capa fija con una copia de la cinta + sección de funciones (ver
+     buildScenePreview() en el <script>), recortada con clip-path al
+     hueco actual de #sceneScreenFrame — pedido explícitamente: la
+     siguiente sección debe "aparecer desde dentro de la pantalla del PC"
+     a medida que esta crece en el último paso del tramo C, nunca visible
+     fuera de ese hueco. z-index menor que #nav (50) para que la píldora
+     del menú se siga viendo por encima durante la transición, pero mayor
+     que el resto de capas de la escena. */
+  #scenePreviewLayer{
+    position:fixed; inset:0; z-index:40; pointer-events:none;
+    opacity:0; overflow:hidden; background:var(--bg);
+  }
   /* Placeholder: aquí va "imagen 4" (el fondo real de la app) cuando la
      pases — se desvela a través de la pantalla del móvil en el tramo C. */
   .scene-app-bg{
@@ -919,6 +931,34 @@ const revealObserver = new IntersectionObserver(entries=>{
 }, { threshold:0.15, rootMargin:'0px 0px -60px 0px' });
 document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
 
+// ── Vista previa de la siguiente sección dentro de la pantalla ──────
+// Copia estática (clonada una sola vez, después de construir la cinta de
+// capturas de arriba) de la cinta + la sección de funciones, montada en
+// #scenePreviewLayer (fixed, recortada con clip-path — ver el <style>).
+// Pedido explícitamente: en el último paso del tramo C de la escena, al
+// crecer #sceneScreenFrame hasta cubrir toda la página, esta copia debe
+// "aparecer desde dentro de la pantalla del PC", nunca visible fuera de
+// ese hueco — ver su posicionamiento en updateHeroProgress(). Es una
+// COPIA, no la sección real (que sigue donde siempre, justo después de
+// la escena): sin ids (para que getElementById no la confunda con la
+// real) y con sus propios .reveal forzados ya visibles (si no, saldrían
+// con opacity:0 por el estado por defecto de esa clase, ya que esta
+// copia nunca pasa por el IntersectionObserver de arriba).
+const scenePreviewLayer = document.createElement('div');
+scenePreviewLayer.id = 'scenePreviewLayer';
+scenePreviewLayer.setAttribute('aria-hidden', 'true');
+[document.querySelector('.marquee-section'), document.querySelector('.features')].forEach(section=>{
+  const clone = section.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+  clone.querySelectorAll('.reveal').forEach(el=>{
+    el.classList.add('in-view');
+    el.style.transitionDelay = '0s';
+  });
+  scenePreviewLayer.appendChild(clone);
+});
+document.body.appendChild(scenePreviewLayer);
+
 // ── Selector de idioma (de momento solo visual, sin i18n real) ──────
 const langTrigger = document.getElementById('langTrigger');
 const langMenu = document.getElementById('langMenu');
@@ -1060,13 +1100,21 @@ const SCREEN_BASE_SCALE = 1.75;
 //   explícitamente: "no está para nada centrada" — antes se intentaba
 //   deshacer solo ese offset de 226/-18 a mano, pero no bastaba, porque
 //   el propio scale(1.75) también desplaza dónde cae el centro).
-// - screenMaxGrowScale: el multiplicador de escala máximo (relativo a su
-//   propio tamaño ya recentrado) que le cabe al frame sin salirse de un
-//   margen de seguridad del viewport — pedido explícitamente, "ojo con
-//   los márgenes, respétalos".
+// - screenFullBleedScale: el multiplicador de escala (relativo a su
+//   propio tamaño ya recentrado) que necesita el frame para cubrir el
+//   viewport ENTERO sin dejar ningún hueco — a propósito SIN respetar
+//   margen esta vez (pedido explícitamente: en el último paso del tramo
+//   C la pantalla debe "cubrir TODA la pantalla de la web", para que la
+//   siguiente sección pueda "aparecer desde dentro" de ella — ver
+//   scenePreviewLayer más abajo).
+// - screenBaseRect: su ancho/alto ya a SCREEN_BASE_SCALE (sin ningún
+//   scale adicional de JS) — lo necesita updateHeroProgress() para saber,
+//   sin leer el DOM en cada frame de scroll, qué tamaño en pantalla tiene
+//   el frame en cada instante (base × el screenScale del momento).
 let screenExitPx = 0;
 let screenRecenterPx = { x:0, y:0 };
-let screenMaxGrowScale = 1;
+let screenFullBleedScale = 1;
+let screenBaseRect = { width:0, height:0 };
 function readScreenExitPx(){
   // #sceneScreen se mide relativo a #heroStagePin (no al viewport
   // directamente): esta función puede llamarse en cualquier momento,
@@ -1095,10 +1143,10 @@ function readScreenExitPx(){
     y: window.innerHeight/2 - centerY,
   };
 
-  const MARGIN = 60;
-  const maxW = window.innerWidth - MARGIN*2;
-  const maxH = window.innerHeight - MARGIN*2;
-  screenMaxGrowScale = Math.max(1, Math.min(maxW/r.width, maxH/r.height));
+  screenBaseRect = { width:r.width, height:r.height };
+  // ×1.03 de margen de seguridad: que no quede ni un hueco de un píxel en
+  // los bordes por redondeos.
+  screenFullBleedScale = Math.max(window.innerWidth/r.width, window.innerHeight/r.height) * 1.03;
 }
 readScreenExitPx();
 
@@ -1123,12 +1171,18 @@ function readSceneMode(){ isMobileScene = window.innerWidth <= 640; }
 //    menú ya viene formado en píldora desde el tramo de texto anterior.
 // B) tramo fijo, sin más cambios (hueco para el vídeo scrubbeado).
 // C) aquí cambian los papeles (ver phoneIsProtagonist más abajo), EN TRES
-//    PASOS encadenados (pedido explícitamente — "hazlo por pasos"), ver
-//    swapT/holdT/growT más abajo: (1) quien deja de ser protagonista se
-//    aparta y desenfoca, quien lo va a ser vuelve al centro pero a un
-//    tamaño reducido, nada más; (2) pausa sin ningún cambio — hueco
-//    reservado para la animación/vídeo que se añadirá más adelante; (3)
-//    solo entonces crece de verdad.
+//    PASOS encadenados (pedido explícitamente), ver swapT/expandT más
+//    abajo: (1) SIMULTÁNEOS (pedido explícitamente, "para que sea más
+//    dinámico" — antes iban uno detrás del otro) — quien deja de ser
+//    protagonista se aparta y desenfoca MIENTRAS quien lo va a ser vuelve
+//    al centro y crece un poco (no mucho todavía); (2) pausa sin ningún
+//    cambio — hueco reservado para la animación/vídeo que se añadirá más
+//    adelante; (3) solo entonces, cuando esa animación termina, la
+//    protagonista se expande hasta cubrir la página entera — y
+//    #scenePreviewLayer (ver el <style> y buildScenePreview más arriba)
+//    hace que la siguiente sección de la web (la cinta + "Lo que puedes
+//    hacer con MarDex") se vea "aparecer desde dentro" de esa pantalla
+//    mientras crece, nunca fuera de su hueco.
 const PHASE_PRE_FUEL_VH = 70;
 const PHASE_A_FUEL_VH = 200;
 const PHASE_B_FUEL_VH = 120;
@@ -1175,21 +1229,20 @@ function updateHeroProgress(){
 
   // Tramo C: aquí el móvil y la pantalla del portátil intercambian su
   // papel de protagonista (pedido explícitamente) — isMobileScene decide
-  // quién gana en cada plataforma (ver comentario de la variable), EN
-  // TRES PASOS encadenados (pedido explícitamente, "hazlo por pasos"):
-  // (1) swapT, 0→1 en el primer tercio: el intercambio en sí — quien dej
-  // a de ser protagonista se aparta y desenfoca, quien lo va a ser vuelve
-  // al centro pero SIN crecer todavía; (2) tramo intermedio sin ningún
-  // cambio (hueco reservado para la animación/vídeo que se añadirá más
-  // adelante); (3) growT, 0→1 en el último tercio: solo entonces crece de
-  // verdad. Cada paso se congela en cuanto termina el suyo — nada sigue
-  // cambiando fuera de su propia ventana.
+  // quién gana en cada plataforma (ver comentario de la variable), en
+  // tres pasos: (1) swapT, 0→1 en el primer tramo — el intercambio en sí,
+  // quien deja de ser protagonista se aparta y desenfoca A LA VEZ que
+  // quien lo va a ser vuelve al centro y crece un poco (pedido
+  // explícitamente simultáneo, "más dinámico"); (2) tramo intermedio sin
+  // ningún cambio — hueco para la animación/vídeo; (3) expandT, 0→1 en el
+  // último tramo — solo entonces la protagonista se expande hasta cubrir
+  // la página entera. Cada paso se congela en cuanto termina el suyo.
   const phoneIsProtagonist = isMobileScene;
   const screenIsProtagonist = !phoneIsProtagonist;
-  const SWAP_END = 0.34;
-  const GROW_START = 0.66;
+  const SWAP_END = 0.30;
+  const HOLD_END = 0.60;
   const swapT = Math.min(1, phaseC / SWAP_END);
-  const growT = phaseC <= GROW_START ? 0 : Math.min(1, (phaseC - GROW_START) / (1 - GROW_START));
+  const expandT = phaseC <= HOLD_END ? 0 : Math.min(1, (phaseC - HOLD_END) / (1 - HOLD_END));
 
   let phoneScale, phoneX, phoneBlur;
   if(phoneIsProtagonist){
@@ -1200,15 +1253,14 @@ function updateHeroProgress(){
     phoneX = offsetX;
     phoneBlur = 0;
   } else {
-    // Escritorio: deja de ser el foco y se aparta hacia la IZQUIERDA
-    // (pedido explícitamente, corrigiendo la ronda anterior — se había
-    // apartado a la derecha por error), un poco más pequeño, con un
-    // desenfoque creciente — pedido explícitamente ("la pantalla que no
-    // esté centrada esté un poco blureada"). Todo en función de swapT
-    // (paso 1), así que se congela en cuanto termina el intercambio y no
-    // se mueve más durante la pausa ni el crecimiento de la pantalla.
-    phoneScale = placedScale - (placedScale-0.82)*swapT;
-    phoneX = offsetX - swapT*560;
+    // Escritorio: deja de ser el foco y se aparta hacia la IZQUIERDA, más
+    // lejos que antes (pedido explícitamente, "no se aparta lo
+    // suficiente"), un poco más pequeño, con un desenfoque creciente.
+    // Todo en función de swapT (paso 1), así que se congela en cuanto
+    // termina el intercambio y no se mueve más durante la pausa ni la
+    // expansión final de la pantalla.
+    phoneScale = placedScale - (placedScale-0.45)*swapT;
+    phoneX = offsetX - swapT*660;
     phoneBlur = swapT*5;
   }
   heroMockup.style.filter = phoneBlur > 0 ? `blur(${phoneBlur}px)` : '';
@@ -1246,22 +1298,27 @@ function updateHeroProgress(){
   const sweepPx = easeOutQuart(phaseA) * screenExitPx;
   const screenDeemph = screenIsProtagonist ? phaseA*(1-swapT) : phaseA;
 
-  let screenScale, screenTX, screenTY;
+  let screenScale, screenTX, screenTY, screenRadius;
   if(screenIsProtagonist){
     // Escritorio, tramo C: paso 1 (swapT) — vuelve de ese escondite a
-    // medias y se recentra del todo de verdad (contra el centro medido
-    // del viewport, ver screenRecenterPx — antes se deshacía solo el
-    // offset de composición a mano y no quedaba centrada, pedido
-    // explícitamente arreglarlo), SIN crecer todavía (escala 1, "que sea
-    // más pequeña al centrarse"). Paso 2 (pausa): nada cambia aquí, swapT
-    // y growT se quedan clavados en 1 y 0 respectivamente. Paso 3
-    // (growT) — solo entonces crece, hasta screenMaxGrowScale como mucho
-    // (pedido explícitamente, "ojo con los márgenes, respétalos": ese
-    // tope se calcula para que, a tamaño completo, no llegue a tocar los
-    // bordes del viewport).
-    screenScale = 1 + growT*(screenMaxGrowScale-1);
+    // medias, se recentra del todo de verdad (contra el centro medido del
+    // viewport, ver screenRecenterPx) Y crece un poco, LAS DOS COSAS A LA
+    // VEZ (pedido explícitamente, "para que sea más dinámico" — antes iba
+    // primero una y luego la otra). Paso 2 (pausa): nada cambia aquí,
+    // swapT se queda clavado en 1 y expandT en 0. Paso 3 (expandT) — solo
+    // entonces, cuando termina esa pausa (la animación/vídeo), se expande
+    // hasta cubrir la página entera — a propósito SIN respetar ningún
+    // margen esta vez (pedido explícitamente): screenFullBleedScale está
+    // calculado para que no quede ni un hueco en los bordes, porque este
+    // paso es el que hace de "portal" hacia la siguiente sección (ver
+    // scenePreviewLayer más abajo). Las esquinas se enderezan a la vez
+    // (pedido explícitamente, "cuidado con los radios... cuando aparezca
+    // la web"), para que al cubrir toda la página no queden redondeadas.
+    const modestScale = 1 + swapT*0.08;
+    screenScale = modestScale + expandT*(screenFullBleedScale - modestScale);
     screenTX = (sweepPx*(1-swapT) + screenRecenterPx.x*swapT) / SCREEN_BASE_SCALE;
     screenTY = (screenRecenterPx.y*swapT) / SCREEN_BASE_SCALE;
+    screenRadius = 18*(1-expandT);
   } else {
     // Móvil, tramo C: el móvil es quien se lleva el protagonismo — la
     // pantalla del portátil se queda apartada donde la dejó el tramo A
@@ -1269,9 +1326,35 @@ function updateHeroProgress(){
     screenScale = 1;
     screenTX = sweepPx;
     screenTY = 0;
+    screenRadius = 18;
   }
   sceneScreenFrame.style.transform = `translate(${screenTX}px, ${screenTY}px) scale(${screenScale})`;
+  sceneScreenFrame.style.borderRadius = screenRadius + 'px';
   sceneScreen.style.filter = screenDeemph > 0 ? `blur(${screenDeemph*5}px)` : '';
+
+  // Vista previa de la siguiente sección "dentro" de la pantalla: solo
+  // tiene sentido en escritorio, durante el paso 3 (expandT) del tramo C
+  // — se recorta (clip-path) al hueco actual de #sceneScreenFrame,
+  // calculado analíticamente (mismo centro que arriba, tamaño =
+  // screenBaseRect × screenScale) en vez de leyendo el DOM, para no forzar
+  // un reflow justo después de escribir el transform de arriba. pastHero:
+  // en cuanto el usuario sigue scrolleando más allá de donde #heroStage
+  // termina (su propio rect.bottom ya no llega al borde del viewport), la
+  // sección real ya está entrando en flujo normal por detrás — hay que
+  // apagar esta copia entonces, o se quedaría clavada encima para siempre
+  // (heroProgress se queda clavado en 1 a partir de ahí).
+  if(screenIsProtagonist && expandT > 0){
+    const renderedW = screenBaseRect.width * screenScale;
+    const renderedH = screenBaseRect.height * screenScale;
+    const left = window.innerWidth/2 - renderedW/2;
+    const top = window.innerHeight/2 - renderedH/2;
+    const pastHero = rect.bottom < window.innerHeight - 2;
+    scenePreviewLayer.style.opacity = pastHero ? '0' : '1';
+    scenePreviewLayer.style.clipPath =
+      `inset(${top}px ${window.innerWidth-left-renderedW}px ${window.innerHeight-top-renderedH}px ${left}px round ${screenRadius}px)`;
+  } else {
+    scenePreviewLayer.style.opacity = '0';
+  }
 
   // El fondo de la escena ya NO se desvanece (pedido explícitamente: la
   // foto de fondo debe seguir viéndose siempre, no solo mientras nadie es
