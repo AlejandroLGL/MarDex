@@ -2300,29 +2300,31 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
       linear-gradient(90deg, rgba(5,20,32,0.5) 0%, rgba(5,20,32,0) 60%),
       linear-gradient(0deg, rgba(5,20,32,0.72) 0%, rgba(5,20,32,0) 55%);
   }
+  /* Modificador para las tarjetas "Resumen del perfil" y "Logros": todo su
+     contenido centrado como un bloque único (icono+título+cifras), en vez
+     de título arriba y contenido abajo con un hueco vacío en medio. */
+  .home-carousel-slide-inner.centered{ justify-content:center; align-items:center; text-align:center; }
   /* Fila de estadísticas compactas (tarjeta "Resumen del perfil"). */
-  .home-stat-row{ display:flex; gap:10px; margin-top:auto; }
-  .home-stat-item{ flex:1; min-width:0; }
+  .home-stat-row{ display:flex; gap:18px; margin-top:6px; }
+  .home-stat-item{ min-width:0; }
   .home-stat-value{ font-size:22px; font-weight:800; color:#fff; line-height:1.1; text-shadow:0 1px 4px rgba(0,0,0,0.25); }
   .home-stat-label{ font-size:10px; font-weight:700; color:rgba(255,255,255,0.78); text-transform:uppercase; letter-spacing:.03em; margin-top:2px; }
-  /* Mini dashboard de Logros: ruedas de progreso con conic-gradient (sin
-     SVG), reutilizando los mismos tonos que las barras lineales del panel
-     completo (.ach-progress-fill) pero en un anillo compacto. */
-  .home-ach-summary{ font-size:12.5px; font-weight:700; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); margin-bottom:2px; }
-  .home-ach-ring-row{ display:flex; gap:12px; margin-top:auto; }
-  .home-ach-ring-item{ display:flex; flex-direction:column; align-items:center; gap:4px; width:64px; }
+  /* Mini dashboard de Logros: círculos rellenos por porcentaje (conic-gradient,
+     sin SVG ni hueco interior — no son "ruedas" sino discos de color sólido),
+     con el mismo color por categoría que las barras lineales del panel
+     completo (.ach-progress-fill): ver HOME_ACH_RING_COLORS. */
+  .home-ach-summary{ font-size:12.5px; font-weight:700; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); margin-bottom:8px; }
+  .home-ach-ring-row{ display:flex; gap:16px; justify-content:center; margin-top:6px; }
+  .home-ach-ring-item{ display:flex; flex-direction:column; align-items:center; gap:4px; width:68px; }
   .home-ach-ring{
-    position:relative; width:52px; height:52px; border-radius:50%;
+    width:56px; height:56px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-  }
-  .home-ach-ring-inner{
-    position:absolute; inset:5px; border-radius:50%; background:#78909C;
-    display:flex; align-items:center; justify-content:center;
-    font-size:11px; font-weight:800; color:#fff;
+    font-size:13px; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.4);
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
   }
   .home-ach-ring-label{ font-size:9px; font-weight:700; color:rgba(255,255,255,0.85); text-align:center; line-height:1.15; }
   .home-ach-ring-missing{ font-size:8.5px; color:rgba(255,255,255,0.65); }
-  .home-ach-empty{ font-size:12px; color:rgba(255,255,255,0.8); margin-top:auto; }
+  .home-ach-empty{ font-size:12px; color:rgba(255,255,255,0.8); margin-top:6px; }
   /* Zonas de avance/retroceso en los extremos, con una flecha fina (SVG, no
      el carácter "<"/">"). Siempre visibles a media opacidad (para que se
      noten también en móvil, sin :hover táctil) y a opacidad completa con el
@@ -7834,23 +7836,30 @@ function renderHomeLogrosWidgetHtml(){
 
   const rings = candidates.map(a=>{
     const pct = Math.min(100, Math.round((a.current/a.target)*100));
+    const color = HOME_ACH_RING_COLORS[a.themeClass] || HOME_ACH_RING_COLORS.default;
     return `<div class="home-ach-ring-item">
-      <div class="home-ach-ring" style="background:conic-gradient(#fff ${pct}%, rgba(255,255,255,0.28) 0);">
-        <div class="home-ach-ring-inner">${pct}%</div>
-      </div>
+      <div class="home-ach-ring" style="background:conic-gradient(${color} ${pct}%, rgba(255,255,255,0.28) 0);">${pct}%</div>
       <div class="home-ach-ring-label">${escapeHtml(a.title)}</div>
       <div class="home-ach-ring-missing">Faltan ${a.target-a.current}</div>
     </div>`;
   }).join('');
 
   return `
-    <div class="home-carousel-slide-inner">
+    <div class="home-carousel-slide-inner centered">
       <div class="home-carousel-slide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M9 14l-1.5 7L12 19l4.5 2L15 14"/></svg></div>
       <div class="home-carousel-slide-title">Logros</div>
       <div class="home-ach-summary">${summaryLine}</div>
       ${candidates.length ? `<div class="home-ach-ring-row">${rings}</div>` : `<div class="home-ach-empty">¡Hitos numéricos completados!</div>`}
     </div>`;
 }
+// Mismos colores por categoría que las barras lineales del panel completo
+// de Logros (.ach-progress-card.<cat> .ach-progress-fill, ~línea 730).
+// `default` cubre los hitos globales (themeClass vacío: "N especies · entorno").
+const HOME_ACH_RING_COLORS = {
+  ray:'var(--lagoon)', fish:'var(--amber)', medusa:'var(--violet)',
+  crustaceo:'var(--rust)', reptil:'var(--sage)', molusco:'var(--magenta)',
+  default:'var(--blue)',
+};
 
 // Mini-dashboard de "Resumen del perfil": reutiliza SPECIES/isUnlockedEnv ya
 // cargados (sin pedir nada al servidor) para "especies desbloqueadas", y
@@ -7871,7 +7880,7 @@ function renderHomeProfileWidgetHtml(divesForStats){
     zoneCount = new Set(divesForStats.map(zoneKeyForDive).filter(Boolean)).size;
   }
   return `
-    <div class="home-carousel-slide-inner">
+    <div class="home-carousel-slide-inner centered">
       <div class="home-carousel-slide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
       <div class="home-carousel-slide-title">Resumen del perfil</div>
       <div class="home-stat-row">
