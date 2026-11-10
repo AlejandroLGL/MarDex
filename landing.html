@@ -1337,18 +1337,29 @@ function updateHeroProgress(){
   // — se recorta (clip-path) al hueco actual de #sceneScreenFrame,
   // calculado analíticamente (mismo centro que arriba, tamaño =
   // screenBaseRect × screenScale) en vez de leyendo el DOM, para no forzar
-  // un reflow justo después de escribir el transform de arriba. pastHero:
-  // en cuanto el usuario sigue scrolleando más allá de donde #heroStage
-  // termina (su propio rect.bottom ya no llega al borde del viewport), la
-  // sección real ya está entrando en flujo normal por detrás — hay que
-  // apagar esta copia entonces, o se quedaría clavada encima para siempre
-  // (heroProgress se queda clavado en 1 a partir de ahí).
+  // un reflow justo después de escribir el transform de arriba.
+  //
+  // pastHero: en cuanto heroProgress llega a 1 (rect.bottom = la altura
+  // del viewport), #heroStagePin TODAVÍA no ha terminado de soltarse —
+  // sticky se suelta solo cuando #heroStage entero (no solo su
+  // "combustible") ha pasado del todo, y eso son otros 100vh más de
+  // scroll (la altura del propio pin) antes de que la sección real
+  // siguiente llegue a ocupar el viewport entero. Apagar la copia nada
+  // más llegar a heroProgress=1 (como se hacía antes) la quitaba de en
+  // medio DEMASIADO PRONTO, dejando ver esos 100vh de por medio el propio
+  // #heroStagePin soltándose (ya sin trackear el centro del viewport, al
+  // ya no estar "pegado") — un salto feo entre lo que se veía expandido y
+  // la sección real, pedido explícitamente arreglarlo. Con
+  // rect.bottom<=0 (el final de verdad de #heroStage, combustible +
+  // pin) la copia se queda encima hasta el instante exacto en que la
+  // sección real ya ocupa el viewport entero por detrás — mismo
+  // contenido, ningún salto.
   if(screenIsProtagonist && expandT > 0){
     const renderedW = screenBaseRect.width * screenScale;
     const renderedH = screenBaseRect.height * screenScale;
     const left = window.innerWidth/2 - renderedW/2;
     const top = window.innerHeight/2 - renderedH/2;
-    const pastHero = rect.bottom < window.innerHeight - 2;
+    const pastHero = rect.bottom <= 1;
     scenePreviewLayer.style.opacity = pastHero ? '0' : '1';
     scenePreviewLayer.style.clipPath =
       `inset(${top}px ${window.innerWidth-left-renderedW}px ${window.innerHeight-top-renderedH}px ${left}px round ${screenRadius}px)`;
