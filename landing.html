@@ -307,28 +307,22 @@
   }
   .nav-pill-btn.active{ color:var(--ink); }
 
-  /* ── Hero: texto fijo que se desvanece con el scroll ─────────────────
+  /* ── Hero: texto centrado, se queda quieto hasta que lo tapa la escena ──
      Mismo truco de "combustible" que el resto del héroe: .hero-text-stage
-     da scroll de sobra, .hero-text-pin se queda anclado (sticky) arriba
-     mientras tanto (NO centrado — pedido explícitamente que el texto se
-     quede donde estaba "antes", cerca del borde superior, no a media
-     pantalla). Ese scroll de más (120vh de stage - 100vh de pin = 20vh,
-     antes 60vh — reducido para que el hueco entre la sección 1 y la 2 sea
-     más corto, pedido explícitamente) mueve la opacidad de
-     #heroTextContent (hasta un suelo bajo, no 0: el texto queda muy tenue
-     pero no desaparece del todo por sí solo) y un ligero translateY hacia
-     arriba, para reforzar que se está "yendo" en vez de quedarse clavado.
-     El resto de su desaparición lo hace el propio scroll normal al
-     soltarse el sticky (el pin, 100vh, se desplaza fuera de la pantalla
-     por arriba mientras la escena siguiente — que empieza justo donde
-     acaba este stage, sin hueco en blanco — sube por detrás): eso es lo
-     que lo "oculta detrás de la frontera" de verdad, no la opacidad sola.
-     Ver updateHeroTextProgress(). */
+     da scroll de sobra, .hero-text-pin se queda anclado (sticky) y
+     CENTRADO mientras tanto (pedido explícitamente — el texto no debe
+     subirse ni desvanecerse por sí solo, solo quedarse quieto). Ese
+     scroll de más (120vh de stage - 100vh de pin = 20vh) no le hace nada
+     al texto: solo da tiempo de sobra antes de que, al soltarse el
+     sticky, el pin (100vh) se desplace fuera de la pantalla por arriba
+     mientras la escena siguiente sube por detrás (sin hueco en blanco
+     entre medias) — así es como se "oculta al llegar a la siguiente
+     sección", por scroll normal, no por opacidad. Ver
+     updateHeroTextProgress() (ya no toca #heroTextContent, solo el menú). */
   .hero-text-stage{ height:120vh; position:relative; }
   .hero-text-pin{
     position:sticky; top:0; height:100vh;
-    display:flex; align-items:flex-start; justify-content:center;
-    padding-top:96px;
+    display:flex; align-items:center; justify-content:center;
   }
   .hero{
     position:relative; text-align:center;
@@ -391,17 +385,6 @@
     position:absolute; inset:0; z-index:1;
     background:linear-gradient(160deg,#07233a 0%,#0a3f58 45%,#0c5b77 100%);
   }
-  /* Marco decorativo, metido hacia dentro del borde — pedido
-     explícitamente, "añade un borde a la imagen de fondo". Va encima del
-     propio fondo a pantalla completa (no lo sustituye por una tarjeta con
-     margen: eso dejaría huecos en blanco a los lados, fuera de la
-     "foto"), como un pseudo-elemento aparte para no interferir con el
-     propio ::after (la etiqueta de placeholder). */
-  .scene-bg::before{
-    content:''; position:absolute; inset:clamp(16px,4vw,40px); z-index:1;
-    border-radius:28px; border:1.5px solid rgba(255,255,255,0.22);
-    pointer-events:none;
-  }
   .scene-bg::after{
     content:'Fondo: sustituir por foto real'; position:absolute; bottom:18px; left:50%;
     transform:translateX(-50%); color:rgba(255,255,255,0.42); font-size:11px;
@@ -430,9 +413,12 @@
      el barrido mueve de verdad la pantalla física entera (el frame, con
      su fondo/cristal/contenido dentro), no solo el contenido, que es lo
      que pasaba antes. */
+  /* Escala 1.75 (antes 1.4, +25% pedido explícitamente — "aumentala en un
+     25%" — junto con un móvil algo más pequeño, para que la pantalla del
+     portátil gane protagonismo en la composición inicial). */
   .scene-screen{
     position:absolute; top:50%; left:50%; z-index:3; width:min(620px, 56vw); aspect-ratio:16/9;
-    transform:translate(-50%,-50%) translate(226px, -18px) scale(1.4);
+    transform:translate(-50%,-50%) translate(226px, -18px) scale(1.75);
   }
   .scene-screen-frame{
     position:absolute; inset:0; border-radius:18px; overflow:hidden; padding:8px;
@@ -470,7 +456,7 @@
      updateHeroProgress) para desvanecerlo del todo; ahí también se
      interpola desde esta misma opacidad base en vez de blanco opaco. */
   .hero-mockup{
-    position:absolute; top:50%; left:50%; z-index:5; width:340px; border-radius:30px; padding:10px;
+    position:absolute; top:50%; left:50%; z-index:5; width:300px; border-radius:30px; padding:10px;
     background:rgba(255,255,255,0.52);
     backdrop-filter:blur(12px) saturate(1.4); -webkit-backdrop-filter:blur(12px) saturate(1.4);
     border:1.5px solid rgba(255,255,255,0.55);
@@ -506,10 +492,10 @@
       width:92vw;
       transform:translate(-50%,-50%) translate(26vw, -22vh);
     }
-    /* 300px (antes 208px): mismo motivo que en escritorio — más resolución
+    /* 270px (antes 208px): mismo motivo que en escritorio — más resolución
        de base para el zoom final del tramo C, donde en móvil es el móvil
        quien se "traga" la vista (ver comentario de .hero-mockup arriba). */
-    .hero-mockup{ width:300px; }
+    .hero-mockup{ width:270px; }
   }
 
   /* ── Cinta de capturas en bucle (marquee) ──────────────────────────
@@ -964,26 +950,21 @@ function easeOutQuart(t){ return 1 - Math.pow(1-t, 4); }
 // el barrido de la pantalla del portátil, pedido explícitamente así.
 function easeOutQuint(t){ return 1 - Math.pow(1-t, 5); }
 
-// ── Texto del héroe: fijo arriba, se desvanece con el scroll ────────
-// Mismo "combustible" que el resto, pero mucho más corto (20vh de
-// "sobra" encima del pin de 100vh, antes 60vh — pedido explícitamente
-// acortar el hueco entre la sección 1 y la 2): ese scroll mueve la
-// opacidad de #heroTextContent (hasta un suelo bajo, 0.12, no 0 — no debe
-// desaparecer del todo por sí solo) y un ligero translateY hacia arriba,
-// para que se note que se está "yendo" y no solo apagando en el sitio. Lo
-// que queda de él se oculta de verdad al soltarse el sticky — el pin
-// (100vh) se desplaza fuera de la pantalla por arriba mientras la escena
-// siguiente sube por detrás (sin hueco en blanco entre medias), tapándolo
-// de verdad contra la línea frontera de la escena, no solo con opacidad.
-//
-// El menú también pasa a píldora AQUÍ (no durante la escena siguiente,
-// como antes) — pedido explícitamente: para cuando empieza la escena del
+// ── Texto del héroe: centrado y quieto hasta que lo tapa la escena ──
+// El texto en sí YA NO se anima (pedido explícitamente — debe seguir
+// centrado, sin subirse ni desvanecerse solo): #heroTextContent no se
+// toca aquí. Lo único que sigue viviendo de este "combustible" es el
+// menú, que pasa a píldora AQUÍ (no durante la escena siguiente, como
+// antes) — pedido explícitamente: para cuando empieza la escena del
 // móvil, el menú ya tiene que estar formado del todo. #navSideLogin (el
-// "Iniciar sesión" que ahora vive fuera del dock) cambia de color a la
-// vez, de oscuro a blanco: sin esto quedaría ilegible en cuanto el fondo
-// de detrás pasa de la página clara a la escena oscura.
+// "Iniciar sesión" que vive fuera del dock) cambia de color a la vez, de
+// oscuro a blanco: sin esto quedaría ilegible en cuanto el fondo de
+// detrás pasa de la página clara a la escena oscura. El propio texto se
+// oculta de verdad al soltarse el sticky — el pin (100vh) se desplaza
+// fuera de la pantalla por arriba mientras la escena siguiente sube por
+// detrás (sin hueco en blanco entre medias), tapándolo contra la línea
+// frontera de la escena.
 const heroTextStage = document.getElementById('heroTextStage');
-const heroTextContent = document.getElementById('heroTextContent');
 const INK_RGB = [13,43,64,1];
 const WHITE_RGB = [255,255,255,0.92];
 function updateHeroTextProgress(){
@@ -991,8 +972,6 @@ function updateHeroTextProgress(){
   const scrollable = heroTextStage.offsetHeight - window.innerHeight;
   const raw = scrollable > 0 ? -rect.top / scrollable : 0;
   const progress = Math.min(1, Math.max(0, raw));
-  heroTextContent.style.opacity = 1 - progress*0.88;
-  heroTextContent.style.transform = `translateY(${-progress*36}px)`;
 
   navShell.style.borderRadius = (progress*30) + 'px';
   // Reserva creciente (hasta 200px) para #navSideActions, que ya no vive
@@ -1026,7 +1005,6 @@ const heroStage = document.getElementById('heroStage');
 const heroStagePin = document.querySelector('.hero-stage-pin');
 const heroMockup = document.getElementById('heroMockup');
 const heroMockupScreen = document.getElementById('heroMockupScreen');
-const sceneBg = document.getElementById('sceneBg');
 const sceneScreen = document.getElementById('sceneScreen');
 const sceneScreenFrame = document.getElementById('sceneScreenFrame');
 const sceneAppBg = document.getElementById('sceneAppBg');
@@ -1132,76 +1110,96 @@ function updateHeroProgress(){
   // la esquina de la pantalla + rotación sutil en su eje vertical (sube y
   // vuelve a 0° con un seno) + escala MODERADA — ya no es forzosamente la
   // protagonista final (eso se decide en el tramo C, ver abajo), así que
-  // aquí solo necesita un crecimiento de "colocación".
+  // aquí solo necesita un crecimiento de "colocación". 0.34 (antes 0.5):
+  // reducido para que, ya colocado, no llegue a tocar los márgenes
+  // superior/inferior del viewport — pedido explícitamente ("que sea un
+  // poco más pequeña").
   const rotateY = Math.sin(phaseA * Math.PI) * 12;
-  const placedScale = 1 + phaseA*0.5;
+  const placedScale = 1 + phaseA*0.34;
   const offsetX = PHONE_START.x + (PHONE_END.x - PHONE_START.x)*easedA;
   const offsetY = PHONE_START.y + (PHONE_END.y - PHONE_START.y)*easedA;
 
   // Tramo C: aquí el móvil y la pantalla del portátil intercambian su
   // papel de protagonista (pedido explícitamente) — isMobileScene decide
-  // quién gana en cada plataforma (ver comentario de la variable).
+  // quién gana en cada plataforma (ver comentario de la variable). El
+  // intercambio en sí ocurre solo en la primera mitad del tramo C
+  // (swapT, 0→1) y se queda clavado ahí el resto — "su animación se
+  // pare", pedido explícitamente: ya no sigue cambiando hasta el final
+  // del tramo, se asienta y para.
   const phoneIsProtagonist = isMobileScene;
   const screenIsProtagonist = !phoneIsProtagonist;
+  const SWAP_SHARE = 0.5;
+  const swapT = Math.min(1, phaseC / SWAP_SHARE);
 
-  let phoneScale;
+  let phoneScale, phoneX, phoneBlur;
   if(phoneIsProtagonist){
-    // Sigue creciendo mucho más allá de su tamaño "colocado", hasta
-    // tragarse la vista.
+    // Móvil: sigue creciendo mucho más allá de su tamaño "colocado",
+    // hasta tragarse la vista — sin cambios respecto a antes (lo pedido
+    // en esta ronda es sobre la composición de escritorio).
     phoneScale = placedScale + phaseC*6;
+    phoneX = offsetX;
+    phoneBlur = 0;
   } else {
-    // Recupera su forma original (escala 1) y se aparta a la izquierda —
-    // pedido explícitamente ("se me ha ocurrido...") en vez de seguir
-    // creciendo: ahora es la pantalla del portátil quien se lleva el
-    // protagonismo final.
-    phoneScale = placedScale - (placedScale-1)*phaseC;
+    // Escritorio: deja de ser el foco y se aparta hacia la DERECHA
+    // (pedido explícitamente — antes se apartaba a la izquierda), un
+    // poco más pequeño, con un desenfoque creciente — pedido
+    // explícitamente ("la pantalla que no esté centrada esté un poco
+    // blureada"). Todo en función de swapT, así que se congela en cuanto
+    // termina el intercambio.
+    phoneScale = placedScale - (placedScale-0.82)*swapT;
+    phoneX = offsetX + swapT*560;
+    phoneBlur = swapT*5;
   }
-  const phoneX = phoneIsProtagonist ? offsetX : offsetX - phaseC*300;
-  const phoneOpacity = phoneIsProtagonist ? 1 : 1 - phaseC*0.6;
-  heroMockup.style.opacity = phoneOpacity;
+  heroMockup.style.filter = phoneBlur > 0 ? `blur(${phoneBlur}px)` : '';
   heroMockup.style.transform =
     `translate(-50%,-50%) translate(${phoneX}px, ${offsetY}px) perspective(1400px) rotateY(${rotateY}deg) scale(${phoneScale})`;
 
   // Pantalla del móvil: transparente mientras ES la protagonista del
   // tramo C, para fundirse con #sceneAppBg (el "fondo real de la app")
-  // que hay justo debajo — si no lo es, se queda opaca (solo se achica y
-  // aparta, no "traga" nada). El propio marco (#heroMockup) tiene fondo
-  // translúcido (efecto glass, no opaco), así que también hay que
-  // desvanecerlo a la vez para que no tape lo de detrás.
+  // que hay justo debajo — si no lo es, se queda opaca (solo se achica,
+  // aparta y desenfoca, no "traga" nada). El propio marco (#heroMockup)
+  // tiene fondo translúcido (efecto glass, no opaco), así que también
+  // hay que desvanecerlo a la vez para que no tape lo de detrás.
   const phoneReveal = phoneIsProtagonist ? phaseC : 0;
   heroMockupScreen.style.opacity = 1 - phoneReveal;
   heroMockup.style.background = `rgba(255,255,255,${0.52*(1-phoneReveal)})`;
 
   // Pantalla del portátil: en el tramo A barre hacia la derecha el marco
-  // físico entero (#sceneScreenFrame, no solo su contenido) una distancia
-  // en px reales (screenExitPx) con una curva acelerada, hasta salir del
-  // todo del viewport. En el tramo C vuelve de esa barrida (sweepBackPx)
-  // y, si es ella la protagonista (escritorio), además se recentra del
-  // todo (deshaciendo el offset de composición de .scene-screen) y crece
-  // muchísimo hasta que su interior se "traga" la página entera; si no
-  // (móvil), simplemente se queda de vuelta en su sitio, a tamaño normal,
-  // apartada mientras el móvil es quien crece. #sceneScreen (el
-  // contenedor exterior) no se toca aquí: solo fija la posición/escala
-  // responsive de base.
-  const sweepPx = easeOutQuint(phaseA) * screenExitPx;
-  const sweepBackPx = sweepPx * (1 - phaseC);
-  const screenScale = screenIsProtagonist ? 1 + phaseC*7 : 1;
-  const screenRecenterX = screenIsProtagonist ? -226*phaseC : 0;
-  const screenRecenterY = screenIsProtagonist ? 18*phaseC : 0;
-  sceneScreenFrame.style.transform =
-    `translate(${sweepBackPx + screenRecenterX}px, ${screenRecenterY}px) scale(${screenScale})`;
-  // Aquí el interior (#sceneScreenContent) se queda opaco todo el rato,
-  // sin revelar #sceneAppBg detrás como hace el móvil: su propio
-  // placeholder YA es "el interior de la pantalla", así que no hace falta
-  // una capa aparte — y #sceneAppBg vive por detrás de #sceneScreen en el
-  // z-index (pensado para el móvil, que sí va por delante), así que
-  // intentar revelarlo aquí solo dejaba un doble-expuesto feo.
-  sceneScreen.style.opacity = screenIsProtagonist ? 1 : 1 - phaseC;
+  // físico entero (#sceneScreenFrame, no solo su contenido) — pero ya NO
+  // sale del todo del viewport (pedido explícitamente, "no debe
+  // desaparecer del todo"): solo la mitad de esa distancia, para que se
+  // quede "escondida a medias" hacia el margen derecho, no desaparecida.
+  const sweepPx = easeOutQuint(phaseA) * screenExitPx * 0.5;
 
-  // El fondo de la escena se desvanece durante el tramo C, a la vez que
-  // #sceneAppBg (el "fondo real de la app") aparece detrás del móvil,
-  // SOLO cuando es él quien se la traga.
-  sceneBg.style.opacity = 1 - phaseC;
+  let screenScale, screenTX, screenTY, screenBlur;
+  if(screenIsProtagonist){
+    // Escritorio, tramo C: vuelve de ese escondite a medias, se recentra
+    // del todo (deshaciendo también el offset de composición de
+    // .scene-screen) y gana solo un pelín de escala — YA NO crece
+    // muchísimo hasta tragarse la página (pedido explícitamente esta
+    // ronda: debe quedarse una pantalla reconocible y centrada, no un
+    // zoom enorme). Congelada en cuanto termina el intercambio (swapT).
+    screenScale = 1 + swapT*0.15;
+    screenTX = sweepPx*(1-swapT) - 226*swapT;
+    screenTY = 18*swapT;
+    screenBlur = 0;
+  } else {
+    // Móvil, tramo C: el móvil es quien se lleva el protagonismo — la
+    // pantalla del portátil se queda apartada donde la dejó el tramo A
+    // (no vuelve de su escondite) y se desenfoca, igual que el móvil en
+    // el caso de escritorio.
+    screenScale = 1;
+    screenTX = sweepPx;
+    screenTY = 0;
+    screenBlur = swapT*5;
+  }
+  sceneScreenFrame.style.transform = `translate(${screenTX}px, ${screenTY}px) scale(${screenScale})`;
+  sceneScreen.style.filter = screenBlur > 0 ? `blur(${screenBlur}px)` : '';
+
+  // El fondo de la escena ya NO se desvanece (pedido explícitamente: la
+  // foto de fondo debe seguir viéndose siempre, no solo mientras nadie es
+  // protagonista del todo) — #sceneAppBg solo aparece cuando es el móvil
+  // quien se "traga" la vista (móvil).
   sceneAppBg.style.opacity = phoneReveal;
 }
 
