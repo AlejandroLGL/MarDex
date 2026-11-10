@@ -659,6 +659,7 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .admin-title{ font-size:20px; font-weight:800; color:var(--ink); }
   .admin-subtitle{ font-size:13px; color:var(--muted); margin-top:2px; }
+  .novedad-body{ font-size:14.5px; line-height:1.6; color:var(--ink); margin-top:18px; white-space:normal; }
   .admin-close{
     width:32px; height:32px; border-radius:50%; border:none;
     background:rgba(0,0,0,0.06); color:var(--muted); cursor:pointer;
@@ -2267,17 +2268,61 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
   }
   .home-carousel-track:active{ cursor:grabbing; }
   .home-carousel-slide{
-    position:absolute; inset:0; padding:20px;
-    display:flex; flex-direction:column; justify-content:flex-start; gap:4px;
+    position:absolute; inset:0; overflow:hidden;
     background:linear-gradient(150deg, #90A4AE 0%, #78909C 100%);
     box-shadow:5px 5px 18px rgba(7,59,92,0.14),2px 2px 6px rgba(7,59,92,0.08);
     transform:translateX(100%);
     transition:transform .5s cubic-bezier(0.45,0,0.2,1);
+    cursor:pointer;
+  }
+  /* Envoltorio con el padding real: separado de .home-carousel-slide para
+     que la tarjeta de "Fotos destacadas" pueda poner una <img> a sangre
+     (inset:0 sin padding) por debajo, con este wrapper encima solo para su
+     overlay de avatar/nombre. */
+  .home-carousel-slide-inner{
+    position:relative; height:100%; padding:20px;
+    display:flex; flex-direction:column; justify-content:flex-start; gap:4px;
   }
   .home-carousel-slide-icon{ opacity:0.5; margin-bottom:6px; }
   .home-carousel-slide-icon svg{ width:28px; height:28px; }
-  .home-carousel-slide-title{ font-size:19px; font-weight:800; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); }
+  .home-carousel-slide-title{ font-size:19px; font-weight:800; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); display:flex; align-items:center; gap:8px; }
   .home-carousel-slide-sub{ font-size:12.5px; color:rgba(255,255,255,0.85); text-shadow:0 1px 4px rgba(0,0,0,0.2); }
+  /* Punto rojo de aviso (p. ej. novedad sin ver), superpuesto a una esquina
+     de lo que lo contenga — se posiciona relative donde haga falta. */
+  .home-carousel-badge-dot{
+    width:9px; height:9px; border-radius:50%; background:#E53935;
+    box-shadow:0 0 0 2px rgba(255,255,255,0.85); flex-shrink:0;
+  }
+  .home-carousel-slide-photo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  .home-carousel-slide-photo-overlay{
+    position:absolute; inset:0; z-index:1;
+    background:
+      linear-gradient(90deg, rgba(5,20,32,0.5) 0%, rgba(5,20,32,0) 60%),
+      linear-gradient(0deg, rgba(5,20,32,0.72) 0%, rgba(5,20,32,0) 55%);
+  }
+  /* Fila de estadísticas compactas (tarjeta "Resumen del perfil"). */
+  .home-stat-row{ display:flex; gap:10px; margin-top:auto; }
+  .home-stat-item{ flex:1; min-width:0; }
+  .home-stat-value{ font-size:22px; font-weight:800; color:#fff; line-height:1.1; text-shadow:0 1px 4px rgba(0,0,0,0.25); }
+  .home-stat-label{ font-size:10px; font-weight:700; color:rgba(255,255,255,0.78); text-transform:uppercase; letter-spacing:.03em; margin-top:2px; }
+  /* Mini dashboard de Logros: ruedas de progreso con conic-gradient (sin
+     SVG), reutilizando los mismos tonos que las barras lineales del panel
+     completo (.ach-progress-fill) pero en un anillo compacto. */
+  .home-ach-summary{ font-size:12.5px; font-weight:700; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.2); margin-bottom:2px; }
+  .home-ach-ring-row{ display:flex; gap:12px; margin-top:auto; }
+  .home-ach-ring-item{ display:flex; flex-direction:column; align-items:center; gap:4px; width:64px; }
+  .home-ach-ring{
+    position:relative; width:52px; height:52px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .home-ach-ring-inner{
+    position:absolute; inset:5px; border-radius:50%; background:#78909C;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:800; color:#fff;
+  }
+  .home-ach-ring-label{ font-size:9px; font-weight:700; color:rgba(255,255,255,0.85); text-align:center; line-height:1.15; }
+  .home-ach-ring-missing{ font-size:8.5px; color:rgba(255,255,255,0.65); }
+  .home-ach-empty{ font-size:12px; color:rgba(255,255,255,0.8); margin-top:auto; }
   /* Zonas de avance/retroceso en los extremos, con una flecha fina (SVG, no
      el carácter "<"/">"). Siempre visibles a media opacidad (para que se
      noten también en móvil, sin :hover táctil) y a opacidad completa con el
@@ -2868,6 +2913,12 @@ if('serviceWorker' in navigator && !localStorage.getItem('mardex-sw-cleaned-v2')
 <div class="admin-overlay" id="notifOverlay">
   <div class="admin-sheet" id="notifSheet">
     <!-- populated by renderNotifPanel() -->
+  </div>
+</div>
+
+<div class="admin-overlay" id="novedadOverlay">
+  <div class="admin-sheet" id="novedadSheet">
+    <!-- populated by openNovedadPopup() -->
   </div>
 </div>
 
@@ -4883,6 +4934,15 @@ async function renderProfilePage(){
         <span class="pp-row-label">Favoritos</span>
         <span class="pp-row-value">${favorites}</span>
       </div>
+      <div class="pp-row">
+        <span class="pp-row-label">Foto destacada</span>
+        <span class="pp-row-value">
+          <img id="ppFeaturedImg" alt="" style="width:34px;height:34px;border-radius:8px;object-fit:cover;vertical-align:middle;${acc?.featured_photo_url?'':'display:none;'}" src="${acc?.featured_photo_url?escapeHtml(acc.featured_photo_url):''}">
+          <span id="ppFeaturedEmpty" style="color:var(--faint);font-style:italic;${acc?.featured_photo_url?'display:none;':''}">Sin foto</span>
+        </span>
+        <button class="pp-row-action" id="ppFeaturedBtn">${acc?.featured_photo_url?'Cambiar':'Subir'}</button>
+        <input type="file" accept="image/*" id="ppFeaturedInput" style="display:none">
+      </div>
     </div>
 
     <!-- Actividad -->
@@ -5027,6 +5087,46 @@ async function renderProfilePage(){
     ppBanner.classList.remove('pp-banner-dragover');
     const file = e.dataTransfer?.files?.[0];
     handleBannerFile(file);
+  });
+
+  // Foto destacada: prototipo de una sola foto por cuenta, para la tarjeta
+  // "Fotos destacadas" del carrusel de inicio. Mismo bucket/patrón que
+  // avatar/banner — solo cambia la ruta y la columna. Sin recorte propio,
+  // igual que el banner.
+  const featuredInput = document.getElementById('ppFeaturedInput');
+  const featuredImg = document.getElementById('ppFeaturedImg');
+  const featuredEmpty = document.getElementById('ppFeaturedEmpty');
+  const featuredBtn = document.getElementById('ppFeaturedBtn');
+  featuredBtn.onclick = ()=> featuredInput.click();
+  featuredInput.addEventListener('change', async ()=>{
+    const file = featuredInput.files[0];
+    featuredInput.value = '';
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ showToast('Elige un archivo de imagen.', true); return; }
+    if(file.size > 8*1024*1024){ showToast('La imagen no puede superar los 8 MB.', true); return; }
+
+    const resized = await resizeImageFileToBlob(file, 1400);
+    const previewUrl = URL.createObjectURL(resized);
+    featuredImg.src = previewUrl;
+    featuredImg.style.display = '';
+    featuredEmpty.style.display = 'none';
+
+    try{
+      const path = `${currentAccountData.id}/featured.jpg`;
+      const {error:upErr} = await _sb.storage.from('avatars').upload(path, resized, {upsert:true, cacheControl:'3600', contentType:'image/jpeg'});
+      if(upErr) throw upErr;
+      const {data:pub} = _sb.storage.from('avatars').getPublicUrl(path);
+      const publicUrl = pub.publicUrl + '?t=' + Date.now();
+      const {error:dbErr} = await _sb.from('profiles').update({featured_photo_url: publicUrl}).eq('id', currentAccountData.id);
+      if(dbErr) throw dbErr;
+      currentAccountData.featured_photo_url = publicUrl;
+      featuredImg.src = publicUrl;
+      featuredBtn.textContent = 'Cambiar';
+      showToast('Foto destacada actualizada.');
+    }catch(err){
+      console.error('[featured]', err);
+      showToast('No se pudo subir la foto: ' + (err.message||'error desconocido'), true);
+    }
   });
 
   initActivityCalendar();
@@ -5235,6 +5335,70 @@ function evaluateAchievement(def, sightingsMap){
 }
 function evaluateAllAchievements(sightingsMap){
   return getAchievementDefs().map(def=>Object.assign({}, def, evaluateAchievement(def, sightingsMap)));
+}
+
+// Fecha en la que se cumplió cada logro, reconstruida "reproduciendo" los
+// avistamientos en orden cronológico (por dateISO, no por el "date" ya
+// formateado para pantalla) y anotando la primera vez que cada condición se
+// satisface — sin tabla ni columna nueva: usa justo los mismos datos que ya
+// mueve evaluateAllAchievements(), solo que paso a paso en vez de solo el
+// estado final. Se usa únicamente para el mini-dashboard del carrusel de
+// inicio (renderHomeLogrosWidgetHtml) — el panel completo de Logros sigue
+// funcionando igual, sin fechas.
+function computeAchievementEarnedDates(){
+  const flat = [];
+  SPECIES.forEach(s=>{
+    (state.sightings[s.id]||[]).forEach(sg=>{
+      if(!sg.dateISO) return;
+      flat.push({ speciesId:s.id, cat:s.cat, env:sg.environment, dateISO:sg.dateISO, depthObserved:sg.depthObserved });
+    });
+  });
+  flat.sort((a,b)=> a.dateISO < b.dateISO ? -1 : a.dateISO > b.dateISO ? 1 : 0);
+
+  const defs = getAchievementDefs();
+  const countDefsByEnv = { libre:[], acuario:[] };
+  const catDefsByKey = {};
+  let depthDef = null;
+  defs.forEach(def=>{
+    if(def.type==='count') countDefsByEnv[def.env].push(def);
+    else if(def.type==='catcount' || def.type==='catcomplete'){
+      const key = `${def.cat}:${def.env}`;
+      (catDefsByKey[key] = catDefsByKey[key]||[]).push(def);
+    } else if(def.type==='depth') depthDef = def;
+  });
+
+  const earnedAt = new Map();
+  const unlockedSpeciesEnv = new Set();
+  const envCounts = { libre:0, acuario:0 };
+  const catEnvCounts = {};
+  let bestDepthSoFar = null;
+
+  flat.forEach(sg=>{
+    const speciesKey = `${sg.speciesId}:${sg.env}`;
+    if(!unlockedSpeciesEnv.has(speciesKey)){
+      unlockedSpeciesEnv.add(speciesKey);
+      const speciesDefId = `species:${sg.env}:${sg.speciesId}`;
+      if(!earnedAt.has(speciesDefId)) earnedAt.set(speciesDefId, sg.dateISO);
+
+      envCounts[sg.env] += 1;
+      countDefsByEnv[sg.env].forEach(def=>{
+        if(envCounts[sg.env] >= def.threshold && !earnedAt.has(def.id)) earnedAt.set(def.id, sg.dateISO);
+      });
+
+      const catKey = `${sg.cat}:${sg.env}`;
+      catEnvCounts[catKey] = (catEnvCounts[catKey]||0) + 1;
+      (catDefsByKey[catKey]||[]).forEach(def=>{
+        if(catEnvCounts[catKey] >= def.threshold && !earnedAt.has(def.id)) earnedAt.set(def.id, sg.dateISO);
+      });
+    }
+
+    if(sg.depthObserved != null && (bestDepthSoFar===null || sg.depthObserved > bestDepthSoFar)){
+      bestDepthSoFar = sg.depthObserved;
+      if(depthDef && !earnedAt.has(depthDef.id)) earnedAt.set(depthDef.id, sg.dateISO);
+    }
+  });
+
+  return earnedAt;
 }
 
 // Comparación "antes/después" de un guardado de avistamiento para detectar
@@ -7605,13 +7769,189 @@ const DEFAULT_HOME_LAYOUT = [
   { key:'zones', size:'2x1' },
 ];
 
-// Las tres tarjetas del carrusel son solo el hueco visual por ahora — sin
-// contenido real todavía. "Logros" no navega a ningún sitio de momento:
-// se deja igual de vacía que las otras dos hasta que se diga lo contrario.
+// Novedades de la app: array a mano, más reciente primero. Publicar una
+// nueva = añadir una entrada arriba (PR/deploy) — a propósito: así se
+// controla exactamente qué se anuncia y cuándo, sin un panel de admin de
+// por medio. `body` es texto plano, con "\n" para separar párrafos.
+const NOVEDADES = [
+  // { id:'slug-unico', date:'2026-11-10', title:'Título breve', body:'Texto del artículo.\n\nSegundo párrafo.' },
+];
+
+function openNovedadPopup(novedad){
+  if(!novedad) return;
+  const sheet = document.getElementById('novedadSheet');
+  const dateLabel = new Date(novedad.date+'T00:00:00').toLocaleDateString('es-ES', {day:'numeric', month:'long', year:'numeric'});
+  sheet.innerHTML = `
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">${escapeHtml(novedad.title)}</div>
+        <div class="admin-subtitle">${dateLabel}</div>
+      </div>
+      <button class="admin-close" id="novedadCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="novedad-body">${escapeHtml(novedad.body).replace(/\n/g,'<br>')}</div>
+  `;
+  document.getElementById('novedadCloseBtn').onclick = closeNovedadPopup;
+  document.getElementById('novedadOverlay').classList.add('open');
+
+  // Ver la más reciente marca todas como vistas (no tiene sentido llevar la
+  // cuenta de cuáles en concreto si solo hay un aviso binario "hay algo
+  // nuevo o no").
+  if(novedad.id === NOVEDADES[0]?.id && currentAccountData && currentAccountData.last_seen_novedad_id !== novedad.id){
+    currentAccountData.last_seen_novedad_id = novedad.id;
+    _sb.from('profiles').update({last_seen_novedad_id: novedad.id}).eq('id', currentAccountData.id);
+    refreshNotifBadge();
+    document.getElementById('homeNovedadDot')?.remove();
+  }
+}
+function closeNovedadPopup(){
+  document.getElementById('novedadOverlay').classList.remove('open');
+}
+onBackdropClose('novedadOverlay', closeNovedadPopup);
+
+// Mini-dashboard de Logros para la tarjeta del carrusel: top 3 hitos
+// numéricos más cerca de completarse (se excluyen los logros binarios de
+// especie concreta y el de récord de profundidad, que no tienen un target
+// numérico con el que calcular un "% completado") + cuántos se han
+// conseguido en los últimos 30 días (ver computeAchievementEarnedDates()
+// más abajo, junto al resto del sistema de logros).
+function renderHomeLogrosWidgetHtml(){
+  const all = evaluateAllAchievements();
+  const earnedDates = computeAchievementEarnedDates();
+  const since = new Date(); since.setDate(since.getDate()-30);
+  const earnedThisMonth = all.filter(a=>{
+    const d = earnedDates.get(a.id);
+    return d && new Date(d+'T00:00:00') >= since;
+  }).length;
+  const summaryLine = earnedThisMonth>0
+    ? `${earnedThisMonth} logro${earnedThisMonth===1?'':'s'} conseguido${earnedThisMonth===1?'':'s'} este mes`
+    : 'Ningún logro nuevo este mes todavía';
+
+  const candidates = all
+    .filter(a=>!a.earned && (a.type==='count'||a.type==='catcount'||a.type==='catcomplete') && a.target)
+    .sort((a,b)=> (b.current/b.target) - (a.current/a.target))
+    .slice(0,3);
+
+  const rings = candidates.map(a=>{
+    const pct = Math.min(100, Math.round((a.current/a.target)*100));
+    return `<div class="home-ach-ring-item">
+      <div class="home-ach-ring" style="background:conic-gradient(#fff ${pct}%, rgba(255,255,255,0.28) 0);">
+        <div class="home-ach-ring-inner">${pct}%</div>
+      </div>
+      <div class="home-ach-ring-label">${escapeHtml(a.title)}</div>
+      <div class="home-ach-ring-missing">Faltan ${a.target-a.current}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="home-carousel-slide-inner">
+      <div class="home-carousel-slide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M9 14l-1.5 7L12 19l4.5 2L15 14"/></svg></div>
+      <div class="home-carousel-slide-title">Logros</div>
+      <div class="home-ach-summary">${summaryLine}</div>
+      ${candidates.length ? `<div class="home-ach-ring-row">${rings}</div>` : `<div class="home-ach-empty">¡Hitos numéricos completados!</div>`}
+    </div>`;
+}
+
+// Mini-dashboard de "Resumen del perfil": reutiliza SPECIES/isUnlockedEnv ya
+// cargados (sin pedir nada al servidor) para "especies desbloqueadas", y
+// pide aparte (perezosamente, solo fecha+coordenadas) las inmersiones
+// propias para las otras dos stats — así no se engancha al ciclo de vida de
+// loadDives()/el Logbook ni a sus variables (myCollabByDiveId, etc.).
+async function loadHomeProfileStatsDives(){
+  if(!currentAccountData?.id) return [];
+  const { data, error } = await _sb.from('dives').select('date,lat,lng').eq('user_id', currentAccountData.id);
+  return error ? [] : (data||[]);
+}
+function renderHomeProfileWidgetHtml(divesForStats){
+  const speciesCount = SPECIES.filter(s=>isUnlockedEnv(s.id,'libre')).length;
+  let seasonCount = '—', zoneCount = '—';
+  if(Array.isArray(divesForStats)){
+    const since = new Date(); since.setMonth(since.getMonth()-6);
+    seasonCount = divesForStats.filter(d=>d.date && new Date(d.date+'T00:00:00') >= since).length;
+    zoneCount = new Set(divesForStats.map(zoneKeyForDive).filter(Boolean)).size;
+  }
+  return `
+    <div class="home-carousel-slide-inner">
+      <div class="home-carousel-slide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <div class="home-carousel-slide-title">Resumen del perfil</div>
+      <div class="home-stat-row">
+        <div class="home-stat-item"><div class="home-stat-value">${seasonCount}</div><div class="home-stat-label">Inmersiones 6 meses</div></div>
+        <div class="home-stat-item"><div class="home-stat-value">${speciesCount}</div><div class="home-stat-label">Especies desbloqueadas</div></div>
+        <div class="home-stat-item"><div class="home-stat-value">${zoneCount}</div><div class="home-stat-label">Zonas buceadas</div></div>
+      </div>
+    </div>`;
+}
+
+// Las 4 tarjetas del carrusel de inicio. `render()` devuelve el HTML de
+// dentro de `.home-carousel-slide` (ver renderHomePage()); `afterRender(el)`
+// corre justo después de insertar esa tarjeta en el DOM, para las que
+// necesitan pedir algo al servidor o enganchar el badge de "visto"; y
+// `onNavigate()` es lo que se ejecuta al TOCAR (no deslizar) la tarjeta
+// activa — ver wireHomeCarouselSwipe()/finishDrag más abajo.
 const HOME_CAROUSEL_SLIDES = [
-  { title:'Fotos destacadas', sub:'Próximamente', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 15l-5-5L5 19"/></svg>' },
-  { title:'Resumen del perfil', sub:'Próximamente', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' },
-  { title:'Logros', sub:'Próximamente', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M9 14l-1.5 7L12 19l4.5 2L15 14"/></svg>' },
+  {
+    title:'Novedades',
+    render(){
+      const latest = NOVEDADES[0];
+      const unseen = !!latest && currentAccountData?.last_seen_novedad_id !== latest.id;
+      return `
+        <div class="home-carousel-slide-inner">
+          <div class="home-carousel-slide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 0 1-5.8-1.6"/></svg></div>
+          <div class="home-carousel-slide-title">Novedades${unseen?'<span class="home-carousel-badge-dot" id="homeNovedadDot"></span>':''}</div>
+          <div class="home-carousel-slide-sub">${latest ? escapeHtml(latest.title) : 'Aún no hay novedades publicadas.'}</div>
+        </div>`;
+    },
+    onNavigate(){ if(NOVEDADES[0]) openNovedadPopup(NOVEDADES[0]); },
+  },
+  {
+    title:'Fotos destacadas',
+    render(){
+      const acc = currentAccountData;
+      const url = acc?.featured_photo_url;
+      if(!url){
+        return `
+          <div class="home-carousel-slide-inner">
+            <div class="home-carousel-slide-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 15l-5-5L5 19"/></svg></div>
+            <div class="home-carousel-slide-title">Fotos destacadas</div>
+            <div class="home-carousel-slide-sub">Próximamente</div>
+          </div>`;
+      }
+      const name = acc?.name || currentProfile || 'Usuario';
+      const username = acc?.username ? '@'+acc.username : '';
+      const avatarUrl = acc?.avatar_url || '';
+      const initial = (name[0]||'?').toUpperCase();
+      const certLabel = acc?.cert_level && CERT_LEVEL_LABEL[acc.cert_level] ? CERT_LEVEL_LABEL[acc.cert_level] : '';
+      return `
+        <img class="home-carousel-slide-photo" src="${escapeHtml(url)}" alt="">
+        <div class="home-carousel-slide-photo-overlay"></div>
+        <div class="home-carousel-slide-inner" style="justify-content:flex-end;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="home-profile-avatar" style="width:46px;height:46px;font-size:18px;">${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" alt="">` : escapeHtml(initial)}</div>
+            <div class="home-profile-text">
+              <div class="home-profile-name" style="font-size:16px;">${escapeHtml(name)}${certLabel ? ` <span class="person-cert-inline">(${escapeHtml(certLabel)})</span>` : ''}</div>
+              ${username ? `<div class="home-profile-username" style="font-size:12px;">${escapeHtml(username)}</div>` : ''}
+            </div>
+          </div>
+        </div>`;
+    },
+    onNavigate(){ if(currentAccountData?.featured_photo_url) openLightbox(currentAccountData.featured_photo_url); },
+  },
+  {
+    title:'Resumen del perfil',
+    render(){ return renderHomeProfileWidgetHtml(this._divesCache); },
+    afterRender(el){
+      loadHomeProfileStatsDives().then(rows=>{
+        this._divesCache = rows;
+        if(el && el.isConnected) el.innerHTML = renderHomeProfileWidgetHtml(rows);
+      });
+    },
+    onNavigate(){ openProfilePage(); },
+  },
+  {
+    title:'Logros',
+    render(){ return renderHomeLogrosWidgetHtml(); },
+    onNavigate(){ openAchievementsPanel(); },
+  },
 ];
 
 function openHomePage(){
@@ -7660,11 +8000,7 @@ function renderHomePage(){
     <div class="home-carousel">
       <div class="home-carousel-track" id="homeCarouselTrack">
         ${HOME_CAROUSEL_SLIDES.map((s,i)=>`
-          <div class="home-carousel-slide" data-slide="${i}">
-            <div class="home-carousel-slide-icon">${s.icon}</div>
-            <div class="home-carousel-slide-title">${escapeHtml(s.title)}</div>
-            <div class="home-carousel-slide-sub">${escapeHtml(s.sub)}</div>
-          </div>
+          <div class="home-carousel-slide" data-slide="${i}">${s.render()}</div>
         `).join('')}
         <button type="button" class="home-carousel-arrow home-carousel-arrow-prev" id="homeCarouselPrev" aria-label="Tarjeta anterior">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
@@ -7711,6 +8047,12 @@ function renderHomePage(){
   initHomeCarouselPositions();
   startHomeCarouselTimer();
   renderHomeWidgetGrid();
+
+  // Pide lo que haga falta por slide (p. ej. las inmersiones para el
+  // resumen del perfil) justo después de insertar las 4 tarjetas en el DOM.
+  HOME_CAROUSEL_SLIDES.forEach((s,i)=>{
+    if(typeof s.afterRender === 'function') s.afterRender(document.querySelector(`.home-carousel-slide[data-slide="${i}"]`));
+  });
 }
 
 // Coloca las tres tarjetas según el índice activo, sin animar: la activa en
@@ -7881,6 +8223,15 @@ function wireHomeCarouselSwipe(track){
     homeCarouselDragStart = null;
     if(Math.abs(dx) > HOME_CAROUSEL_SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)){
       stepHomeCarousel(dx < 0 ? 1 : -1); // deslizar hacia la izquierda avanza, hacia la derecha retrocede
+      return;
+    }
+    // Fue un toque, no un arrastre: si no vino de una flecha o un puntito
+    // (ya tienen su propio onclick), se trata como un click sobre la
+    // tarjeta activa y navega a donde corresponda (ver HOME_CAROUSEL_SLIDES).
+    if(Math.abs(dx) <= HOME_CAROUSEL_SWIPE_THRESHOLD && Math.abs(dy) <= HOME_CAROUSEL_SWIPE_THRESHOLD){
+      if(e.target.closest('.home-carousel-arrow, .home-carousel-dots')) return;
+      const slide = HOME_CAROUSEL_SLIDES[homeCarouselIndex];
+      if(slide && typeof slide.onNavigate === 'function') slide.onNavigate();
     }
   };
   track.addEventListener('pointerup', finishDrag);
@@ -9616,13 +9967,16 @@ async function refreshNotifBadge(){
   // Las invitaciones (dive_invites) llevan seen_at, así que solo cuentan
   // las que aún no se han abierto en la campana; las etiquetas (dive_tags)
   // no tienen ese campo (no hacía falta para su alcance) — cuentan todas
-  // las pendientes mientras lo sigan siendo.
+  // las pendientes mientras lo sigan siendo. Las novedades son un aviso
+  // binario (hay una sin ver o no), así que suman como mucho +1, no una
+  // por cada entrada del histórico.
   const [{ count: inviteCount, error: inviteErr }, { data: tags, error: tagErr }] = await Promise.all([
     _sb.from('dive_invites').select('id', { count:'exact', head:true })
       .eq('to_user_id', currentAccountData.id).eq('status', 'pending').is('seen_at', null),
     _sb.rpc('get_pending_dive_tags'),
   ]);
-  const total = (inviteErr ? 0 : (inviteCount||0)) + (tagErr ? 0 : (tags||[]).length);
+  const unseenNovedad = NOVEDADES[0] && currentAccountData.last_seen_novedad_id !== NOVEDADES[0].id ? 1 : 0;
+  const total = (inviteErr ? 0 : (inviteCount||0)) + (tagErr ? 0 : (tags||[]).length) + unseenNovedad;
   if(!total){ badge.style.display = 'none'; return; }
   badge.textContent = total > 9 ? '9+' : String(total);
   badge.style.display = 'flex';
@@ -9638,19 +9992,31 @@ function closeNotifPanel(){
 onBackdropClose('notifOverlay', closeNotifPanel);
 document.getElementById('notifBellBtn').onclick = openNotifPanel;
 
+let notifView = 'pendientes'; // 'pendientes' | 'novedades'
+
 async function renderNotifPanel(){
   const sheet = document.getElementById('notifSheet');
+  const unseenNovedad = NOVEDADES[0] && currentAccountData?.last_seen_novedad_id !== NOVEDADES[0].id;
   sheet.innerHTML = `
     <div class="admin-header">
       <div>
         <div class="admin-title">Notificaciones</div>
-        <div class="admin-subtitle">Invitaciones a inmersiones compartidas</div>
+        <div class="admin-subtitle">Invitaciones, etiquetas y novedades de la app</div>
       </div>
       <button class="admin-close" id="notifCloseBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="chip-row" id="notifTopTabs">
+      <button type="button" class="chip ${notifView==='pendientes'?'active':''}" data-view="pendientes">Pendientes</button>
+      <button type="button" class="chip ${notifView==='novedades'?'active':''}" data-view="novedades">Novedades${unseenNovedad?' <span class="home-carousel-badge-dot" style="display:inline-block;margin-left:4px;vertical-align:middle;"></span>':''}</button>
     </div>
     <div id="notifList"><div class="zones-empty">Cargando…</div></div>
   `;
   document.getElementById('notifCloseBtn').onclick = closeNotifPanel;
+  sheet.querySelectorAll('#notifTopTabs [data-view]').forEach(btn=>{
+    btn.onclick = ()=>{ notifView = btn.dataset.view; renderNotifPanel(); };
+  });
+
+  if(notifView==='novedades'){ renderNotifNovedadesTab(); return; }
 
   const [{ data: invites, error: inviteErr }, { data: tags, error: tagErr }] = await Promise.all([
     _sb.from('dive_invites').select('*')
@@ -9719,6 +10085,32 @@ async function renderNotifPanel(){
 
   await _sb.rpc('mark_dive_invites_seen');
   refreshNotifBadge();
+}
+
+// Pestaña "Novedades": histórico completo (NOVEDADES, hardcodeado — ver su
+// definición junto a HOME_CAROUSEL_SLIDES), cada una abre el mismo pop-up
+// que la tarjeta del carrusel (openNovedadPopup), que ya se encarga de
+// marcar como vista la más reciente si es esa la que se abre.
+function renderNotifNovedadesTab(){
+  const listEl = document.getElementById('notifList');
+  if(!listEl) return;
+  if(!NOVEDADES.length){
+    listEl.innerHTML = `<div class="zones-empty">Todavía no se ha publicado ninguna novedad.</div>`;
+    return;
+  }
+  listEl.innerHTML = NOVEDADES.map(n=>{
+    const dateLabel = new Date(n.date+'T00:00:00').toLocaleDateString('es-ES');
+    const unseen = n.id === NOVEDADES[0].id && currentAccountData?.last_seen_novedad_id !== n.id;
+    return `<div class="notif-item ${unseen ? 'unseen' : ''}" data-novedad-id="${escapeHtml(n.id)}" style="cursor:pointer;">
+      <div class="notif-item-text">
+        <div class="notif-item-title">${escapeHtml(n.title)}</div>
+        <div class="notif-item-sub">${dateLabel}</div>
+      </div>
+    </div>`;
+  }).join('');
+  listEl.querySelectorAll('[data-novedad-id]').forEach(el=>{
+    el.onclick = ()=> openNovedadPopup(NOVEDADES.find(n=>n.id===el.dataset.novedadId));
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -10742,6 +11134,32 @@ const ZONES = [
     [37.7719,-122.4562],[38.5329,-123.1201],[39.4212,-123.6538],[40.3469,-123.9631]
   ]},
 ];
+
+// Punto-en-polígono (ray casting estándar) para saber a qué zona de ZONES
+// corresponde una inmersión por sus coordenadas — usado por el mini-stat
+// "Zonas buceadas" del carrusel de inicio (ver renderHomeProfileWidgetHtml).
+// Los polígonos de ZONES ya están en [lat,lng] (mismo orden que usa Leaflet
+// en el resto de la app), así que `point` también se da como [lat,lng].
+function pointInZonePolygon(lat, lng, polygon){
+  let inside = false;
+  for(let i=0, j=polygon.length-1; i<polygon.length; j=i++){
+    const yi = polygon[i][0], xi = polygon[i][1];
+    const yj = polygon[j][0], xj = polygon[j][1];
+    const intersect = ((yi>lat) !== (yj>lat)) && (lng < (xj-xi)*(lat-yi)/(yj-yi)+xi);
+    if(intersect) inside = !inside;
+  }
+  return inside;
+}
+// Sin coordenadas (ubicación solo en texto libre, sin pasar por el buscador
+// ni el mapa al registrar la inmersión) no hay forma de clasificarla: se
+// deja fuera del conteo de zonas, tal y como se acordó. Si un punto cae en
+// más de una zona a la vez (polígonos solapados en el borde), se queda con
+// la primera que coincide en el orden de ZONES — caso raro, no merece más.
+function zoneKeyForDive(d){
+  if(d.lat==null || d.lng==null) return null;
+  const z = ZONES.find(z=>pointInZonePolygon(d.lat, d.lng, z.polygon));
+  return z ? z.key : null;
+}
 let selectedZoneIdx = 0;
 let zonesMapInstance = null;
 let zonesMapCircles = [];
@@ -12436,6 +12854,7 @@ async function _alEnterAccount(user){
   currentAccountData={
     id:user.id,name:profile?.name||'',username:profile?.username||'',email:user.email,
     is_admin:!!profile?.is_admin,avatar_url:profile?.avatar_url||'',banner_url:profile?.banner_url||'',
+    featured_photo_url:profile?.featured_photo_url||'', last_seen_novedad_id:profile?.last_seen_novedad_id||null,
     home_layout:Array.isArray(profile?.home_layout)?profile.home_layout:[],
     privacy:profile?.privacy||'amigos', units:profile?.units||'metric', language:profile?.language||'es',
   };
