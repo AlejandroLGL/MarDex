@@ -417,7 +417,9 @@
      25%" — junto con un móvil algo más pequeño, para que la pantalla del
      portátil gane protagonismo en la composición inicial). */
   .scene-screen{
-    position:absolute; top:50%; left:50%; z-index:3; width:min(620px, 56vw); aspect-ratio:16/9;
+    /* 64/27 (= 2560x1080, el vídeo real de videos/laptop-screen.mp4) en vez
+       de 16/9: a igual ancho, la pantalla sale más baja/panorámica. */
+    position:absolute; top:50%; left:50%; z-index:3; width:min(620px, 56vw); aspect-ratio:64/27;
     transform:translate(-50%,-50%) translate(226px, -18px) scale(1.75);
   }
   .scene-screen-frame{
