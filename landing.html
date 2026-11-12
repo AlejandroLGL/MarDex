@@ -1100,6 +1100,12 @@ readPhoneOffsets();
 // (confirmado con getBoundingClientRect() — sin dividir, se movía/crecía
 // mucho más de lo pedido).
 const SCREEN_BASE_SCALE = 1.75;
+// Ver su uso en updateHeroProgress (paso 1 del tramo C, "crecimiento
+// modesto"): cuánto se desplaza a la derecha el conjunto móvil+pantalla
+// para leer como un conjunto centrado, en vez de centrar solo la pantalla
+// a secas — se ajusta empíricamente junto con el resto de constantes de
+// esa composición (660→600 del móvil, 0.08→0.14 del crecimiento).
+const PAIR_SHIFT_PX = 50;
 
 // Tres medidas en px reales de pantalla, todas calculadas a partir de la
 // geometría estática actual de #sceneScreen (el contenedor exterior, que
@@ -1278,8 +1284,8 @@ function updateHeroProgress(){
     // Todo en función de swapT (paso 1), así que se congela en cuanto
     // termina el intercambio y no se mueve más durante la pausa ni la
     // expansión final de la pantalla.
-    phoneScale = placedScale - (placedScale-0.45)*swapT;
-    phoneX = offsetX - swapT*660;
+    phoneScale = placedScale - (placedScale-0.32)*swapT;
+    phoneX = offsetX - swapT*660 + swapT*PAIR_SHIFT_PX;
     phoneBlur = swapT*5;
   }
   heroMockup.style.filter = phoneBlur > 0 ? `blur(${phoneBlur}px)` : '';
@@ -1333,9 +1339,16 @@ function updateHeroProgress(){
     // scenePreviewLayer más abajo). Las esquinas se enderezan a la vez
     // (pedido explícitamente, "cuidado con los radios... cuando aparezca
     // la web"), para que al cubrir toda la página no queden redondeadas.
-    const modestScale = 1 + swapT*0.08;
+    const modestScale = 1 + swapT*0.1;
     screenScale = modestScale + expandT*(screenFullBleedScale - modestScale);
-    screenTX = (sweepPx*(1-swapT) + screenRecenterPx.x*swapT) / SCREEN_BASE_SCALE;
+    // PAIR_SHIFT_PX: durante el "crecimiento modesto" (swapT=1, expandT=0),
+    // el conjunto móvil+pantalla se desplaza un poco a la derecha para leer
+    // como un conjunto centrado (pedido explícitamente) — se desvanece a la
+    // vez que expandT avanza (×(1-expandT)) para que la pantalla vuelva a
+    // su centro EXACTO del viewport antes de cubrirlo entero (paso 3): si
+    // no se desvaneciera, la expansión final dejaría un hueco en un borde.
+    const pairShift = swapT*(1-expandT)*PAIR_SHIFT_PX;
+    screenTX = (sweepPx*(1-swapT) + screenRecenterPx.x*swapT + pairShift) / SCREEN_BASE_SCALE;
     screenTY = (screenRecenterPx.y*swapT) / SCREEN_BASE_SCALE;
     screenRadius = 18*(1-expandT);
   } else {
