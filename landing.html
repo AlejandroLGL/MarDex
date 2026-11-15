@@ -117,10 +117,19 @@
      sin esto, el texto ya blanco quedaba casi invisible otra vez ahí. */
   .nav-side-login{
     color:var(--ink); font-size:14px; font-weight:700; text-decoration:none;
-    padding:8px 10px; text-shadow:0 1px 3px rgba(0,0,0,0.25);
+    padding:8px 10px;
+    /* Antes solo una sombra oscura de 3px — bastaba sobre la escena oscura,
+       pero el texto ya blanco quedaba casi invisible sobre fondos claros
+       (p. ej. "Imagen 4" al final del tramo C, o el propio fondo claro de
+       la página antes de llegar a la escena). Sombra en las 4 direcciones
+       en vez de una sola: actúa como un contorno fino, legible encima de
+       cualquier fondo, claro u oscuro. */
+    text-shadow:
+      0 1px 3px rgba(0,0,0,0.3),
+      1px 0 2px rgba(0,0,0,0.25), -1px 0 2px rgba(0,0,0,0.25),
+      0 -1px 2px rgba(0,0,0,0.25);
   }
   .nav-side-login:hover{ color:var(--blue); }
-  @media(max-width:480px){ .nav-side-login{ display:none; } }
   /* Relleno negro + esquinas poco redondeadas (pedido explícitamente,
      "que se note que es un rectángulo" — no la píldora de .btn-primary). */
   .nav-side-signup{
@@ -228,9 +237,27 @@
      por debajo de este ancho la píldora ya no tiene hueco de sobra para
      los 4 enlaces sin que su propio fondo quede recortado debajo del
      botón Registrarse — medido con capturas reales, no a ojo. */
+  .nav-pill-brand{
+    display:none; align-items:center; gap:8px; text-decoration:none;
+  }
+  .nav-pill-brand img{ width:26px; height:26px; border-radius:8px; }
+  .nav-pill-brand span{ font-family:var(--font-head); font-weight:800; font-size:16px; color:#fff; }
+  /* Por debajo de ~480px, #navShell centrado (margin:0 auto, regla base)
+     se metía debajo de #navSideActions al encogerse — login+registrarse
+     ocupan más de la mitad del ancho del nav y están pegados a la derecha,
+     así que un hueco centrado en TODO el ancho siempre acababa invadiendo
+     ese lado. Pegado a la izquierda en vez de centrado, el hueco relevante
+     es solo hasta donde empieza #navSideActions, que es mucho más grande. */
+  @media(max-width:480px){
+    .nav-shell{ margin-left:0; margin-right:auto; }
+    /* Con el nombre no entraba entero dentro de la píldora encogida (se
+       recortaba a "MarD") — solo el icono, suficiente para reconocerla. */
+    .nav-pill-brand span{ display:none; }
+  }
   @media(max-width:860px){
     .nav-pill-links, .nav-pill-indicator{ display:none; }
     .nav-pill-content{ justify-content:center; }
+    .nav-pill-brand{ display:flex; }
   }
   /* .nav-pill-indicator (fuera) solo se encarga de la posición/ancho —
      eso es lo que anima positionPillIndicator(). El aspecto glass/3D y el
@@ -546,17 +573,21 @@
      archivo, así que puesta antes no tenía ningún efecto). */
   @media(max-width:640px){
     .hero-stage-pin{
-      --phone-start-x:-20px; --phone-start-y:170px;
+      --phone-start-x:-13px; --phone-start-y:114px;
       --phone-end-x:0px; --phone-end-y:0px;
     }
+    /* Mismos ratios de siempre (92vw de ancho, desplazada 26vw/-22vh),
+       escalados ×0.67 — a 92vw/26vw/22vh sin más, con el cambio de
+       aspect-ratio de la pantalla (64:27 en vez de 16:9), el conjunto ya
+       no cabía bien en un viewport estrecho (pedido explícitamente:
+       mantener exactamente la misma composición/posición relativa entre
+       las dos pantallas, solo que a un tamaño que quepa de verdad). */
     .scene-screen{
-      width:92vw;
-      transform:translate(-50%,-50%) translate(26vw, -22vh);
+      width:62vw;
+      transform:translate(-50%,-50%) translate(17vw, -15vh);
     }
-    /* 270px (antes 208px): mismo motivo que en escritorio — más resolución
-       de base para el zoom final del tramo C, donde en móvil es el móvil
-       quien se "traga" la vista (ver comentario de .hero-mockup arriba). */
-    .hero-mockup{ width:270px; }
+    /* 270px escalado por el mismo ×0.67 que el resto de esta composición. */
+    .hero-mockup{ width:180px; }
   }
 
   /* ── Cinta de capturas en bucle (marquee) ──────────────────────────
@@ -739,6 +770,13 @@
         <button type="button" class="nav-pill-btn" data-target="ia">IA</button>
         <button type="button" class="nav-pill-btn" data-target="f-ranking">Ranking</button>
       </div>
+      <!-- Por debajo de 860px .nav-pill-links se oculta (no hay sitio para
+           los 4 atajos) — sin esto la píldora se queda vacía, un rectángulo
+           negro sin ningún contenido. -->
+      <a href="#top" class="nav-pill-brand">
+        <img src="icon.png" alt="">
+        <span>MarDex</span>
+      </a>
     </div>
   </div>
   <!-- Fuera de #navShell a propósito (ver comentario de .nav-side-actions
@@ -1080,11 +1118,16 @@ function updateHeroTextProgress(){
   const progress = Math.min(1, Math.max(0, raw));
 
   navShell.style.borderRadius = (progress*30) + 'px';
-  // Reserva creciente (hasta 200px) para #navSideActions, que ya no vive
+  // Reserva creciente (hasta 230px) para #navSideActions, que ya no vive
   // dentro de #navShell: sin esto, en viewports de ancho intermedio
   // (~700-1000px) la píldora se quedaba lo bastante ancha como para que
   // su propio fondo redondeado se recortara debajo del botón Registrarse.
-  const sideReserve = progress*230;
+  // Por debajo de ~460px (móvil) esos mismos 230px dejaban la píldora en
+  // apenas 40-50px — ni cabía el logo de respaldo (ver .nav-pill-brand) —
+  // así que el tope baja con el viewport para dejar siempre ~100px de
+  // píldora real como mínimo; por encima de ~460px no cambia nada.
+  const sideReserveMax = Math.max(60, Math.min(230, window.innerWidth*0.72 - 100));
+  const sideReserve = progress*sideReserveMax;
   navShell.style.width = `calc(${100 - progress*28}% - ${sideReserve}px)`;
   navShell.style.maxWidth = (1180 - progress*(1180-660) - sideReserve) + 'px';
   navShell.style.marginTop = (progress*22) + 'px';
