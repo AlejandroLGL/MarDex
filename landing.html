@@ -454,6 +454,29 @@
     position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
     border-radius:inherit; z-index:1;
   }
+  /* Pantalla del portátil, en concreto: se expande hasta cubrir el
+     viewport entero (ver screenFullBleedScale en el <script>) y el
+     viewport puede tener cualquier aspect ratio — con un solo <video>
+     cover, en ratios muy distintos al del vídeo (64:27) se recortaría
+     demasiado. Dos copias del mismo archivo en su lugar: una de fondo,
+     cover + muy desenfocada (rellena cualquier hueco sin que se note el
+     recorte, como el fondo de Spotify Canvas o el fullscreen de YouTube),
+     y otra delante, contain, que se ve SIEMPRE entera sin recortar nada —
+     si sobra espacio alrededor (barras), ahí se ve la de fondo por detrás
+     en vez de quedar vacío. scale(1.15) en la de fondo para que el
+     desenfoque no deje ver un borde sin pintar. Solo para esta pantalla
+     (la del móvil se queda con .screen-video tal cual: su propio aspect
+     ratio no cambia al crecer, no tiene este problema). */
+  .screen-video-fill{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    border-radius:inherit; z-index:1;
+    filter:blur(44px) saturate(1.3) brightness(0.78);
+    transform:scale(1.15);
+  }
+  .screen-video-sharp{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:contain;
+    border-radius:inherit; z-index:2;
+  }
   /* Capa fija con una copia de la cinta + sección de funciones (ver
      buildScenePreview() en el <script>), recortada con clip-path al
      hueco actual de #sceneScreenFrame — pedido explícitamente: la
@@ -766,8 +789,13 @@
         <div class="scene-screen-frame" id="sceneScreenFrame">
           <div class="scene-screen-content" id="sceneScreenContent">
             <!-- Deja caer videos/laptop-screen.mp4 (ver videos/README.txt) y se
-                 reproduce solo aquí, sin tocar nada más. -->
-            <video class="screen-video" src="videos/laptop-screen.mp4" autoplay muted loop playsinline onerror="this.style.display='none'"></video>
+                 reproduce solo aquí, sin tocar nada más. Dos copias (ver
+                 .screen-video-fill/.screen-video-sharp en el <style>): una de
+                 fondo desenfocada que rellena cualquier hueco, y otra delante
+                 sin recortar, para que se vea bien en cualquier aspect ratio
+                 de pantalla. -->
+            <video class="screen-video-fill" src="videos/laptop-screen.mp4" autoplay muted loop playsinline onerror="this.style.display='none'"></video>
+            <video class="screen-video-sharp" src="videos/laptop-screen.mp4" autoplay muted loop playsinline onerror="this.style.display='none'"></video>
             Pantalla del portátil<br>(sustituir por una captura real de la app)
           </div>
         </div>
